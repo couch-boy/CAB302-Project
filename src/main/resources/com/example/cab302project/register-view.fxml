@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<VBox alignment="TOP_LEFT" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.cab302project.RegisterController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+    <Label text="Welcome to the user registration screen."/>
+    <GridPane hgap="5.0" vgap="5.0" >
+        <columnConstraints>
+            <ColumnConstraints minWidth="70" />
+            <ColumnConstraints hgrow="ALWAYS"/>
+        </columnConstraints>
+        <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <Label text="Email:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+        <Label text="Phone:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+        <TextField fx:id="usernameField" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+        <PasswordField fx:id="passwordField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        <TextField fx:id="emailField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+        <TextField fx:id="phoneField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+    </GridPane>
+    <HBox spacing="10.0" alignment="CENTER">
+        <Button text="Register Account" onAction="#onRegisterAccount"/>
+        <Button text="Cancel" onAction="#onReturnToLogin"/>
+    </HBox>
+
+
+
+</VBox>

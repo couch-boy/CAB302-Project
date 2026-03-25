@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<VBox alignment="TOP_LEFT" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.cab302project.LoginController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+    <Label text="Please enter your login details."/>
+    <GridPane hgap="5.0" vgap="5.0" >
+        <columnConstraints>
+            <ColumnConstraints minWidth="70" />
+            <ColumnConstraints hgrow="ALWAYS"/>
+        </columnConstraints>
+        <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <TextField fx:id="usernameField" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+        <PasswordField fx:id="passwordField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+    </GridPane>
+    <HBox spacing="10.0" alignment="CENTER">
+        <Button text="Login" onAction="#onLogin"/>
+        <Button text="Register" onAction="#onRegister"/>
+    </HBox>
+
+
+
+</VBox>

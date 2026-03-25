@@ -1,6 +1,7 @@
 module com.example.cab302project {
     requires javafx.controls;
     requires javafx.fxml;
+    requires java.sql;
 
 
     opens com.example.cab302project to javafx.fxml;
