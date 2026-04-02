@@ -1,0 +1,9 @@
+User Stories 
+
+As a public user, I want to write a crime report so that I can tell the police what happened.
+As a public user, I want to add the location of the incident so that the police know where it happened.
+As a public user, I want to see a hotspot map so that I can check which areas have more reports.
+As a police officer, I want to see all reports in a list so that I can review them.
+As a police officer, I want to sort and filter reports so that I can find the most important ones.
+As a police officer, I want to change a report’s status so that I can show what stage it is at.
+As a police officer, I want to add notes to a report so that I can record what I’ve done.
