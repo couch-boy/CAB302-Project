@@ -1,0 +1,107 @@
+/* Style all labels */
+.label {
+    -fx-text-fill: #000000;
+    -fx-font-size: 14px;
+}
+
+/* Style all buttons */
+.button {
+    -fx-background-color: #2e2e2e;
+    -fx-text-fill: white;
+    -fx-background-radius: 5;
+    -fx-padding: 8 16;
+}
+
+.button:hover {
+    -fx-background-color: #444444;
+}
+
+/* Style text fields */
+.text-field, .password-field {
+    -fx-background-color: #1e1e1e;
+    -fx-text-fill: black;
+    -fx-border-color: #555;
+    -fx-border-radius: 5;
+}
+
+/* Style the VBox container */
+.login-container {
+    -fx-background-color: #000000;
+    -fx-padding: 20;
+    -fx-spacing: 20;
+}
+/*  Root Background */
+.root {
+    -fx-background-color: #000000;
+    -fx-padding: 40;
+}
+
+/*  Labels  */
+.label {
+    -fx-text-fill: #e6e6e6;
+    -fx-font-size: 14px;
+}
+
+.label-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.label-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #bbbbbb;
+}
+
+/*  Text Fields  */
+.text-field, .password-field {
+    -fx-background-color: #1c1c1c;
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #888;
+    -fx-border-color: #333;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 8;
+}
+
+.text-field:focused, .password-field:focused {
+    -fx-border-color: #4a90e2;
+}
+
+/* Buttons */
+.button {
+    -fx-background-color: #2e2e2e;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-padding: 8 20;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #3a3a3a;
+}
+
+.button:pressed {
+    -fx-background-color: #1f1f1f;
+}
+
+/* Login Container */
+.login-container {
+    -fx-background-color: #121212;
+    -fx-padding: 20;
+    -fx-spacing: 20;
+    -fx-alignment: center;
+}
+
+    /*  HBox for Buttons  */
+.hbox {
+    -fx-spacing: 15;
+    -fx-alignment: center;
+}
+.register-Container {
+    -fx-background-color: #8b1010;
+    -fx-padding: 20;
+    -fx-spacing: 20;
+    -fx-alignment: center;
+}

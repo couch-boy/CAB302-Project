@@ -11,6 +11,7 @@ public class SqliteDAO {
     public SqliteDAO() {
         connection = SqliteConnection.getInstance();
         createUserTable();
+        createReprtTable();
         //uncomment to insert sample user data to data.db file
         //insertSampleUserData();
     }
@@ -89,4 +90,38 @@ public class SqliteDAO {
         }
     }
 
+    private void createReprtTable() {
+        try{
+            Statement statement = connection.createStatement();
+            String query = "CREATE TABLE IF NOT EXISTS reprt ("+
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "username TEXT," +
+                    "type TEXT," +
+                    "description TEXT," +
+                    "location TEXT," +
+                    "timestamp TEXT" +
+                    ")";
+            statement.execute(query);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    public boolean addReport(String username, String type, String description, String location) {
+        String query = "INSERT INTO reports (username, type, description, location, timestamp) " +
+                "VALUES (?, ?, ?, ?, datetime('now'))";
+
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setString(1, username);
+            stmt.setString(2, type);
+            stmt.setString(3, description);
+            stmt.setString(4, location);
+
+            stmt.executeUpdate();
+            return true;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

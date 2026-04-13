@@ -27,3 +27,18 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# Salesforce DX (you accidentally committed this earlier)
+.sfdx/
+
+# Database file
+*.db
+
+# Java / build output (important for JavaFX projects)
+target/
+out/
+bin/
+
+# IntelliJ IDEA (you already have most, but this is fine too)
+.idea/
+*.iml

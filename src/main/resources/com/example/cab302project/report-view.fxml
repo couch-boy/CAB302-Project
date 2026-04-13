@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" alignment="CENTER" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+        fx:controller="com.example.cab302project.ReportController">
+<Label text="Submit a Crime Report" />
+<ComboBox fx:id="typeField" promptText="Select Crime Type" />
+<TextArea fx:id="descriptionField" promptText="Enter description" />
+<TextField fx:id="locationField" promptText="Enter location" />
+<Button text="Submit Report" onAction="#onSubmitReport" />
+<Button text="Back to Dashboard" onAction="#onBack" />
+        </VBox>

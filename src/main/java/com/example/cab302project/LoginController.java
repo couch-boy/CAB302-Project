@@ -1,3 +1,4 @@
+
 package com.example.cab302project;
 
 import javafx.fxml.FXML;
@@ -43,11 +44,13 @@ public class LoginController {
             UserSession.login(authenticatedUser);
 
             try {
-                //get the current stage (window) by referencing a ui element
+                //get the current stage (window) by referencing  ui element
                 Stage stage = (Stage) usernameField.getScene().getWindow();
                 //load main application view
                 FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("dashboard-view.fxml"));
                 Scene scene = new Scene(fxmlLoader.load(), HelloApplication.WIDTH, HelloApplication.HEIGHT);
+                String css = HelloApplication.class.getResource("style.css").toExternalForm();
+                scene.getStylesheets().add(css);
                 stage.setScene(scene);
 
             } catch (IOException e) {
@@ -64,7 +67,7 @@ public class LoginController {
     @FXML
     public void onRegister() {
         try {
-            //get the current stage (window) by referencing a ui element
+            //get the current stage (window) by referencing  ui element
             Stage stage = (Stage) usernameField.getScene().getWindow();
             //load register view
             FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("register-view.fxml"));

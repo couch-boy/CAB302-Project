@@ -49,4 +49,11 @@ public class DashboardController {
 
 
     }
+    @FXML
+    public void onReport() throws IOException {
+        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        FXMLLoader loader = new FXMLLoader(HelloApplication.class.getResource("report-view.fxml"));
+        Scene scene = new Scene(loader.load(), HelloApplication.WIDTH, HelloApplication.HEIGHT);
+        stage.setScene(scene);
+    }
 }
