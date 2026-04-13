@@ -1,13 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
 
-<VBox
-        fillWidth="false"
-        prefWidth="154.0"
-        xmlns="http://javafx.com/javafx/17.0.12"
-        xmlns:fx="http://javafx.com/fxml/1"
-
-/>
-
-
+<VBox alignment="TOP_CENTER" prefWidth="154.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.cab302project.PoliceDashboardController">
+   <padding>
+      <Insets top="184.0" />
+   </padding>
+   <children>
+      <Line endX="100.0" startX="-100.0" translateY="-10.0" />
+      <Button
+              fx:id="logoutButton"
+              text="Logout"
+              translateX="60.0"
+              onAction="#onLogout"
+      />
+      <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Police " textAlignment="CENTER" translateY="-184.0" />
+   </children>
+</VBox>

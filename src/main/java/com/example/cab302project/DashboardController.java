@@ -14,8 +14,6 @@ public class DashboardController {
     private Label welcomeLabel;
     @FXML
     private Label emailLabel;
-    @FXML
-    private Button Police;
 
     private SqliteDAO dao;
 
