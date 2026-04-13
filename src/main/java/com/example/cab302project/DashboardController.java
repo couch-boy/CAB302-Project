@@ -3,6 +3,7 @@ package com.example.cab302project;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
@@ -13,6 +14,8 @@ public class DashboardController {
     private Label welcomeLabel;
     @FXML
     private Label emailLabel;
+    @FXML
+    private Button Police;
 
     private SqliteDAO dao;
 
@@ -33,6 +36,29 @@ public class DashboardController {
     }
 
     @FXML
+    protected void onPoliceClick() {
+        try {
+            // get the current stage
+            Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                    HelloApplication.class.getResource("police-dashboard-view.fxml")
+            );
+
+            Scene scene = new Scene(
+                    fxmlLoader.load(),
+                    HelloApplication.WIDTH,
+                    HelloApplication.HEIGHT
+            );
+
+            stage.setScene(scene);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
     public void onLogout() {
         UserSession.logout();
 
@@ -46,7 +72,6 @@ public class DashboardController {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
     }
+
 }
