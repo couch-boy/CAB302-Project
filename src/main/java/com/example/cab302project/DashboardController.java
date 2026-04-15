@@ -34,19 +34,25 @@ public class DashboardController {
 
     @FXML
     public void onLogout() {
+
         UserSession.logout();
 
-        try {
-            //get the current stage (window) by referencing a ui element
-            Stage stage = (Stage) welcomeLabel.getScene().getWindow();
-            //load login view
-            FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("login-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), HelloApplication.WIDTH, HelloApplication.HEIGHT);
-            stage.setScene(scene);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        //get the current stage (window) by referencing a ui element
+        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        //load login view
+        UIUtils.switchScene(stage, "login-view.fxml");
 
     }
+
+    @FXML
+    public void viewCrimes() {
+
+        //get the current stage (window) by referencing a ui element
+        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        //load crimes view
+        UIUtils.switchScene(stage, "crimes-view.fxml");
+
+    }
+
+
 }

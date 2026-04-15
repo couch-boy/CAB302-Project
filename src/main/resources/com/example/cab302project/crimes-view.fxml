@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox alignment="TOP_LEFT" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.cab302project.CrimesController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+
+    <Label text="Crime Report Database" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+
+    <HBox VBox.vgrow="ALWAYS" spacing="20.0">
+        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+            <TableView fx:id="crimeTable" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="idColumn" text="ID" prefWidth="50" />
+                    <TableColumn fx:id="categoryColumn" text="Category" prefWidth="120" />
+                    <TableColumn fx:id="severityColumn" text="Severity" prefWidth="80" />
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                </columnResizePolicy>
+            </TableView>
+            <Button text="Back to Dashboard" onAction="#onBackButtonClick" maxWidth="Infinity"/>
+        </VBox>
+
+        <VBox spacing="10.0" prefWidth="350">
+            <Label text="Report Details" style="-fx-font-weight: bold;" />
+            <GridPane hgap="10.0" vgap="10.0">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="80" />
+                    <ColumnConstraints hgrow="ALWAYS" />
+                </columnConstraints>
+
+                <Label text="Category:" GridPane.rowIndex="0" />
+                <ComboBox fx:id="categoryComboBox" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                <Label text="Severity:" GridPane.rowIndex="1"/>
+                <ComboBox fx:id="severityComboBox" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                <Label text="Reporter:" GridPane.rowIndex="2" />
+                <TextField fx:id="reporterField" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                <Label text="Location:" GridPane.rowIndex="3" />
+                <TextField fx:id="locationField" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                <Label text="Description:" GridPane.rowIndex="4" />
+                <TextArea fx:id="descriptionArea" editable="true" wrapText="true" prefHeight="200"
+                          GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+            </GridPane>
+
+            <Button text="Update Crime Details" onAction="#onUpdateCrime" maxWidth="Infinity"/>
+
+        </VBox>
+    </HBox>
+</VBox>
