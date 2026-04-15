@@ -24,6 +24,7 @@ public class PoliceDashboardController
     @FXML
     public void initialize()
     {
+        // temporary list of crime reports
         ObservableList<CrimeReport> reports = FXCollections.observableArrayList
                 (
                         new CrimeReport("Robbery at gas station", "HIGH", "7:35PM"),
@@ -32,6 +33,7 @@ public class PoliceDashboardController
                         new CrimeReport("Suspicious Activity", "MEDIUM", "8:00AM")
                 );
 
+        // Link the data so it displays on the dashboard
         reportListView.setItems(reports);
     }
 
