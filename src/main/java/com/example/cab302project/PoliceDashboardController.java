@@ -1,8 +1,12 @@
 package com.example.cab302project;
 
+import javafx.beans.Observable;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.ListView;
 import javafx.stage.Stage;
 import javafx.scene.control.Button;
 
@@ -11,10 +15,30 @@ import java.io.IOException;
 public class PoliceDashboardController
 {
     @FXML
-    private Button logoutButton;
+    private ListView<CrimeReport> reportListView;
 
     @FXML
-    public void onLogout() {
+    private Button logoutButton;
+
+    // Temp
+    @FXML
+    public void initialize()
+    {
+        ObservableList<CrimeReport> reports = FXCollections.observableArrayList
+                (
+                        new CrimeReport("Robbery at gas station", "HIGH", "7:35PM"),
+                        new CrimeReport("Noise complaint", "LOW", "11:00PM"),
+                        new CrimeReport("Assult and battery", "HIGH", "11:45AM"),
+                        new CrimeReport("Suspicious Activity", "MEDIUM", "8:00AM")
+                );
+
+        reportListView.setItems(reports);
+    }
+
+
+    @FXML
+    public void onLogout()
+    {
         UserSession.logout();
 
         try

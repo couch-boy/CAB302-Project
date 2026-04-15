@@ -6,18 +6,29 @@
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 
-<VBox alignment="TOP_CENTER" prefWidth="154.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.cab302project.PoliceDashboardController">
+<VBox alignment="TOP_CENTER" spacing="10"
+      xmlns="http://javafx.com/javafx/17.0.12"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.cab302project.PoliceDashboardController">
+
    <padding>
-      <Insets top="184.0" />
+      <Insets top="20"/>
    </padding>
-   <children>
-      <Line endX="100.0" startX="-100.0" translateY="-10.0" />
-      <Button
-              fx:id="logoutButton"
-              text="Logout"
-              translateX="60.0"
-              onAction="#onLogout"
-      />
-      <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Police " textAlignment="CENTER" translateY="-184.0" />
-   </children>
+
+   <!-- Title -->
+   <Text
+           text="Police Dashboard"
+   />
+
+   <!-- Crime Report List -->
+   <ListView
+           fx:id="reportListView"
+           prefHeight="400"
+           prefWidth="300"/>
+
+   <!-- Logout Button -->
+   <Button
+           fx:id="logoutButton"
+           text="Logout"
+           onAction="#onLogout"/>
 </VBox>
