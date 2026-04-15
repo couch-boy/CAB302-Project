@@ -1,6 +1,5 @@
 package com.example.cab302project;
 
-import javafx.beans.Observable;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -9,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.ListView;
 import javafx.stage.Stage;
 import javafx.scene.control.Button;
+import javafx.scene.control.ListCell;
 
 import java.io.IOException;
 
@@ -35,6 +35,29 @@ public class PoliceDashboardController
 
         // Link the data so it displays on the dashboard
         reportListView.setItems(reports);
+
+        // cell to add full report
+        reportListView.setCellFactory(listView -> new ListCell<>()
+        {
+            private final Button viewButton = new Button("Full Report");
+
+            @Override
+            protected void updateItem(CrimeReport report, boolean empty) {
+                super.updateItem(report, empty);
+
+                if (empty || report == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    setText(report.toString());
+
+                    viewButton.setOnAction(e -> openFullReport(report));
+
+                    setGraphic(viewButton);
+                }
+            }
+        }
+        );
     }
 
 
@@ -57,6 +80,32 @@ public class PoliceDashboardController
                     HelloApplication.WIDTH,
                     HelloApplication.HEIGHT);
 
+            stage.setScene(scene);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Opens the full report screen
+    private void openFullReport(CrimeReport report) {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    HelloApplication.class.getResource("police-full-report-view.fxml")
+            );
+
+            Scene scene = new Scene(
+                    loader.load(),
+                    HelloApplication.WIDTH,
+                    HelloApplication.HEIGHT
+            );
+
+            // pass selected report to next script
+            PoliceFullReportController controller = loader.getController();
+             controller.setReport(report);
+
+             // switch scene
+            Stage stage = (Stage) reportListView.getScene().getWindow();
             stage.setScene(scene);
 
         } catch (IOException e) {
