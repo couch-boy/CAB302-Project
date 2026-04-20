@@ -15,6 +15,7 @@
     <Label fx:id="emailLabel" text="Loading user details..."/>
     <Button text="Logout" onAction="#onLogout"/>
     <Button text="View Crimes" onAction="#viewCrimes"/>
+    <Button text="View Profile" onAction="#viewProfile"/>
 
 
 

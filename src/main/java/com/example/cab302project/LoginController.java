@@ -1,29 +1,31 @@
 package com.example.cab302project;
 
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.stage.Stage;
 
-import java.io.IOException;
-
 public class LoginController {
+
+    // FXML UI elements
     @FXML
     private TextField usernameField;
     @FXML
     private PasswordField passwordField;
 
-    private SqliteDAO dao;
+    private IAppDAO dao;
 
+    // Constructor
     public LoginController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
 
+    /**
+     * Validate user information and attempt to move to the dashboard
+     */
     @FXML
     public void onLogin() {
         String username = usernameField.getText();
@@ -53,6 +55,9 @@ public class LoginController {
 
     }
 
+    /**
+     * Move to the new user registration screen
+     */
     @FXML
     public void onRegister() {
 

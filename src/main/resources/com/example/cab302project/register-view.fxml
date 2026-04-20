@@ -21,10 +21,10 @@
         <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
         <Label text="Email:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
         <Label text="Phone:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-        <TextField fx:id="usernameField" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
-        <PasswordField fx:id="passwordField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-        <TextField fx:id="emailField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-        <TextField fx:id="phoneField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+        <TextField fx:id="usernameField" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity" onAction="#onRegisterAccount"/>
+        <PasswordField fx:id="passwordField" GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity" onAction="#onRegisterAccount"/>
+        <TextField fx:id="emailField" GridPane.columnIndex="1" GridPane.rowIndex="2" maxWidth="Infinity" onAction="#onRegisterAccount"/>
+        <TextField fx:id="phoneField" GridPane.columnIndex="1" GridPane.rowIndex="3" maxWidth="Infinity" onAction="#onRegisterAccount"/>
     </GridPane>
     <HBox spacing="10.0" alignment="CENTER">
         <Button text="Register Account" onAction="#onRegisterAccount"/>
