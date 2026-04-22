@@ -29,4 +29,16 @@ public class UserSession {
     public static void logout() {
         instance = null;
     }
+
+    //helper to easily check darkmode for UI elements
+    public static boolean isDarkMode() {
+        // Get current session
+        UserSession session = getInstance();
+        // If session is not null, and user is not null
+        if (session != null && session.getUser() != null) {
+            // Return current user darkmode preference
+            return session.getUser().isDarkMode();
+        }
+        return false; // Default if no one is logged in
+    }
 }

@@ -19,8 +19,8 @@
         </columnConstraints>
         <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
         <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-        <TextField fx:id="usernameField" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
-        <PasswordField fx:id="passwordField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        <TextField fx:id="usernameField" onAction="#onLogin" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity"/>
+        <PasswordField fx:id="passwordField" onAction="#onLogin" GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity"/>
     </GridPane>
     <HBox spacing="10.0" alignment="CENTER">
         <Button text="Login" onAction="#onLogin"/>

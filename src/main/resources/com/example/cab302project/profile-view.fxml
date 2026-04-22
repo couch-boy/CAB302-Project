@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox alignment="TOP_CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.cab302project.ProfileController">
+    <padding>
+        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
+    </padding>
+
+    <Label text="User Profile" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+
+    <GridPane hgap="10.0" vgap="15.0" alignment="CENTER">
+        <columnConstraints>
+            <ColumnConstraints minWidth="100" halignment="RIGHT"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="200"/>
+        </columnConstraints>
+
+        <Label text="Username:" GridPane.rowIndex="0" />
+        <Label fx:id="usernameLabel" style="-fx-font-weight: bold;"
+               GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+        <Label text="New Password:" GridPane.rowIndex="1" />
+        <PasswordField fx:id="passwordField" promptText="Leave blank to keep current password" onAction="#onSave"
+                       GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+        <Label text="Email:" GridPane.rowIndex="2" />
+        <TextField fx:id="emailField" onAction="#onSave"
+                   GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+        <Label text="Phone:" GridPane.rowIndex="3" />
+        <TextField fx:id="phoneField" onAction="#onSave"
+                   GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+        <Label text="Home Location:" GridPane.rowIndex="4" />
+        <TextField fx:id="locationField" promptText="latitude, longitude" onAction="#onSave"
+                   GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+        <Label text="Settings:" GridPane.rowIndex="5" />
+        <CheckBox fx:id="darkModeCheckBox" text="Enable Dark Mode"
+                  GridPane.columnIndex="1" GridPane.rowIndex="5" />
+    </GridPane>
+
+    <HBox spacing="15.0" alignment="CENTER">
+        <Button text="Save Changes" onAction="#onSave" />
+        <Button text="Back" onAction="#onBack" />
+    </HBox>
+</VBox>

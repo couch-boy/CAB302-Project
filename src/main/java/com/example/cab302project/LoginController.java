@@ -1,37 +1,39 @@
 package com.example.cab302project;
 
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.stage.Stage;
 
-import java.io.IOException;
-
 public class LoginController {
+
+    // FXML UI elements
     @FXML
     private TextField usernameField;
     @FXML
     private PasswordField passwordField;
 
-    private SqliteDAO dao;
+    private IAppDAO dao;
 
+    // Constructor
     public LoginController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
 
+    /**
+     * Validate user information and attempt to move to the dashboard
+     */
     @FXML
     public void onLogin() {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
-        // Check if fields are empty before hitting the database
+        //check if fields are empty before hitting the database
         if (username.isEmpty() || password.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "Form Error!", "Please enter both username and password.");
+            UIUtils.showAlert(Alert.AlertType.WARNING, "Form Error!", "Please enter both username and password.");
             return;
         }
 
@@ -42,46 +44,27 @@ public class LoginController {
             //showAlert(AlertType.INFORMATION, "Login Successful!", "Welcome, " + username + "!");
             UserSession.login(authenticatedUser);
 
-            try {
-                //get the current stage (window) by referencing a ui element
-                Stage stage = (Stage) usernameField.getScene().getWindow();
-                //load main application view
-                FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("dashboard-view.fxml"));
-                Scene scene = new Scene(fxmlLoader.load(), HelloApplication.WIDTH, HelloApplication.HEIGHT);
-                stage.setScene(scene);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                showAlert(AlertType.ERROR, "System Error", "Could not load the user dashboard screen.");
-            }
-
-        } else {
-            showAlert(AlertType.ERROR, "Login Failed!", "Invalid username or password.");
-        }
-
-    }
-
-    @FXML
-    public void onRegister() {
-        try {
             //get the current stage (window) by referencing a ui element
             Stage stage = (Stage) usernameField.getScene().getWindow();
-            //load register view
-            FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("register-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), HelloApplication.WIDTH, HelloApplication.HEIGHT);
-            stage.setScene(scene);
+            //load dashboard view
+            UIUtils.switchScene(stage, "dashboard-view.fxml");
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else {
+            UIUtils.showAlert(AlertType.ERROR, "Login Failed!", "Invalid username or password.");
         }
+
     }
 
-    // Helper method to show pop-up messages to the user
-    private void showAlert(AlertType alertType, String title, String message) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+    /**
+     * Move to the new user registration screen
+     */
+    @FXML
+    public void onRegister() {
+
+        //get the current stage (window) by referencing a ui element
+        Stage stage = (Stage) usernameField.getScene().getWindow();
+        //load register view
+        UIUtils.switchScene(stage, "register-view.fxml");
+
     }
 }

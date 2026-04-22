@@ -1,26 +1,28 @@
 package com.example.cab302project;
 
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
-import java.io.IOException;
-
 public class DashboardController {
+
+    // FXML UI elements
     @FXML
     private Label welcomeLabel;
     @FXML
     private Label emailLabel;
 
-    private SqliteDAO dao;
+    private IAppDAO dao;
 
+    // Constructor
     public DashboardController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
 
+    /**
+     * This method runs automatically after the FXML has loaded
+     */
     @FXML
     public void initialize() {
         //this method auto-runs when dashboard-view.fxml loads
@@ -32,21 +34,42 @@ public class DashboardController {
         }
     }
 
+    /**
+     * Return to login screen and logout current UserSession
+     */
     @FXML
     public void onLogout() {
+
         UserSession.logout();
 
-        try {
-            //get the current stage (window) by referencing a ui element
-            Stage stage = (Stage) welcomeLabel.getScene().getWindow();
-            //load login view
-            FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("login-view.fxml"));
-            Scene scene = new Scene(fxmlLoader.load(), HelloApplication.WIDTH, HelloApplication.HEIGHT);
-            stage.setScene(scene);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        //get the current stage (window) by referencing a ui element
+        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        //load login view
+        UIUtils.switchScene(stage, "login-view.fxml");
 
     }
+
+    /**
+     * Go to crimes view
+     */
+    @FXML
+    public void viewCrimes() {
+
+        //get the current stage (window) by referencing a ui element
+        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        //load crimes view
+        UIUtils.switchScene(stage, "crimes-view.fxml");
+
+    }
+
+    /**
+     * Go to profile view
+     */
+    @FXML
+    public void viewProfile() {
+        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        UIUtils.switchScene(stage, "profile-view.fxml");
+    }
+
+
 }

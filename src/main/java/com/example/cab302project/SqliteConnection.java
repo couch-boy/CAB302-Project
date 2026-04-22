@@ -4,26 +4,30 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-//class for establishing sqlite database connection with singleton instance
 public class SqliteConnection {
-    //private connection instance
+
+    // Private connection instance
     private static Connection instance = null;
 
-    //private method to establish connection instance if noot already instantiated
-    private SqliteConnection() {
-        String url = "jdbc:sqlite:data.db";
-        try {
-            instance = DriverManager.getConnection(url);
-        } catch (SQLException sqlEx) {
-            System.err.println(sqlEx);
-        }
-    }
+    // Constructor: Private for singleton database connection
+    private SqliteConnection() {}
 
-    //public method to return existing instance, or create one if not instantiated
+    /**
+     *
+     * @return
+     */
     public synchronized static Connection getInstance() {
-        if (instance == null) {
-            new SqliteConnection();
+        try {
+            // Check if instance is null OR if the connection was closed externally
+            if (instance == null || instance.isClosed()) {
+                String url = "jdbc:sqlite:data.db";
+                // Re-establish connection instance
+                instance = DriverManager.getConnection(url);
+            }
+        } catch (SQLException e) {
+            System.err.println("Database connection failed: " + e.getMessage());
         }
+        // Return existing database connection instance
         return instance;
     }
 }
