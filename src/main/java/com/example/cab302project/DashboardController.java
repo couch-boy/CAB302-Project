@@ -1,7 +1,9 @@
 package com.example.cab302project;
 
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.scene.web.WebView;
 import javafx.scene.web.WebEngine;
@@ -16,18 +18,22 @@ public class DashboardController {
     private Label welcomeLabel;
     @FXML
     private Label emailLabel;
-
     @FXML
     private WebView mapView;
+    @FXML
+    private Button hamburgerBtn;
+    @FXML
+    private StackPane dashboardRoot;
 
     private IAppDAO dao;
+    private HamburgerMenu hamburgerMenu;
 
     // Constructor
     public DashboardController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
-
     }
+
     private String buildCrimeJson(List<CrimeRecord> crimes) {
         StringBuilder sb = new StringBuilder("[");
 
@@ -48,6 +54,7 @@ public class DashboardController {
         sb.append("]");
         return sb.toString();
     }
+
     private void loadMap() {
         if (mapView == null) {
             System.out.println("mapView is null");
@@ -95,7 +102,19 @@ public class DashboardController {
             welcomeLabel.setText("Welcome back, " + session.getUser().getUsername() + "!");
             emailLabel.setText("Your email is: " + session.getUser().getEmail());
         }
+
         Platform.runLater(this::loadMap);
+
+        // Wire hamburger menu after scene is attached
+        // Platform.runLater ensures getScene().getWindow() is not null
+        Platform.runLater(() -> {
+            Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+            hamburgerMenu = new HamburgerMenu(stage);
+            hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
+            hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
+            dashboardRoot.getChildren().add(hamburgerMenu);
+            hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+        });
     }
 
     /**
@@ -103,14 +122,12 @@ public class DashboardController {
      */
     @FXML
     public void onLogout() {
-
         UserSession.logout();
 
         //get the current stage (window) by referencing a ui element
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         //load login view
         UIUtils.switchScene(stage, "login-view.fxml");
-
     }
 
     /**
@@ -118,12 +135,10 @@ public class DashboardController {
      */
     @FXML
     public void viewCrimes() {
-
         //get the current stage (window) by referencing a ui element
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         //load crimes view
         UIUtils.switchScene(stage, "crimes-view.fxml");
-
     }
 
     /**
@@ -134,11 +149,10 @@ public class DashboardController {
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         UIUtils.switchScene(stage, "profile-view.fxml");
     }
+
     @FXML
     public void viewHotspots() {
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         UIUtils.switchScene(stage, "hotspots-view.fxml");
     }
-
-
 }

@@ -1,13 +1,9 @@
 package com.example.cab302project;
 
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
-
-import java.io.IOException;
 
 public class HelloController {
 
@@ -18,20 +14,21 @@ public class HelloController {
     private Button loginButton;
 
     /**
-     * Display welcome text (NEEDS TO BE REMOVED LATER)
+     * "Create an Account" button - navigates to register screen.
+     * Previously showed a test label, now routes to registration.
      */
     @FXML
     protected void onHelloButtonClick() {
-        welcomeText.setText("Welcome to JavaFX Application!");
+        Stage stage = (Stage) loginButton.getScene().getWindow();
+        UIUtils.switchScene(stage, "register-view.fxml");
     }
 
     /**
-     * Go to user login screen
+     * "Sign In" button - navigates to login screen.
      */
     @FXML
     protected void onLoginButtonClick() {
         Stage stage = (Stage) loginButton.getScene().getWindow();
         UIUtils.switchScene(stage, "login-view.fxml");
     }
-
 }

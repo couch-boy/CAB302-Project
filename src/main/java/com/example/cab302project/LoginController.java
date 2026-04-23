@@ -41,7 +41,6 @@ public class LoginController {
         User authenticatedUser = dao.validateUser(username, password);
 
         if (authenticatedUser != null) {
-            //showAlert(AlertType.INFORMATION, "Login Successful!", "Welcome, " + username + "!");
             UserSession.login(authenticatedUser);
 
             //get the current stage (window) by referencing a ui element
@@ -52,7 +51,6 @@ public class LoginController {
         } else {
             UIUtils.showAlert(AlertType.ERROR, "Login Failed!", "Invalid username or password.");
         }
-
     }
 
     /**
@@ -60,11 +58,19 @@ public class LoginController {
      */
     @FXML
     public void onRegister() {
-
         //get the current stage (window) by referencing a ui element
         Stage stage = (Stage) usernameField.getScene().getWindow();
         //load register view
         UIUtils.switchScene(stage, "register-view.fxml");
+    }
 
+    /** Tab: Log In - already active, no-op */
+    @FXML
+    public void onTabLogin() {}
+
+    /** Tab: Sign Up - navigate to register */
+    @FXML
+    public void onTabSignup() {
+        onRegister();
     }
 }

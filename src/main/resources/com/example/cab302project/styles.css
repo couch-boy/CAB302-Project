@@ -1,0 +1,291 @@
+/* RADIUS Global Stylesheet */
+
+.root {
+    -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    -fx-font-size: 13px;
+}
+
+/* Landing screen */
+.landing-root {
+    -fx-background-color: #1A2235;
+}
+
+.landing-logo {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 38px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.18), 50, 0.4, 0, 0);
+}
+
+.landing-tagline {
+    -fx-text-fill: rgba(255,255,255,0.42);
+    -fx-font-size: 11px;
+}
+
+/* Auth screens */
+.auth-root {
+    -fx-background-color: #F8F9FA;
+}
+
+.auth-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.09), 24, 0.25, 0, 4);
+    -fx-padding: 36 32 32 32;
+}
+
+.auth-title {
+    -fx-text-fill: #1A1A2E;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+
+.auth-subtitle {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 12px;
+}
+
+.auth-label {
+    -fx-text-fill: #374151;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.auth-field {
+    -fx-background-color: #F1F3F5;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 11 14 11 14;
+    -fx-font-size: 13px;
+    -fx-text-fill: #1A1A2E;
+    -fx-prompt-text-fill: #9CA3AF;
+}
+
+.auth-field:focused {
+    -fx-border-color: #2A364E;
+    -fx-background-color: #FFFFFF;
+    -fx-effect: dropshadow(gaussian, rgba(42,54,78,0.14), 8, 0.3, 0, 0);
+}
+
+/* Primary button - dark navy */
+.btn-primary {
+    -fx-background-color: #2A364E;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 13 0 13 0;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(42,54,78,0.28), 8, 0.3, 0, 2);
+}
+
+.btn-primary:hover {
+    -fx-background-color: #364A6B;
+}
+
+.btn-primary:pressed {
+    -fx-background-color: #1E2A3A;
+    -fx-effect: none;
+}
+
+/* Secondary button - outlined */
+.btn-secondary {
+    -fx-background-color: transparent;
+    -fx-border-color: #2A364E;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-text-fill: #2A364E;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 11 0 11 0;
+    -fx-cursor: hand;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: #EFF2F4;
+}
+
+/* Landing primary button - white on dark */
+.btn-landing-primary {
+    -fx-background-color: #FFFFFF;
+    -fx-text-fill: #2A364E;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 14 0 14 0;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.28), 12, 0.3, 0, 3);
+}
+
+.btn-landing-primary:hover {
+    -fx-background-color: #EFF2F4;
+}
+
+/* Landing secondary button - ghost on dark */
+.btn-landing-secondary {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(255,255,255,0.55);
+    -fx-border-width: 1.5;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-text-fill: rgba(255,255,255,0.80);
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 12 0 12 0;
+    -fx-cursor: hand;
+}
+
+.btn-landing-secondary:hover {
+    -fx-background-color: rgba(255,255,255,0.10);
+    -fx-border-color: #FFFFFF;
+    -fx-text-fill: #FFFFFF;
+}
+
+/* Link labels */
+.link-text {
+    -fx-text-fill: #2A364E;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}
+
+.link-text:hover {
+    -fx-underline: true;
+    -fx-text-fill: #364A6B;
+}
+
+.link-muted {
+    -fx-text-fill: #9CA3AF;
+    -fx-font-size: 12px;
+}
+
+/* App top bar */
+.app-bar {
+    -fx-background-color: #FFFFFF;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0.2, 0, 2);
+    -fx-padding: 10 16 10 16;
+    -fx-min-height: 52;
+}
+
+.app-bar-title {
+    -fx-text-fill: #2A364E;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+/* Hamburger button */
+.hamburger-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #2A364E;
+    -fx-font-size: 20px;
+    -fx-cursor: hand;
+    -fx-padding: 4 8 4 8;
+    -fx-background-radius: 6;
+    -fx-border-width: 0;
+}
+
+.hamburger-btn:hover {
+    -fx-background-color: rgba(42,54,78,0.08);
+}
+
+/* Tab switcher */
+.tab-bar {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: transparent transparent #E5E7EB transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tab-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #9CA3AF;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-padding: 12 0 12 0;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 2.5 0;
+}
+
+.tab-btn-active {
+    -fx-text-fill: #2A364E;
+    -fx-border-color: transparent transparent #2A364E transparent;
+}
+
+/* Hamburger drawer */
+.drawer-pane {
+    -fx-background-color: #2A364E;
+    -fx-min-width: 270;
+    -fx-max-width: 270;
+    -fx-pref-width: 270;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 24, 0.4, 6, 0);
+}
+
+.drawer-header {
+    -fx-background-color: #1E2A3A;
+    -fx-padding: 28 20 20 20;
+}
+
+.drawer-logo {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.drawer-username {
+    -fx-text-fill: rgba(255,255,255,0.88);
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.drawer-email {
+    -fx-text-fill: rgba(255,255,255,0.48);
+    -fx-font-size: 11px;
+}
+
+.drawer-divider {
+    -fx-background-color: rgba(255,255,255,0.11);
+    -fx-min-height: 1;
+    -fx-max-height: 1;
+}
+
+.drawer-section {
+    -fx-text-fill: rgba(255,255,255,0.38);
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 14 20 4 20;
+}
+
+.drawer-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: rgba(255,255,255,0.78);
+    -fx-font-size: 13px;
+    -fx-padding: 13 20 13 20;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+    -fx-background-radius: 0;
+    -fx-border-width: 0;
+    -fx-max-width: Infinity;
+    -fx-graphic-text-gap: 12;
+}
+
+.drawer-item:hover {
+    -fx-background-color: rgba(255,255,255,0.08);
+    -fx-text-fill: #FFFFFF;
+}
+
+.drawer-item-danger {
+    -fx-text-fill: rgba(255,110,110,0.85);
+}
+
+.drawer-item-danger:hover {
+    -fx-background-color: rgba(255,60,60,0.12);
+    -fx-text-fill: #FF7070;
+}
+
+.drawer-toggle-label {
+    -fx-text-fill: rgba(255,255,255,0.68);
+    -fx-font-size: 12px;
+}

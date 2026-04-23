@@ -18,7 +18,6 @@ public class RegisterController {
     @FXML
     private TextField phoneField;
 
-
     private IAppDAO dao;
 
     // Constructor
@@ -37,7 +36,6 @@ public class RegisterController {
         String password = passwordField.getText();
         String email = emailField.getText().trim();
         String phone = phoneField.getText().trim();
-
 
         //check for empty fields
         if (username.isEmpty() || password.isEmpty() || email.isEmpty() || phone.isEmpty()) {
@@ -70,7 +68,6 @@ public class RegisterController {
         } else {
             UIUtils.showAlert(AlertType.ERROR, "Database Error", "Username already exists.");
         }
-
     }
 
     /**
@@ -78,12 +75,19 @@ public class RegisterController {
      */
     @FXML
     public void onReturnToLogin() {
-
         //get the current stage (window) by referencing a ui element
         Stage stage = (Stage) usernameField.getScene().getWindow();
         //load login view
         UIUtils.switchScene(stage, "login-view.fxml");
-
     }
 
+    /** Tab: Log In - navigate to login */
+    @FXML
+    public void onTabLogin() {
+        onReturnToLogin();
+    }
+
+    /** Tab: Sign Up - already active, no-op */
+    @FXML
+    public void onTabSignup() {}
 }
