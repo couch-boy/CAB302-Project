@@ -6,6 +6,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.web.WebView?>
 <VBox alignment="TOP_LEFT" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.example.cab302project.DashboardController">
     <padding>
@@ -15,7 +16,9 @@
     <Label fx:id="emailLabel" text="Loading user details..."/>
     <Button text="Logout" onAction="#onLogout"/>
     <Button text="View Crimes" onAction="#viewCrimes"/>
+    <Button text="View Hotspots" onAction="#viewHotspots"/>
     <Button text="View Profile" onAction="#viewProfile"/>
+    <WebView fx:id="mapView" prefHeight="500.0" prefWidth="800.0" />
 
 
 

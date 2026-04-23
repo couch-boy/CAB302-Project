@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Crime Hotspots</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@latest/ol.css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js"></script>
+    <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script>
+    const vectorSource = new ol.source.Vector();
+
+    const vectorLayer = new ol.layer.Vector({
+        source: vectorSource
+    });
+
+    const map = new ol.Map({
+        target: 'map',
+        layers: [
+            new ol.layer.Tile({
+                source: new ol.source.OSM()
+            }),
+            vectorLayer
+        ],
+        view: new ol.View({
+            center: ol.proj.fromLonLat([153.0235, -27.4709]),
+            zoom: 11
+        })
+    });
+    let hasFitted = false;
+
+   function getRadius(count) {
+    return Math.max(10, count * 3);
+    }
+
+    function getColor(count) {
+        if (count >= 5) return "rgba(255, 0, 0, 0.8)";
+        if (count >= 3) return "rgba(255, 140, 0, 0.8)";
+        return "rgba(255, 215, 0, 0.8)";
+    }
+
+   function applyHotspotStyle(feature) {
+    const count = feature.get('count');
+
+    feature.setStyle(new ol.style.Style({
+        image: new ol.style.Circle({
+            radius: getRadius(count),
+                fill: new ol.style.Fill({
+                    color: getColor(count)
+                }),
+                stroke: new ol.style.Stroke({
+                    color: "#000",
+                    width: 1
+                })
+            }),
+            text: new ol.style.Text({
+                text: String(count),
+                scale: 1.1
+            })
+        }));
+    }
+
+    function loadHotspots(data) {
+            const hotspots = JSON.parse(data);
+            vectorSource.clear();
+
+            const zoom = map.getView().getZoom() || 10;
+
+            hotspots.forEach(h => {
+                const feature = new ol.Feature({
+                    geometry: new ol.geom.Point(
+                        ol.proj.fromLonLat([h.lon, h.lat])
+                    ),
+                    count: h.count
+                });
+
+                applyHotspotStyle(feature);
+                vectorSource.addFeature(feature);
+            });
+
+            if (!hasFitted && vectorSource.getFeatures().length > 0) {
+                map.getView().fit(vectorSource.getExtent(), {
+                    padding: [40, 40, 40, 40],
+                    maxZoom: 14,
+                    duration: 0
+                });
+                hasFitted = true;
+            }
+        }
+
+    map.getView().on('change:resolution', function () {
+        vectorSource.getFeatures().forEach(feature => {
+            applyHotspotStyle(feature);
+        });
+    });
+</script>
+
+</body>
+</html>
