@@ -63,7 +63,7 @@
                 </HBox>
 
                 <Label text="Location:" GridPane.rowIndex="5" />
-                <TextField fx:id="locationField" promptText="lat, lon"
+                <TextField fx:id="locationField" promptText="Enter address"
                            GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
                 <Label text="Description:" GridPane.rowIndex="6" />
@@ -74,17 +74,11 @@
                 <TextField fx:id="reporterField" editable="false" style="-fx-background-color: #f4f4f4;"
                            GridPane.columnIndex="1" GridPane.rowIndex="7" />
 
-                <Label text="Status:" GridPane.rowIndex="8" />
-                <CheckBox fx:id="actionedCheckBox" text="Crime Actioned"
-                          GridPane.columnIndex="1" GridPane.rowIndex="8" />
 
             </GridPane>
 
             <VBox spacing="10.0" prefWidth="350">
-                <Button text="Delete Selected Report" onAction="#onDeleteCrime" maxWidth="Infinity" />
-
                 <Button text="Create New Report" onAction="#onAddNewCrime" maxWidth="Infinity" />
-
                 <Button text="Save Changes" onAction="#onSave" maxWidth="Infinity" />
             </VBox>
 

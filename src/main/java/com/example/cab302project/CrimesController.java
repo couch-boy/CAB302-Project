@@ -9,6 +9,16 @@ import javafx.stage.Stage;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import javafx.animation.PauseTransition;
+import javafx.application.Platform;
+import javafx.geometry.Side;
+import javafx.scene.control.CustomMenuItem;
+import javafx.scene.control.Label;
+import javafx.scene.control.ContextMenu;
+import javafx.util.Duration;
+
+import java.util.List;
+
 public class CrimesController {
 
     // FXML UI elements
@@ -23,9 +33,6 @@ public class CrimesController {
     @FXML
     private TableColumn<CrimeRecord, String> timestampColumn; // String for formatted display of timestamp
     @FXML
-    private TableColumn<CrimeRecord, String> actionedColumn; // Displays Yes/No
-
-    @FXML
     private ComboBox<CrimeCategory> categoryComboBox;
     @FXML
     private Label idLabel, severityLabel;
@@ -37,13 +44,22 @@ public class CrimesController {
     private TextField reporterField, locationField;
     @FXML
     private TextArea descriptionArea;
-    @FXML
-    private CheckBox actionedCheckBox;
+
+
 
     private IAppDAO dao;
 
+    private IGeocodingService geocoder = new OpenStreetMapGeoCoder();
+    @FXML
+
+    private final ContextMenu suggestionsPopup = new ContextMenu();
+    private final PauseTransition suggestionDelay = new PauseTransition(Duration.millis(400));
+
+    private boolean isCreatingNew = false;
+
     // Constructor
     public CrimesController() {
+
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
@@ -80,10 +96,15 @@ public class CrimesController {
         refreshList();
         // Update selected list element after populating
         updateSelectionAfterChange();
+        //  Initialize address autocomplete suggestions for location input
+        setupAddressAutocomplete();
+
     }
 
     /**
-     * This method captures the data from various UI elements to update stored crime details
+     * Handles saving a crime report based on form input.
+     * If the selected record is new (id == 0), it is added to the database.
+     * Existing records are treated as read-only and cannot be modified.
      */
     @FXML
     public void onSave() {
@@ -98,23 +119,20 @@ public class CrimesController {
             CrimeRecord recordFromForm = createRecordFromForm(selected);
 
             if (selected.getId() == 0) {
-                // CASE: This is a brand new record (id == 0)
+                // CASE: This is a brand new record
                 if (dao.addCrime(recordFromForm)) {
                     UIUtils.showAlert(Alert.AlertType.INFORMATION, "Success", "New crime reported successfully.");
-                    refreshList(); // This refreshes from DB, giving us the real ID
+                    refreshList();
+                    updateSelectionAfterChange();
                 }
             } else {
-                // CASE: This is an edit of an existing record (id != 0)
-                if (dao.updateCrime(recordFromForm)) {
-                    UIUtils.showAlert(Alert.AlertType.INFORMATION, "Success", "Record updated.");
-                    refreshList();
-                }
+                // Existing crimes are view-only
+                UIUtils.showAlert(Alert.AlertType.WARNING, "View Only", "Existing crime reports cannot be edited.");
             }
         } catch (Exception e) {
             UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not save: " + e.getMessage());
         }
     }
-
     /**
      * Add a new crime to the database after entering details
      */
@@ -131,6 +149,7 @@ public class CrimesController {
         // Set id to 0
         // Default lat/lon for Brisbane CBD
         // UserSession.getInstance().getUser().getUsername() provides the reporter username
+        isCreatingNew = true;
         CrimeRecord newRecord = new CrimeRecord(
                 0,
                 CrimeCategory.OTHER,
@@ -154,53 +173,10 @@ public class CrimesController {
         // Display popup prompting user to fill in template details and save to store in database
         UIUtils.showAlert(Alert.AlertType.INFORMATION, "New Report",
                 "A new blank report has been created. Fill in the details and click 'Save Changes'.");
+
     }
 
-    /**
-     * Delete an existing crime
-     */
-    @FXML
-    public void onDeleteCrime() {
-        // Get currently selected CrimeRecord object
-        CrimeRecord selected = crimeTable.getSelectionModel().getSelectedItem();
 
-        // If selection is null, show error message
-        if (selected == null) {
-            UIUtils.showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a report to delete.");
-            return;
-        }
-
-        // Confirmation dialog
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirm Deletion");
-        confirm.setHeaderText("Are you sure you want to delete this report?");
-        confirm.setContentText("This action cannot be undone.");
-
-        if (confirm.showAndWait().get() == ButtonType.OK) {
-            // Flag for successful entry deletion
-            boolean success = false;
-
-            if (selected.getId() == 0) {
-                // It's a temporary draft (id == 0), so just remove it from the UI
-                crimeTable.getItems().remove(selected);
-                success = true; // Set to true after draft entry deletion
-            } else {
-                // It's a record in the database (id != 0), so delete via DAO
-                if (dao.deleteCrime(selected.getId())) {
-                    UIUtils.showAlert(Alert.AlertType.INFORMATION, "Deleted", "Report successfully removed.");
-                    refreshList();
-                    success = true; // Set to true after db entry deletion
-                } else {
-                    UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not delete from database.");
-                }
-            }
-
-            // If something was removed, update selected list element
-            if (success) {
-                updateSelectionAfterChange();
-            }
-        }
-    }
 
     /**
      * Return to the previous menu (dashboard)
@@ -233,9 +209,7 @@ public class CrimesController {
         timestampColumn.setCellValueFactory(cd ->
                 new SimpleStringProperty(UIUtils.formatLocalDateTime(cd.getValue().getTimestamp())));
 
-        // Convert boolean to Yes/No
-        actionedColumn.setCellValueFactory(cd ->
-                new SimpleStringProperty(UIUtils.formatBoolean(cd.getValue().isActioned())));
+
     }
 
     // Helper method to initialize date and time UI elements
@@ -255,7 +229,10 @@ public class CrimesController {
         ampmBox.setValue("PM");
     }
 
-    // Helper method to populate UI elements with data
+    /**
+     * Populates the form fields with data from the selected crime record.
+     * Also performs reverse geocoding to display a readable address instead of coordinates.
+     */
     private void populateForm(CrimeRecord crime) {
         // Set ID label
         idLabel.setText(String.valueOf(crime.getId()));
@@ -278,14 +255,27 @@ public class CrimesController {
         int mins = dt.getMinute();
         minuteBox.setValue(String.format("%02d", (mins / 15) * 15));
 
-        locationField.setText(String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude()));
+        new Thread(() -> {
+            try {
+                String address = geocoder.reverseGeocode(crime.getLatitude(), crime.getLongitude());
+                Platform.runLater(() -> locationField.setText(address));
+            } catch (Exception e) {
+                Platform.runLater(() ->
+                        locationField.setText(String.format("%.4f, %.4f",
+                                crime.getLatitude(), crime.getLongitude()))
+                );
+            }
+        }).start();
+
         descriptionArea.setText(crime.getDescription());
         reporterField.setText(crime.getReporterDisplayName());
-        actionedCheckBox.setSelected(crime.isActioned());
+
+        setFormEditable(crime.getId() == 0);
+        isCreatingNew = (crime.getId() == 0);
     }
 
     // Helper method to create CrimeRecord object from form data
-    private CrimeRecord createRecordFromForm(CrimeRecord original) {
+    private CrimeRecord createRecordFromForm(CrimeRecord original) throws Exception {
         // Capture hour, minute, ap/pm values from UI
         int hour = Integer.parseInt(hourBox.getValue());
         int min = Integer.parseInt(minuteBox.getValue());
@@ -298,14 +288,18 @@ public class CrimesController {
         LocalDateTime newTimestamp = LocalDateTime.of(datePicker.getValue(), LocalTime.of(hour, min));
 
         // Parse coordinates using regex to handle spaces automatically
-        String[] coords = locationField.getText().split(",\\s*");
+        String address = locationField.getText().trim();
 
-        if (coords.length != 2) {
-            throw new IllegalArgumentException("Location must be in 'latitude, longitude' format.");
+        if (address.isEmpty()) {
+            throw new IllegalArgumentException("Please enter an address.");
         }
 
-        double lat = Double.parseDouble(coords[0]);
-        double lon = Double.parseDouble(coords[1]);
+        double[] coords = geocoder.geocodeAddress(address);
+        double lat = coords[0];
+        double lon = coords[1];
+
+        System.out.println("Address entered: " + address);
+        System.out.println("Resolved coordinates: " + lat + ", " + lon);
 
         // Bundle everything into the updated object
         return new CrimeRecord(
@@ -315,8 +309,9 @@ public class CrimesController {
                 lat,
                 lon,
                 descriptionArea.getText(),
-                original.getReporter(), // Preserve original raw reporter data (username/null)
-                actionedCheckBox.isSelected()
+                original.getReporter() ,
+                original.isActioned()// Preserve original raw reporter data (username/null)
+
         );
     }
 
@@ -332,7 +327,26 @@ public class CrimesController {
         locationField.clear();
         descriptionArea.clear();
         reporterField.clear();
-        actionedCheckBox.setSelected(false);
+        setFormEditable(true);
+    }
+
+    private void setFormEditable(boolean editable) {
+        categoryComboBox.setDisable(!editable);
+        datePicker.setDisable(!editable);
+        hourBox.setDisable(!editable);
+        minuteBox.setDisable(!editable);
+        ampmBox.setDisable(!editable);
+
+        locationField.setEditable(editable);
+        descriptionArea.setEditable(editable);
+
+        if (!editable) {
+            locationField.setStyle("-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;");
+            descriptionArea.setStyle("-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;");
+        } else {
+            locationField.setStyle("");
+            descriptionArea.setStyle("");
+        }
     }
 
     // Ensures the UI state is consistent after a list refresh or deletion
@@ -342,6 +356,77 @@ public class CrimesController {
             crimeTable.getSelectionModel().selectFirst();
         } else {
             clearForm();
+        }
+    }
+
+    /**
+     * Initializes address autocomplete for the location input, dynamically retrieving
+     * suggestions as the user types. Functionality is restricted to report creation mode
+     * to improve usability and prevent unnecessary interactions during viewing.
+     */
+
+    private void setupAddressAutocomplete() {
+        locationField.textProperty().addListener((obs, oldText, newText) -> {
+
+            if (!isCreatingNew) {
+                suggestionsPopup.hide();
+                return;
+            }
+
+            suggestionDelay.stop();
+
+            if (newText == null || newText.trim().length() < 3) {
+                suggestionsPopup.hide();
+                return;
+            }
+
+            suggestionDelay.setOnFinished(event -> fetchSuggestions(newText.trim()));
+            suggestionDelay.playFromStart();
+        });
+
+        locationField.focusedProperty().addListener((obs, oldVal, focused) -> {
+            if (!focused) {
+                suggestionsPopup.hide();
+            }
+        });
+    }
+
+    private void fetchSuggestions(String query) {
+        new Thread(() -> {
+            try {
+                List<String> suggestions = geocoder.getAddressSuggestions(query);
+
+                Platform.runLater(() -> showSuggestions(suggestions));
+            } catch (Exception e) {
+                Platform.runLater(suggestionsPopup::hide);
+            }
+        }).start();
+    }
+
+    private void showSuggestions(List<String> suggestions) {
+        suggestionsPopup.getItems().clear();
+
+        if (suggestions == null || suggestions.isEmpty()) {
+            suggestionsPopup.hide();
+            return;
+        }
+
+        for (String suggestion : suggestions) {
+            Label entryLabel = new Label(suggestion);
+            entryLabel.setWrapText(true);
+            entryLabel.setMaxWidth(350);
+
+            CustomMenuItem item = new CustomMenuItem(entryLabel, true);
+            item.setOnAction(e -> {
+                locationField.setText(suggestion);
+                suggestionsPopup.hide();
+            });
+
+            suggestionsPopup.getItems().add(item);
+        }
+
+        if (!suggestionsPopup.isShowing()) {
+            suggestionsPopup.show(locationField, Side.BOTTOM, 0, 0);
         }
     }
 }
