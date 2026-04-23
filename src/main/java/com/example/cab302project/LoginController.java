@@ -44,10 +44,24 @@ public class LoginController {
             //showAlert(AlertType.INFORMATION, "Login Successful!", "Welcome, " + username + "!");
             UserSession.login(authenticatedUser);
 
-            //get the current stage (window) by referencing a ui element
+            //get the current stage (window) by referencing an ui element
             Stage stage = (Stage) usernameField.getScene().getWindow();
             //load dashboard view
-            UIUtils.switchScene(stage, "dashboard-view.fxml");
+
+            // ========== ADD THIS CODE WHEN DATABASE IS DONE ===========
+            //if (dao.isPoliceUser(authenticatedUser.getUsername())) {
+            //    UIUtils.switchScene(stage, "police-dashboard-view.fxml");
+            //} else {
+            //    UIUtils.switchScene(stage, "dashboard-view.fxml");
+            //}
+
+
+            // ============= DELETE CODE SECTION BELOW=================
+            if (username.equals("QPS 123") && password.equals("Password")) {
+                UIUtils.switchScene(stage, "police-dashboard-view.fxml");
+            } else {
+                UIUtils.switchScene(stage, "dashboard-view.fxml");
+            }
 
         } else {
             UIUtils.showAlert(AlertType.ERROR, "Login Failed!", "Invalid username or password.");
@@ -61,7 +75,7 @@ public class LoginController {
     @FXML
     public void onRegister() {
 
-        //get the current stage (window) by referencing a ui element
+        //get the current stage (window) by referencing an ui element
         Stage stage = (Stage) usernameField.getScene().getWindow();
         //load register view
         UIUtils.switchScene(stage, "register-view.fxml");
