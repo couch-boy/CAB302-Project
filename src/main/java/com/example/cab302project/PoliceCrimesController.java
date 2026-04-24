@@ -1,25 +1,20 @@
 package com.example.cab302project;
 
+import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
+import javafx.geometry.Side;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-
-import javafx.animation.PauseTransition;
-import javafx.application.Platform;
-import javafx.geometry.Side;
-import javafx.scene.control.CustomMenuItem;
-import javafx.scene.control.Label;
-import javafx.scene.control.ContextMenu;
-import javafx.util.Duration;
-
 import java.util.List;
 
-public class CrimesController {
+public class PoliceCrimesController {
 
     // FXML UI elements
     @FXML
@@ -49,7 +44,6 @@ public class CrimesController {
 
 
 
-
     private IAppDAO dao;
 
     private IGeocodingService geocoder = new OpenStreetMapGeoCoder();
@@ -61,7 +55,7 @@ public class CrimesController {
     private boolean isCreatingNew = false;
 
     // Constructor
-    public CrimesController() {
+    public PoliceCrimesController() {
 
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
@@ -128,9 +122,19 @@ public class CrimesController {
                     refreshList();
                     updateSelectionAfterChange();
                 }
-            } else {
-                // Existing crimes are view-only
-                UIUtils.showAlert(Alert.AlertType.WARNING, "View Only", "Existing crime reports cannot be edited.");
+            }
+            else
+            {
+                // Police can update existing crimes
+                if (dao.updateCrime(recordFromForm)) {
+                    UIUtils.showAlert(Alert.AlertType.INFORMATION, "Updated", "Crime report updated successfully.");
+                    refreshList();
+                    updateSelectionAfterChange();
+                }
+                else
+                {
+                    UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not update crime.");
+                }
             }
         } catch (Exception e) {
             UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not save: " + e.getMessage());
@@ -193,7 +197,7 @@ public class CrimesController {
     // Helper function to refresh crime table with updated crime data
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
-        crimeTable.getItems().setAll(dao.getAllCrimes().stream().filter(c -> !c.isActioned()).toList());
+        crimeTable.getItems().setAll(dao.getAllCrimes());
         if (selectedIndex >= 0) {
             crimeTable.getSelectionModel().select(selectedIndex);
         }
@@ -213,7 +217,8 @@ public class CrimesController {
                 new SimpleStringProperty(UIUtils.formatLocalDateTime(cd.getValue().getTimestamp())));
 
         actionedColumn.setCellValueFactory(cd ->
-                new SimpleStringProperty(cd.getValue().isActioned() ? "Police Dispatched" : "Pending"));
+                new SimpleStringProperty(cd.getValue().isActioned() ? "Police Dispatched" : "Pending")
+        );
     }
 
     // Helper method to initialize date and time UI elements
@@ -274,7 +279,7 @@ public class CrimesController {
         descriptionArea.setText(crime.getDescription());
         reporterField.setText(crime.getReporterDisplayName());
 
-        setFormEditable(crime.getId() == 0);
+        setFormEditable(true);
         isCreatingNew = (crime.getId() == 0);
     }
 
@@ -431,6 +436,29 @@ public class CrimesController {
 
         if (!suggestionsPopup.isShowing()) {
             suggestionsPopup.show(locationField, Side.BOTTOM, 0, 0);
+        }
+    }
+
+    @FXML
+    public void onMarkAsDealt() {
+        CrimeRecord selected = crimeTable.getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            UIUtils.showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a crime.");
+            return;
+        }
+
+        // mark as actioned
+        selected.setActioned(true);
+
+        // update database
+        if (dao.updateCrime(selected)) {
+            UIUtils.showAlert(Alert.AlertType.INFORMATION, "Updated", "Crime marked as dealt with.");
+
+            refreshList(); // reload table
+            updateSelectionAfterChange();
+        } else {
+            UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not update crime.");
         }
     }
 }

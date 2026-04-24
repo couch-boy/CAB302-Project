@@ -55,8 +55,8 @@ public class RegisterController {
             return;
         }
 
-        // Create User object using Brisbane CBD lat/lon and default darkmode to off
-        User newUser = new User(username, password, email, phone, -27.4709, 153.0235, false);
+        // Create new regular user User object using Brisbane CBD lat/lon and default darkmode to off
+        User newUser = new User(username, password, email, phone, -27.4709, 153.0235, false, UserType.REGULAR);
 
         // Attempt to add to db
         boolean success = dao.addUser(newUser);

@@ -9,9 +9,10 @@ public class User {
     private double homeLatitude;
     private double homeLongitude;
     private boolean darkMode;
+    private UserType userType;
 
     public User(String username, String password, String email, String phone,
-                double homeLatitude, double homeLongitude, boolean darkMode) {
+                double homeLatitude, double homeLongitude, boolean darkMode, UserType userType) {
         this.username = username;
         this.password = password;
         this.email = email;
@@ -19,6 +20,7 @@ public class User {
         this.homeLatitude = homeLatitude;
         this.homeLongitude = homeLongitude;
         this.darkMode = darkMode;
+        this.userType = userType;
     }
 
     // --- GETTERS ---
@@ -29,6 +31,7 @@ public class User {
     public double getHomeLatitude() { return homeLatitude; }
     public double getHomeLongitude() { return homeLongitude; }
     public boolean isDarkMode() { return darkMode; }
+    public UserType getUserType() { return userType; }
 
     // --- SETTERS ---
     // No setter for username, as this is the database primary key
@@ -37,6 +40,7 @@ public class User {
     public void setPhone(String phone) { this.phone = phone; }
     // No setters for lat/lon, use setHomeLocation to set both
     public void setDarkMode(boolean darkMode) { this.darkMode = darkMode; }
+    // No setter for userType, as this should not change
 
     public void setHomeLocation(double lat, double lon) {
         // Basic coordinate range validation (-90 to 90 for lat, -180 to 180 for lon)
@@ -44,5 +48,10 @@ public class User {
             this.homeLatitude = lat;
             this.homeLongitude = lon;
         }
+    }
+
+    // Method to check if user is a police officer
+    public boolean isPolice() {
+        return this.userType == UserType.POLICE;
     }
 }
