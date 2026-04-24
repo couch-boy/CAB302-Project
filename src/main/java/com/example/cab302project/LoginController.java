@@ -49,19 +49,21 @@ public class LoginController {
             //load dashboard view
 
             // ========== ADD THIS CODE WHEN DATABASE IS DONE ===========
-            //if (dao.isPoliceUser(authenticatedUser.getUsername())) {
-            //    UIUtils.switchScene(stage, "police-dashboard-view.fxml");
-            //} else {
-            //    UIUtils.switchScene(stage, "dashboard-view.fxml");
-            //}
+            if (authenticatedUser.isPolice()) {
+                UIUtils.switchScene(stage, "police-dashboard-view.fxml");
+            } else {
+                UIUtils.switchScene(stage, "dashboard-view.fxml");
+            }
 
 
+            /*
             // ============= DELETE CODE SECTION BELOW=================
             if (username.equals("QPS 123") && password.equals("Password")) {
                 UIUtils.switchScene(stage, "police-dashboard-view.fxml");
             } else {
                 UIUtils.switchScene(stage, "dashboard-view.fxml");
             }
+            */
 
         } else {
             UIUtils.showAlert(AlertType.ERROR, "Login Failed!", "Invalid username or password.");
