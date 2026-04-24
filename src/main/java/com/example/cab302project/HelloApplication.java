@@ -8,12 +8,12 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class HelloApplication extends Application {
-    // Constants defining the window title and size
-    public static final String TITLE = "CAB302 Project";
-    public static final int WIDTH = 800;
-    public static final int HEIGHT = 600;
 
-    // Create a single instance of the DAO
+    public static final String TITLE = "RADIUS";
+    public static final int WIDTH = 420;
+    public static final int HEIGHT = 700;
+
+    // Single shared DAO instance
     public static final IAppDAO DATABASE = new SqliteDAO();
 
     @Override
@@ -21,6 +21,7 @@ public class HelloApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("hello-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), WIDTH, HEIGHT);
         stage.setTitle(TITLE);
+        stage.setResizable(false);
         stage.setScene(scene);
         stage.show();
     }

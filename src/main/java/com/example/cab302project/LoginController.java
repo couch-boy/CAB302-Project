@@ -77,10 +77,19 @@ public class LoginController {
     @FXML
     public void onRegister() {
 
-        //get the current stage (window) by referencing an ui element
+        //get the current stage (window) by referencing a ui element
         Stage stage = (Stage) usernameField.getScene().getWindow();
         //load register view
         UIUtils.switchScene(stage, "register-view.fxml");
+    }
 
+    /** Tab: Log In - already active, no-op */
+    @FXML
+    public void onTabLogin() {}
+
+    /** Tab: Sign Up - navigate to register */
+    @FXML
+    public void onTabSignup() {
+        onRegister();
     }
 }
