@@ -30,7 +30,8 @@ public class SqliteDAO implements IAppDAO{
                     + "phone VARCHAR NOT NULL,"
                     + "homelatitude REAL,"
                     + "homelongitude REAL,"
-                    + "darkmode BOOLEAN DEFAULT FALSE NOT NULL"
+                    + "darkmode BOOLEAN DEFAULT FALSE NOT NULL,"
+                    + "usertype VARCHAR NOT NULL"
                     + ")";
             statement.execute(query);
         } catch (Exception e) {
@@ -63,10 +64,11 @@ public class SqliteDAO implements IAppDAO{
         try (Statement statement = connection.createStatement()) {
             // Clear before inserting
             statement.execute("DELETE FROM users");
-            String insertQuery = "INSERT INTO users (username, password, email, phone, homelatitude, homelongitude, darkmode) VALUES "
-                    + "('test1', 'test', 'johndoe@example.com', '0423423423', '-27.4765', '153.0285', FALSE),"
-                    + "('test2', 'test', 'janedoe@example.com', '0423423424', '-27.4770', '153.0290', TRUE),"
-                    + "('test3', 'test', 'jaydoe@example.com', '0423423425', '-27.4775', '153.0295', FALSE)";
+            String insertQuery = "INSERT INTO users (username, password, email, phone, homelatitude, homelongitude, darkmode, usertype) VALUES "
+                    + "('QPS123', 'Password', 'police@officer.com', '0412356798', '-27.4760', '153.0280', FALSE, 'POLICE'),"
+                    + "('test1', 'test', 'johndoe@example.com', '0423423423', '-27.4765', '153.0285', FALSE, 'REGULAR'),"
+                    + "('test2', 'test', 'janedoe@example.com', '0423423424', '-27.4770', '153.0290', TRUE, 'REGULAR'),"
+                    + "('test3', 'test', 'jaydoe@example.com', '0423423425', '-27.4775', '153.0295', FALSE, 'REGULAR')";
             statement.execute(insertQuery);
         } catch (Exception e) {
             e.printStackTrace();
@@ -114,8 +116,8 @@ public class SqliteDAO implements IAppDAO{
 
     // Add new user for user registration
     public boolean addUser(User user) {
-        String query = "INSERT INTO users (username, password, email, phone, homelatitude, homelongitude, darkmode) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO users (username, password, email, phone, homelatitude, homelongitude, darkmode, usertype) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, user.getUsername());
@@ -125,6 +127,7 @@ public class SqliteDAO implements IAppDAO{
             preparedStatement.setDouble(5, user.getHomeLatitude());
             preparedStatement.setDouble(6, user.getHomeLongitude());
             preparedStatement.setBoolean(7, user.isDarkMode()); // This will be false by default
+            preparedStatement.setString(7, user.getUserType().name()); // Ensure only regular users are added to the database
 
             preparedStatement.executeUpdate();
             return true;
@@ -138,7 +141,7 @@ public class SqliteDAO implements IAppDAO{
     // Update stored user details
     public boolean updateUser(User user) {
         String query = "UPDATE users SET password = ?, email = ?, phone = ?, " +
-                "homelatitude = ?, homelongitude = ?, darkmode = ? WHERE username = ?";
+                "homelatitude = ?, homelongitude = ?, darkmode = ?, usertype = ? WHERE username = ?";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, user.getPassword());
@@ -147,7 +150,8 @@ public class SqliteDAO implements IAppDAO{
             preparedStatement.setDouble(4, user.getHomeLatitude());
             preparedStatement.setDouble(5, user.getHomeLongitude());
             preparedStatement.setBoolean(6, user.isDarkMode());
-            preparedStatement.setString(7, user.getUsername());
+            preparedStatement.setString(7, user.getUserType().name());
+            preparedStatement.setString(8, user.getUsername());
 
             return preparedStatement.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -302,7 +306,8 @@ public class SqliteDAO implements IAppDAO{
                 resultSet.getString("phone"),
                 resultSet.getDouble("homelatitude"),
                 resultSet.getDouble("homelongitude"),
-                resultSet.getBoolean("darkmode")
+                resultSet.getBoolean("darkmode"),
+                UserType.valueOf(resultSet.getString("usertype"))
         );
     }
 
