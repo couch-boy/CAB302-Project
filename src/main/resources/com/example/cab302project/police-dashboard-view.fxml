@@ -7,19 +7,37 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.web.WebView?>
-<VBox alignment="TOP_LEFT" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.cab302project.PoliceDashboardController">
-    <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-    </padding>
-    <Label fx:id="welcomeLabel" text="Loading user details..."/>
-    <Label fx:id="emailLabel" text="Loading user details..."/>
-    <Button text="Logout" onAction="#onLogout"/>
-    <Button text="View Crimes" onAction="#viewCrimes"/>
-    <Button text="View Hotspots" onAction="#viewHotspots"/>
-    <Button text="View Profile" onAction="#viewProfile"/>
-    <WebView fx:id="mapView" prefHeight="500.0" prefWidth="800.0" />
 
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.example.cab302project.PoliceDashboardController"
+           fx:id="dashboardRoot"
+           stylesheets="@styles.css">
 
+    <VBox alignment="TOP_LEFT" spacing="0">
 
-</VBox>
+        <!-- App bar with hamburger button and RADIUS title -->
+        <HBox styleClass="app-bar" alignment="CENTER_LEFT" spacing="0">
+            <Button fx:id="hamburgerBtn" text="☰" styleClass="hamburger-btn"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="RADIUS" styleClass="app-bar-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Region minWidth="40"/>
+        </HBox>
+
+        <!-- Main content below app bar -->
+        <VBox spacing="12" VBox.vgrow="ALWAYS">
+            <padding><Insets bottom="16" left="20" right="20" top="16"/></padding>
+
+            <Label fx:id="welcomeLabel" text="Loading user details..."/>
+            <Label fx:id="emailLabel" text="Loading user details..."/>
+            <Button text="Logout" onAction="#onLogout"/>
+            <Button text="View Crimes" onAction="#viewCrimes"/>
+            <Button text="View Hotspots" onAction="#viewHotspots"/>
+            <Button text="View Profile" onAction="#viewProfile"/>
+            <WebView fx:id="mapView" VBox.vgrow="ALWAYS"/>
+
+        </VBox>
+
+    </VBox>
+
+</StackPane>

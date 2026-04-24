@@ -3,7 +3,9 @@ package com.example.cab302project;
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
@@ -17,18 +19,22 @@ public class PoliceDashboardController {
     private Label welcomeLabel;
     @FXML
     private Label emailLabel;
-
     @FXML
     private WebView mapView;
+    @FXML
+    private Button hamburgerBtn;
+    @FXML
+    private StackPane dashboardRoot;
 
     private IAppDAO dao;
+    private HamburgerMenu hamburgerMenu;
 
     // Constructor
     public PoliceDashboardController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
-
     }
+
     private String buildCrimeJson(List<CrimeRecord> crimes) {
         StringBuilder sb = new StringBuilder("[");
 
@@ -49,6 +55,7 @@ public class PoliceDashboardController {
         sb.append("]");
         return sb.toString();
     }
+
     private void loadMap() {
         if (mapView == null) {
             System.out.println("mapView is null");
@@ -89,14 +96,25 @@ public class PoliceDashboardController {
      */
     @FXML
     public void initialize() {
-        //this method auto-runs when dashboard-view.fxml loads
+        //this method auto-runs when police-dashboard-view.fxml loads
         UserSession session = UserSession.getInstance();
 
         if (session != null) {
             welcomeLabel.setText("Welcome back, " + session.getUser().getUsername() + "!");
             emailLabel.setText("Your email is: " + session.getUser().getEmail());
         }
+
         Platform.runLater(this::loadMap);
+
+        // Wire hamburger menu after scene is attached
+        Platform.runLater(() -> {
+            Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+            hamburgerMenu = new HamburgerMenu(stage);
+            hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
+            hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
+            dashboardRoot.getChildren().add(hamburgerMenu);
+            hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+        });
     }
 
     /**
@@ -104,14 +122,12 @@ public class PoliceDashboardController {
      */
     @FXML
     public void onLogout() {
-
         UserSession.logout();
 
         //get the current stage (window) by referencing a ui element
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         //load login view
         UIUtils.switchScene(stage, "login-view.fxml");
-
     }
 
     /**
@@ -119,12 +135,10 @@ public class PoliceDashboardController {
      */
     @FXML
     public void viewCrimes() {
-
         //get the current stage (window) by referencing a ui element
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         //load crimes view
         UIUtils.switchScene(stage, "police-crimes-view.fxml");
-
     }
 
     /**
@@ -135,11 +149,10 @@ public class PoliceDashboardController {
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         UIUtils.switchScene(stage, "profile-view.fxml");
     }
+
     @FXML
     public void viewHotspots() {
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         UIUtils.switchScene(stage, "hotspots-view.fxml");
     }
-
-
 }

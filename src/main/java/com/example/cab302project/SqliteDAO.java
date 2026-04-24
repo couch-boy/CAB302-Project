@@ -127,7 +127,7 @@ public class SqliteDAO implements IAppDAO{
             preparedStatement.setDouble(5, user.getHomeLatitude());
             preparedStatement.setDouble(6, user.getHomeLongitude());
             preparedStatement.setBoolean(7, user.isDarkMode()); // This will be false by default
-            preparedStatement.setString(7, user.getUserType().name()); // Ensure only regular users are added to the database
+            preparedStatement.setString(8, user.getUserType().name()); // Ensure only regular users are added to the database
 
             preparedStatement.executeUpdate();
             return true;
