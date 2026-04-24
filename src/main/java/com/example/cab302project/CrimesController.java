@@ -6,15 +6,25 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 import java.util.List;
@@ -47,8 +57,13 @@ public class CrimesController {
     @FXML
     private TextArea descriptionArea;
 
-
-
+    // New bindings for the redesigned list and detail panel
+    @FXML
+    private ListView<CrimeRecord> crimeListView;
+    @FXML
+    private VBox detailPanel;
+    @FXML
+    private Button saveBtn;
 
     private IAppDAO dao;
 
@@ -60,9 +75,13 @@ public class CrimesController {
 
     private boolean isCreatingNew = false;
 
+    // Cache of geocoded addresses keyed by crime ID.
+    // Populated on list load and on row selection.
+    // Static so the cache persists across screen navigations and avoids re-geocoding
+    private static final Map<Integer, String> addressCache = new HashMap<>();
+
     // Constructor
     public CrimesController() {
-
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
@@ -72,7 +91,7 @@ public class CrimesController {
      */
     @FXML
     public void initialize() {
-        // Initialize table columns
+        // Initialize table columns (still required for all existing controller logic)
         setupTableColumns();
 
         // Initialize date and time UI elements
@@ -99,9 +118,14 @@ public class CrimesController {
         refreshList();
         // Update selected list element after populating
         updateSelectionAfterChange();
-        //  Initialize address autocomplete suggestions for location input
+        // Initialize address autocomplete suggestions for location input
         setupAddressAutocomplete();
 
+        // Wire the styled ListView to back the hidden TableView
+        setupListView();
+
+        // Preload addresses for all crimes so list cells show locations immediately
+        preloadAddresses();
     }
 
     /**
@@ -127,6 +151,7 @@ public class CrimesController {
                     UIUtils.showAlert(Alert.AlertType.INFORMATION, "Success", "New crime reported successfully.");
                     refreshList();
                     updateSelectionAfterChange();
+                    onCloseDetail();
                 }
             } else {
                 // Existing crimes are view-only
@@ -136,6 +161,7 @@ public class CrimesController {
             UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not save: " + e.getMessage());
         }
     }
+
     /**
      * Add a new crime to the database after entering details
      */
@@ -173,21 +199,34 @@ public class CrimesController {
         // Scroll to the template in the crime table so the user sees the new entry
         crimeTable.scrollTo(newRecord);
 
+        // Sync list view and open detail panel with save button visible
+        crimeListView.getItems().setAll(crimeTable.getItems());
+        crimeListView.getSelectionModel().selectLast();
+        showDetailPanel(true);
+
         // Display popup prompting user to fill in template details and save to store in database
         UIUtils.showAlert(Alert.AlertType.INFORMATION, "New Report",
                 "A new blank report has been created. Fill in the details and click 'Save Changes'.");
-
     }
-
-
 
     /**
      * Return to the previous menu (dashboard)
      */
     @FXML
     public void onBackButtonClick() {
-        Stage stage = (Stage) crimeTable.getScene().getWindow();
+        Stage stage = (Stage) categoryComboBox.getScene().getWindow();
         UIUtils.switchScene(stage, "dashboard-view.fxml");
+    }
+
+    /**
+     * Close the detail panel when X is clicked
+     */
+    @FXML
+    public void onCloseDetail() {
+        detailPanel.setVisible(false);
+        detailPanel.setManaged(false);
+        crimeListView.getSelectionModel().clearSelection();
+        crimeTable.getSelectionModel().clearSelection();
     }
 
     // Helper function to refresh crime table with updated crime data
@@ -196,6 +235,10 @@ public class CrimesController {
         crimeTable.getItems().setAll(dao.getAllCrimes().stream().filter(c -> !c.isActioned()).toList());
         if (selectedIndex >= 0) {
             crimeTable.getSelectionModel().select(selectedIndex);
+        }
+        // Keep list view in sync with table
+        if (crimeListView != null) {
+            crimeListView.getItems().setAll(crimeTable.getItems());
         }
     }
 
@@ -234,6 +277,135 @@ public class CrimesController {
     }
 
     /**
+     * Returns a human-readable relative time string from a LocalDateTime.
+     * e.g. "Today", "1 day ago", "3 days ago"
+     */
+    private String getRelativeTime(LocalDateTime timestamp) {
+        long daysAgo = ChronoUnit.DAYS.between(timestamp.toLocalDate(), LocalDate.now());
+        if (daysAgo == 0) return "Today";
+        if (daysAgo == 1) return "1 day ago";
+        return daysAgo + " days ago";
+    }
+
+    /**
+     * Geocodes all crimes in the background when the list loads.
+     * Results are stored in addressCache so cells display addresses immediately.
+     * Each crime is geocoded one at a time to avoid Nominatim rate limiting.
+     */
+    private void preloadAddresses() {
+        List<CrimeRecord> crimes = new ArrayList<>(crimeTable.getItems());
+        new Thread(() -> {
+            for (CrimeRecord crime : crimes) {
+                if (!addressCache.containsKey(crime.getId())) {
+                    try {
+                        String address = geocoder.reverseGeocode(
+                                crime.getLatitude(), crime.getLongitude());
+                        String[] parts = address.split(",");
+                        String shortAddress = parts.length >= 2
+                                ? parts[0].trim() + ", " + parts[1].trim()
+                                : address;
+                        addressCache.put(crime.getId(), shortAddress);
+                        Platform.runLater(() -> crimeListView.refresh());
+                    } catch (Exception e) {
+                        // Leave as coordinates if geocoding fails for this entry
+                    }
+                }
+            }
+        }).start();
+    }
+
+    /**
+     * Sets up the styled ListView with custom cells.
+     * Selection on the ListView mirrors to the hidden TableView so all
+     * existing controller logic continues to work unchanged.
+     */
+    private void setupListView() {
+        crimeListView.getItems().setAll(crimeTable.getItems());
+
+        crimeListView.setCellFactory(lv -> new ListCell<CrimeRecord>() {
+            @Override
+            protected void updateItem(CrimeRecord crime, boolean empty) {
+                super.updateItem(crime, empty);
+                if (empty || crime == null) {
+                    setGraphic(null);
+                    setStyle("-fx-background-color: transparent;");
+                    return;
+                }
+
+                // Severity dot colour
+                String dotColor = switch (crime.getCategory().getSeverity()) {
+                    case CRITICAL -> "#DC143C";
+                    case MEDIUM   -> "#FF8C00";
+                    default       -> "#FFD700";
+                };
+
+                Label dot = new Label("●");
+                dot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 14px;");
+
+                Label category = new Label(crime.getCategory().toString());
+                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1A1A2E;");
+
+                String statusText = crime.isActioned() ? "Police Dispatched" : "Pending";
+                Label status = new Label(statusText);
+                status.setStyle("-fx-font-size: 11px; -fx-text-fill: #6B7280;");
+
+                // Show cached address if available, otherwise show short coordinates.
+                // preloadAddresses() fills the cache on load so addresses appear
+                // progressively. crimeListView.refresh() is called after each geocode.
+                String locationText = addressCache.containsKey(crime.getId())
+                        ? addressCache.get(crime.getId())
+                        : String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
+
+                Label location = new Label(locationText);
+                location.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+
+                VBox textBlock = new VBox(2, category, status, location);
+
+                Label time = new Label(getRelativeTime(crime.getTimestamp()));
+                time.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                HBox row = new HBox(10, dot, textBlock, spacer, time);
+                row.setAlignment(Pos.CENTER_LEFT);
+                row.setStyle("-fx-padding: 12 20 12 20;");
+
+                setGraphic(row);
+                setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #F3F4F6; " +
+                        "-fx-border-width: 0 0 1 0;");
+            }
+        });
+
+        // Selecting a list row mirrors to the table and opens the detail panel.
+        // Save button is hidden for public users viewing existing records.
+        crimeListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                crimeTable.getSelectionModel().select(newVal);
+                showDetailPanel(false);
+            }
+        });
+
+        crimeListView.setStyle("-fx-background-color: transparent; " +
+                "-fx-background: transparent; -fx-border-width: 0;");
+    }
+
+    /**
+     * Shows the detail panel.
+     * showSave determines whether the Save Changes button is visible:
+     *   true when creating a new report (any user type)
+     *   false when a public user is viewing an existing report
+     *   always true for police users regardless of showSave
+     */
+    private void showDetailPanel(boolean showSave) {
+        detailPanel.setVisible(true);
+        detailPanel.setManaged(true);
+        boolean canSave = UserSession.isPolice() || showSave;
+        saveBtn.setVisible(canSave);
+        saveBtn.setManaged(canSave);
+    }
+
+    /**
      * Populates the form fields with data from the selected crime record.
      * Also performs reverse geocoding to display a readable address instead of coordinates.
      */
@@ -259,17 +431,31 @@ public class CrimesController {
         int mins = dt.getMinute();
         minuteBox.setValue(String.format("%02d", (mins / 15) * 15));
 
-        new Thread(() -> {
-            try {
-                String address = geocoder.reverseGeocode(crime.getLatitude(), crime.getLongitude());
-                Platform.runLater(() -> locationField.setText(address));
-            } catch (Exception e) {
-                Platform.runLater(() ->
-                        locationField.setText(String.format("%.4f, %.4f",
-                                crime.getLatitude(), crime.getLongitude()))
-                );
-            }
-        }).start();
+        // Use cached address if already geocoded, otherwise geocode and cache.
+        // After caching, refresh the list view so the cell picks up the address.
+        if (addressCache.containsKey(crime.getId())) {
+            locationField.setText(addressCache.get(crime.getId()));
+        } else {
+            new Thread(() -> {
+                try {
+                    String address = geocoder.reverseGeocode(crime.getLatitude(), crime.getLongitude());
+                    String[] parts = address.split(",");
+                    String shortAddress = parts.length >= 2
+                            ? parts[0].trim() + ", " + parts[1].trim()
+                            : address;
+                    addressCache.put(crime.getId(), shortAddress);
+                    Platform.runLater(() -> {
+                        locationField.setText(address); // full address in detail panel
+                        crimeListView.refresh();        // update list cell with short address
+                    });
+                } catch (Exception e) {
+                    Platform.runLater(() ->
+                            locationField.setText(String.format("%.4f, %.4f",
+                                    crime.getLatitude(), crime.getLongitude()))
+                    );
+                }
+            }).start();
+        }
 
         descriptionArea.setText(crime.getDescription());
         reporterField.setText(crime.getReporterDisplayName());
@@ -313,9 +499,8 @@ public class CrimesController {
                 lat,
                 lon,
                 descriptionArea.getText(),
-                original.getReporter() ,
-                original.isActioned()// Preserve original raw reporter data (username/null)
-
+                original.getReporter(),
+                original.isActioned() // Preserve original raw reporter data (username/null)
         );
     }
 
@@ -368,7 +553,6 @@ public class CrimesController {
      * suggestions as the user types. Functionality is restricted to report creation mode
      * to improve usability and prevent unnecessary interactions during viewing.
      */
-
     private void setupAddressAutocomplete() {
         locationField.textProperty().addListener((obs, oldText, newText) -> {
 
@@ -399,7 +583,6 @@ public class CrimesController {
         new Thread(() -> {
             try {
                 List<String> suggestions = geocoder.getAddressSuggestions(query);
-
                 Platform.runLater(() -> showSuggestions(suggestions));
             } catch (Exception e) {
                 Platform.runLater(suggestionsPopup::hide);
