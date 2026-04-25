@@ -289,3 +289,30 @@
     -fx-text-fill: rgba(255,255,255,0.68);
     -fx-font-size: 12px;
 }
+
+/* Crime list cell - hover handled by CSS so it never glitches on fast scroll */
+.crime-list-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #F3F4F6;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 0;
+}
+
+.crime-list-cell:hover {
+    -fx-background-color: #F0F2F5;
+    -fx-cursor: hand;
+}
+
+.crime-list-cell:pressed {
+    -fx-background-color: #E5E8ED;
+}
+
+.crime-list-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+
+/* Remove default JavaFX list cell selection blue highlight */
+.crime-list-cell:selected {
+    -fx-background-color: #E8EBF0;
+}
