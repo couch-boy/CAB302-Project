@@ -1,5 +1,6 @@
 package com.example.cab302project;
 
+import javafx.animation.TranslateTransition;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -22,6 +23,7 @@ import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
@@ -62,6 +64,8 @@ public class CrimesController {
     private ListView<CrimeRecord> crimeListView;
     @FXML
     private VBox detailPanel;
+    @FXML
+    private Pane detailBackdrop;
     @FXML
     private Button saveBtn;
 
@@ -219,14 +223,21 @@ public class CrimesController {
     }
 
     /**
-     * Close the detail panel when X is clicked
+     * Close the detail panel - slides back down off screen
      */
     @FXML
     public void onCloseDetail() {
-        detailPanel.setVisible(false);
-        detailPanel.setManaged(false);
-        crimeListView.getSelectionModel().clearSelection();
-        crimeTable.getSelectionModel().clearSelection();
+        TranslateTransition slide = new TranslateTransition(Duration.millis(280), detailPanel);
+        slide.setToY(detailPanel.getHeight() + 40);
+        slide.setOnFinished(e -> {
+            detailPanel.setVisible(false);
+            detailPanel.setManaged(false);
+            detailBackdrop.setVisible(false);
+            detailBackdrop.setManaged(false);
+            crimeListView.getSelectionModel().clearSelection();
+            crimeTable.getSelectionModel().clearSelection();
+        });
+        slide.play();
     }
 
     // Helper function to refresh crime table with updated crime data
@@ -323,16 +334,26 @@ public class CrimesController {
         crimeListView.getItems().setAll(crimeTable.getItems());
 
         crimeListView.setCellFactory(lv -> new ListCell<CrimeRecord>() {
+
+            {
+                // Style the cell via CSS class so JavaFX handles hover state natively
+                // This avoids glitches from manual mouse event handlers during fast scrolling
+                getStyleClass().add("crime-list-cell");
+            }
+
             @Override
             protected void updateItem(CrimeRecord crime, boolean empty) {
                 super.updateItem(crime, empty);
+
                 if (empty || crime == null) {
                     setGraphic(null);
-                    setStyle("-fx-background-color: transparent;");
+                    setText(null);
+                    getStyleClass().remove("crime-list-cell-populated");
                     return;
                 }
 
-                // Severity dot colour
+                getStyleClass().add("crime-list-cell-populated");
+
                 String dotColor = switch (crime.getCategory().getSeverity()) {
                     case CRITICAL -> "#DC143C";
                     case MEDIUM   -> "#FF8C00";
@@ -349,9 +370,6 @@ public class CrimesController {
                 Label status = new Label(statusText);
                 status.setStyle("-fx-font-size: 11px; -fx-text-fill: #6B7280;");
 
-                // Show cached address if available, otherwise show short coordinates.
-                // preloadAddresses() fills the cache on load so addresses appear
-                // progressively. crimeListView.refresh() is called after each geocode.
                 String locationText = addressCache.containsKey(crime.getId())
                         ? addressCache.get(crime.getId())
                         : String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
@@ -369,11 +387,9 @@ public class CrimesController {
 
                 HBox row = new HBox(10, dot, textBlock, spacer, time);
                 row.setAlignment(Pos.CENTER_LEFT);
-                row.setStyle("-fx-padding: 12 20 12 20;");
+                row.setStyle("-fx-padding: 12 20 12 20; -fx-cursor: hand;");
 
                 setGraphic(row);
-                setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #F3F4F6; " +
-                        "-fx-border-width: 0 0 1 0;");
             }
         });
 
@@ -391,18 +407,29 @@ public class CrimesController {
     }
 
     /**
-     * Shows the detail panel.
+     * Shows the detail panel as a bottom sheet that slides up.
      * showSave determines whether the Save Changes button is visible:
      *   true when creating a new report (any user type)
      *   false when a public user is viewing an existing report
      *   always true for police users regardless of showSave
      */
     private void showDetailPanel(boolean showSave) {
-        detailPanel.setVisible(true);
-        detailPanel.setManaged(true);
         boolean canSave = UserSession.isPolice() || showSave;
         saveBtn.setVisible(canSave);
         saveBtn.setManaged(canSave);
+
+        // Show backdrop
+        detailBackdrop.setVisible(true);
+        detailBackdrop.setManaged(true);
+
+        // Start panel offscreen below and slide up
+        detailPanel.setVisible(true);
+        detailPanel.setManaged(true);
+        detailPanel.setTranslateY(600);
+
+        TranslateTransition slide = new TranslateTransition(Duration.millis(320), detailPanel);
+        slide.setToY(0);
+        slide.play();
     }
 
     /**

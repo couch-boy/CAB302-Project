@@ -9,6 +9,7 @@
            stylesheets="@styles.css"
            style="-fx-background-color: #F8F9FA;">
 
+    <!-- Main page content -->
     <VBox spacing="0">
 
         <!-- App bar -->
@@ -16,14 +17,13 @@
             <Button text="←" onAction="#onBackButtonClick" styleClass="hamburger-btn"/>
             <Region HBox.hgrow="ALWAYS"/>
             <VBox alignment="CENTER" spacing="2">
-            <Label text="RADIUS" styleClass="app-bar-title"/>
-            <Label text="Crime Reports"
-                   style="-fx-text-fill: #6B7280; -fx-font-size: 10px;"/>
+                <Label text="RADIUS" styleClass="app-bar-title"/>
+                <Label text="Crime Reports"
+                       style="-fx-text-fill: #6B7280; -fx-font-size: 10px;"/>
             </VBox>
             <Region HBox.hgrow="ALWAYS"/>
             <Region minWidth="40"/>
         </HBox>
-
 
         <!-- Severity legend -->
         <HBox alignment="CENTER_LEFT" spacing="16"
@@ -37,153 +37,168 @@
             <Label text="Low" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
         </HBox>
 
-        <!-- Content area: list on left, detail panel on right when selected -->
-        <HBox VBox.vgrow="ALWAYS" spacing="0">
+        <!-- Crime list -->
+        <VBox VBox.vgrow="ALWAYS" spacing="0">
 
-            <!-- Left: crime list -->
-            <VBox HBox.hgrow="ALWAYS" spacing="0">
+            <!-- Hidden TableView - all existing controller logic depends on this -->
+            <TableView fx:id="crimeTable"
+                       visible="false" managed="false">
+                <columns>
+                    <TableColumn fx:id="idColumn" text="ID"/>
+                    <TableColumn fx:id="categoryColumn" text="Category"/>
+                    <TableColumn fx:id="severityColumn" text="Severity"/>
+                    <TableColumn fx:id="timestampColumn" text="Date/Time"/>
+                    <TableColumn fx:id="actionedColumn" text="Status"/>
+                </columns>
+            </TableView>
 
-                <!-- Hidden TableView - all existing controller logic depends on this -->
-                <TableView fx:id="crimeTable"
-                           visible="false" managed="false">
-                    <columns>
-                        <TableColumn fx:id="idColumn" text="ID"/>
-                        <TableColumn fx:id="categoryColumn" text="Category"/>
-                        <TableColumn fx:id="severityColumn" text="Severity"/>
-                        <TableColumn fx:id="timestampColumn" text="Date/Time"/>
-                        <TableColumn fx:id="actionedColumn" text="Status"/>
-                    </columns>
-                </TableView>
+            <!-- Section header -->
+            <HBox alignment="CENTER_LEFT"
+                  style="-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;">
+                <Label text="Recent"
+                       style="-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="All" style="-fx-text-fill: #6B7280; -fx-font-size: 12px;"/>
+            </HBox>
 
-                <!-- Section header -->
-                <HBox alignment="CENTER_LEFT"
-                      style="-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;">
-                    <Label text="Recent"
-                           style="-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Label text="All" style="-fx-text-fill: #6B7280; -fx-font-size: 12px;"/>
-                </HBox>
+            <!-- Styled list view - custom cells built in controller -->
+            <ListView fx:id="crimeListView"
+                      VBox.vgrow="ALWAYS"
+                      style="-fx-background-color: transparent;
+                             -fx-background: transparent;
+                             -fx-border-width: 0;"/>
 
-                <!-- Styled list view - custom cells built in controller -->
-                <ListView fx:id="crimeListView"
-                          VBox.vgrow="ALWAYS"
-                          style="-fx-background-color: transparent;
-                                 -fx-background: transparent;
-                                 -fx-border-width: 0;"/>
-
-                <!-- Submit Report always pinned to bottom -->
-                <VBox style="-fx-background-color: #FFFFFF;
-                             -fx-border-color: #E5E7EB;
-                             -fx-border-width: 1 0 0 0;
-                             -fx-padding: 12 20 12 20;">
-                    <Button text="SUBMIT REPORT"
-                            onAction="#onAddNewCrime"
-                            maxWidth="Infinity"
-                            styleClass="btn-primary"
-                            style="-fx-padding: 14 0 14 0;"/>
-                </VBox>
-
-            </VBox>
-
-            <!-- Right: detail panel, hidden until a row is selected -->
-            <VBox fx:id="detailPanel"
-                  prefWidth="350" spacing="0"
-                  visible="false" managed="false"
-                  style="-fx-background-color: #FFFFFF;
+            <!-- Submit Report always pinned to bottom -->
+            <VBox style="-fx-background-color: #FFFFFF;
                          -fx-border-color: #E5E7EB;
-                         -fx-border-width: 0 0 0 1;">
+                         -fx-border-width: 1 0 0 0;
+                         -fx-padding: 12 20 12 20;">
+                <Button text="SUBMIT REPORT"
+                        onAction="#onAddNewCrime"
+                        maxWidth="Infinity"
+                        styleClass="btn-primary"
+                        style="-fx-padding: 14 0 14 0;"/>
+            </VBox>
 
-                <!-- Detail panel header -->
-                <HBox alignment="CENTER_LEFT" spacing="0"
-                      style="-fx-background-color: #F8F9FA;
-                             -fx-padding: 14 16 14 16;
-                             -fx-border-color: #E5E7EB;
-                             -fx-border-width: 0 0 1 0;">
-                    <Label text="Report Details" styleClass="auth-label"
-                           style="-fx-font-size: 14px;"/>
+        </VBox>
+
+    </VBox>
+
+    <!-- Dim backdrop - clicking it closes the detail panel -->
+    <Pane fx:id="detailBackdrop"
+          visible="false" managed="false"
+          onMouseClicked="#onCloseDetail"
+          style="-fx-background-color: rgba(0,0,0,0.35);"
+          StackPane.alignment="CENTER"/>
+
+    <!-- Bottom sheet detail panel - slides up from bottom -->
+    <VBox fx:id="detailPanel"
+          visible="false" managed="false"
+          spacing="0"
+          maxHeight="560"
+          StackPane.alignment="BOTTOM_CENTER"
+          style="-fx-background-color: #FFFFFF;
+                 -fx-background-radius: 20 20 0 0;
+                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0.3, 0, -4);">
+
+        <!-- Drag handle + close button row -->
+        <HBox alignment="CENTER" style="-fx-padding: 12 16 0 16;">
+            <Region HBox.hgrow="ALWAYS"/>
+            <!-- Drag handle pill -->
+            <Pane style="-fx-background-color: #D1D5DB;
+                         -fx-background-radius: 4;
+                         -fx-min-width: 40; -fx-max-width: 40;
+                         -fx-min-height: 4; -fx-max-height: 4;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="✕" onAction="#onCloseDetail"
+                    style="-fx-background-color: #F3F4F6;
+                           -fx-text-fill: #6B7280; -fx-cursor: hand;
+                           -fx-font-size: 13px; -fx-border-width: 0;
+                           -fx-background-radius: 50;
+                           -fx-min-width: 28; -fx-min-height: 28;"/>
+        </HBox>
+
+        <!-- Sheet title -->
+        <HBox alignment="CENTER_LEFT"
+              style="-fx-padding: 10 20 12 20;
+                     -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;">
+            <Label text="Report Details" styleClass="auth-label"
+                   style="-fx-font-size: 15px;"/>
+        </HBox>
+
+        <!-- Scrollable form fields -->
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                    VBox.vgrow="ALWAYS"
+                    style="-fx-background-color: transparent; -fx-background: transparent;
+                           -fx-border-width: 0;">
+            <VBox spacing="16" style="-fx-padding: 20 20 20 20;">
+
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Crime ID" styleClass="auth-label"/>
                     <Region HBox.hgrow="ALWAYS"/>
-                    <Button text="✕" onAction="#onCloseDetail"
-                            style="-fx-background-color: transparent; -fx-text-fill: #6B7280;
-                                   -fx-cursor: hand; -fx-font-size: 14px; -fx-border-width: 0;"/>
+                    <Label fx:id="idLabel" text="-"
+                           style="-fx-font-weight: bold; -fx-text-fill: #2A364E;"/>
                 </HBox>
 
-                <!-- Scrollable form fields -->
-                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
-                            VBox.vgrow="ALWAYS"
-                            style="-fx-background-color: transparent; -fx-background: transparent;
-                                   -fx-border-width: 0;">
-                    <VBox spacing="16" style="-fx-padding: 20 16 20 16;">
+                <VBox spacing="6">
+                    <Label text="Category" styleClass="auth-label"/>
+                    <ComboBox fx:id="categoryComboBox" maxWidth="Infinity"
+                              styleClass="auth-field"/>
+                </VBox>
 
-                        <HBox alignment="CENTER_LEFT" spacing="8">
-                            <Label text="Crime ID" styleClass="auth-label"/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                            <Label fx:id="idLabel" text="-"
-                                   style="-fx-font-weight: bold; -fx-text-fill: #2A364E;"/>
-                        </HBox>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Severity" styleClass="auth-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="severityLabel" text="-" style="-fx-font-weight: bold;"/>
+                </HBox>
 
-                        <VBox spacing="6">
-                            <Label text="Category" styleClass="auth-label"/>
-                            <ComboBox fx:id="categoryComboBox" maxWidth="Infinity"
-                                      styleClass="auth-field"/>
-                        </VBox>
+                <VBox spacing="6">
+                    <Label text="Date" styleClass="auth-label"/>
+                    <DatePicker fx:id="datePicker" maxWidth="Infinity"/>
+                </VBox>
 
-                        <HBox alignment="CENTER_LEFT" spacing="8">
-                            <Label text="Severity" styleClass="auth-label"/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                            <Label fx:id="severityLabel" text="-" style="-fx-font-weight: bold;"/>
-                        </HBox>
+                <VBox spacing="6">
+                    <Label text="Time" styleClass="auth-label"/>
+                    <HBox spacing="6">
+                        <ComboBox fx:id="hourBox" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                        <ComboBox fx:id="minuteBox" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                        <ComboBox fx:id="ampmBox" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                    </HBox>
+                </VBox>
 
-                        <VBox spacing="6">
-                            <Label text="Date" styleClass="auth-label"/>
-                            <DatePicker fx:id="datePicker" maxWidth="Infinity"/>
-                        </VBox>
+                <VBox spacing="6">
+                    <Label text="Location" styleClass="auth-label"/>
+                    <TextField fx:id="locationField"
+                               promptText="Enter address"
+                               styleClass="auth-field"/>
+                </VBox>
 
-                        <VBox spacing="6">
-                            <Label text="Time" styleClass="auth-label"/>
-                            <HBox spacing="6">
-                                <ComboBox fx:id="hourBox" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                                <ComboBox fx:id="minuteBox" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                                <ComboBox fx:id="ampmBox" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                            </HBox>
-                        </VBox>
+                <VBox spacing="6">
+                    <Label text="Description" styleClass="auth-label"/>
+                    <TextArea fx:id="descriptionArea"
+                              wrapText="true" prefHeight="100"
+                              styleClass="auth-field"/>
+                </VBox>
 
-                        <VBox spacing="6">
-                            <Label text="Location" styleClass="auth-label"/>
-                            <TextField fx:id="locationField"
-                                       promptText="Enter address"
-                                       styleClass="auth-field"/>
-                        </VBox>
-
-                        <VBox spacing="6">
-                            <Label text="Description" styleClass="auth-label"/>
-                            <TextArea fx:id="descriptionArea"
-                                      wrapText="true" prefHeight="120"
-                                      styleClass="auth-field"/>
-                        </VBox>
-
-                        <VBox spacing="6">
-                            <Label text="Reporter" styleClass="auth-label"/>
-                            <TextField fx:id="reporterField" editable="false"
-                                       styleClass="auth-field"
-                                       style="-fx-opacity: 1; -fx-background-color: #f4f4f4;"/>
-                        </VBox>
-
-                    </VBox>
-                </ScrollPane>
-
-                <!-- Save button - shown only for police or when submitting new report -->
-                <VBox style="-fx-padding: 12 16 12 16; -fx-border-color: #E5E7EB;
-                             -fx-border-width: 1 0 0 0;">
-                    <Button fx:id="saveBtn"
-                            text="Save Changes"
-                            onAction="#onSave"
-                            maxWidth="Infinity"
-                            styleClass="btn-primary"/>
+                <VBox spacing="6">
+                    <Label text="Reporter" styleClass="auth-label"/>
+                    <TextField fx:id="reporterField" editable="false"
+                               styleClass="auth-field"
+                               style="-fx-opacity: 1; -fx-background-color: #f4f4f4;"/>
                 </VBox>
 
             </VBox>
+        </ScrollPane>
 
-        </HBox>
+        <!-- Save button - shown only for police or when submitting new report -->
+        <VBox style="-fx-padding: 12 20 16 20; -fx-border-color: #E5E7EB;
+                     -fx-border-width: 1 0 0 0;">
+            <Button fx:id="saveBtn"
+                    text="Save Changes"
+                    onAction="#onSave"
+                    maxWidth="Infinity"
+                    styleClass="btn-primary"/>
+        </VBox>
 
     </VBox>
 
