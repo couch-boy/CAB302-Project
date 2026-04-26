@@ -7,6 +7,7 @@
 
 <StackPane xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.example.cab302project.CrimesController"
+           fx:id="crimesRoot"
            stylesheets="@styles.css"
            style="-fx-background-color: #F8F9FA;">
 
@@ -15,7 +16,7 @@
 
         <!-- App bar -->
         <HBox styleClass="app-bar" alignment="CENTER_LEFT" spacing="0">
-            <Button text="←" onAction="#onBackButtonClick" styleClass="hamburger-btn"/>
+            <Button fx:id="hamburgerBtn" text="☰" styleClass="hamburger-btn"/>
             <Region HBox.hgrow="ALWAYS"/>
             <VBox alignment="CENTER" spacing="2">
                 <Label text="RADIUS" styleClass="app-bar-title"/>
@@ -224,5 +225,5 @@
         </VBox>
 
     </VBox>
-
+    <!-- HamburgerMenu is added programmatically in CrimesController.initialize() -->
 </StackPane>

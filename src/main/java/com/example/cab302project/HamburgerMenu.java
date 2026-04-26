@@ -121,7 +121,11 @@ public class HamburgerMenu extends StackPane {
         isOpen = false;
     }
 
-    private void onMap()      { close(); }
+    private void onMap() {
+        close();
+        UIUtils.switchScene(stage, "dashboard-view.fxml");
+    }
+
     private void onSettings() { close(); }
     private void onPolice()   { close(); }
 

@@ -27,6 +27,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
@@ -83,6 +84,14 @@ public class CrimesController {
     private VBox mapPane;
     @FXML
     private WebView crimeMapView;
+
+    // Hamburger menu
+    @FXML
+    private StackPane crimesRoot;
+    @FXML
+    private Button hamburgerBtn;
+
+    private HamburgerMenu hamburgerMenu;
 
     private IAppDAO dao;
 
@@ -151,6 +160,17 @@ public class CrimesController {
 
         // Set List tab as active by default
         setActiveTab(true);
+
+        // Wire hamburger menu after scene is attached
+        // Platform.runLater ensures getScene().getWindow() is not null
+        Platform.runLater(() -> {
+            Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+            hamburgerMenu = new HamburgerMenu(stage);
+            hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
+            hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
+            crimesRoot.getChildren().add(hamburgerMenu);
+            hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+        });
     }
 
     /**
