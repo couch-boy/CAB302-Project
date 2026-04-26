@@ -27,19 +27,8 @@
             <Region minWidth="40"/>
         </HBox>
 
-        <!-- Main content below app bar -->
-        <VBox spacing="12" VBox.vgrow="ALWAYS">
-            <padding><Insets bottom="16" left="20" right="20" top="16"/></padding>
-
-            <Label fx:id="welcomeLabel" text="Loading user details..."/>
-            <Label fx:id="emailLabel" text="Loading user details..."/>
-            <Button text="Logout" onAction="#onLogout"/>
-            <Button text="View Crimes" onAction="#viewCrimes"/>
-            <Button text="View Hotspots" onAction="#viewHotspots"/>
-            <Button text="View Profile" onAction="#viewProfile"/>
-            <WebView fx:id="mapView" VBox.vgrow="ALWAYS"/>
-
-        </VBox>
+        <!-- Hotspots map fills remaining height -->
+        <WebView fx:id="mapView" VBox.vgrow="ALWAYS"/>
 
     </VBox>
 

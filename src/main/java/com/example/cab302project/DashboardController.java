@@ -9,15 +9,12 @@ import javafx.scene.web.WebView;
 import javafx.scene.web.WebEngine;
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DashboardController {
 
     // FXML UI elements
-    @FXML
-    private Label welcomeLabel;
-    @FXML
-    private Label emailLabel;
     @FXML
     private WebView mapView;
     @FXML
@@ -34,19 +31,71 @@ public class DashboardController {
         this.dao = HelloApplication.DATABASE;
     }
 
-    private String buildCrimeJson(List<CrimeRecord> crimes) {
-        StringBuilder sb = new StringBuilder("[");
+    // Builds hotspot cluster list from raw crime records
+    private List<Hotspot> buildHotspots(List<CrimeRecord> crimes, double radiusKm) {
+        List<Hotspot> hotspots = new ArrayList<>();
+        boolean[] used = new boolean[crimes.size()];
 
         for (int i = 0; i < crimes.size(); i++) {
-            CrimeRecord c = crimes.get(i);
+            if (used[i]) continue;
+
+            CrimeRecord base = crimes.get(i);
+
+            double sumLat = base.getLatitude();
+            double sumLon = base.getLongitude();
+            int count = 1;
+            used[i] = true;
+
+            for (int j = i + 1; j < crimes.size(); j++) {
+                if (used[j]) continue;
+
+                CrimeRecord other = crimes.get(j);
+                double distance = distanceKm(
+                        base.getLatitude(), base.getLongitude(),
+                        other.getLatitude(), other.getLongitude()
+                );
+
+                if (distance <= radiusKm) {
+                    sumLat += other.getLatitude();
+                    sumLon += other.getLongitude();
+                    count++;
+                    used[j] = true;
+                }
+            }
+
+            hotspots.add(new Hotspot(sumLat / count, sumLon / count, count));
+        }
+
+        return hotspots;
+    }
+
+    private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
+        double earthRadius = 6371.0;
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadius * c;
+    }
+
+    private String buildHotspotJson(List<Hotspot> hotspots) {
+        StringBuilder sb = new StringBuilder("[");
+
+        for (int i = 0; i < hotspots.size(); i++) {
+            Hotspot h = hotspots.get(i);
 
             sb.append("{")
-                    .append("\"lat\":").append(c.getLatitude()).append(",")
-                    .append("\"lon\":").append(c.getLongitude()).append(",")
-                    .append("\"severity\":\"").append(c.getCategory().getSeverity().toString()).append("\"")
+                    .append("\"lat\":").append(h.getLatitude()).append(",")
+                    .append("\"lon\":").append(h.getLongitude()).append(",")
+                    .append("\"count\":").append(h.getCount())
                     .append("}");
 
-            if (i < crimes.size() - 1) {
+            if (i < hotspots.size() - 1) {
                 sb.append(",");
             }
         }
@@ -63,9 +112,9 @@ public class DashboardController {
 
         WebEngine engine = mapView.getEngine();
 
-        var resource = getClass().getResource("/com/example/cab302project/crime-map.html");
+        var resource = getClass().getResource("/com/example/cab302project/hotspots-map.html");
         if (resource == null) {
-            System.out.println("crime-map.html not found");
+            System.out.println("hotspots-map.html not found");
             return;
         }
 
@@ -74,12 +123,14 @@ public class DashboardController {
         engine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {
                 List<CrimeRecord> crimes = dao.getAllCrimes();
-                final String json = buildCrimeJson(crimes)
-                        .replace("\\", "\\\\")
-                        .replace("'", "\\'");
+                List<Hotspot> hotspots = buildHotspots(crimes, 2.0);
+
+                String json = buildHotspotJson(hotspots);
+                final String safeJson = json.replace("\\", "\\\\").replace("'", "\\'");
+
                 Platform.runLater(() -> {
                     try {
-                        engine.executeScript("loadCrimeMarkers('" + json + "')");
+                        engine.executeScript("loadHotspots('" + safeJson + "')");
                     } catch (Exception e) {
                         System.out.println("JS execution failed: " + e.getMessage());
                     }
@@ -95,14 +146,6 @@ public class DashboardController {
      */
     @FXML
     public void initialize() {
-        //this method auto-runs when dashboard-view.fxml loads
-        UserSession session = UserSession.getInstance();
-
-        if (session != null) {
-            welcomeLabel.setText("Welcome back, " + session.getUser().getUsername() + "!");
-            emailLabel.setText("Your email is: " + session.getUser().getEmail());
-        }
-
         Platform.runLater(this::loadMap);
 
         // Wire hamburger menu after scene is attached
@@ -125,7 +168,7 @@ public class DashboardController {
         UserSession.logout();
 
         //get the current stage (window) by referencing a ui element
-        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
         //load login view
         UIUtils.switchScene(stage, "login-view.fxml");
     }
@@ -136,7 +179,7 @@ public class DashboardController {
     @FXML
     public void viewCrimes() {
         //get the current stage (window) by referencing a ui element
-        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
         //load crimes view
         UIUtils.switchScene(stage, "crimes-view.fxml");
     }
@@ -146,13 +189,13 @@ public class DashboardController {
      */
     @FXML
     public void viewProfile() {
-        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
         UIUtils.switchScene(stage, "profile-view.fxml");
     }
 
     @FXML
     public void viewHotspots() {
-        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
+        Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
         UIUtils.switchScene(stage, "hotspots-view.fxml");
     }
 }
