@@ -1,12 +1,21 @@
 package com.example.cab302project;
 
 import javafx.animation.PauseTransition;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.Button;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -17,33 +26,28 @@ import java.util.List;
 public class PoliceCrimesController {
 
     // FXML UI elements
-    @FXML
-    private TableView<CrimeRecord> crimeTable;
-    @FXML
-    private TableColumn<CrimeRecord, Integer> idColumn;
-    @FXML
-    private TableColumn<CrimeRecord, CrimeCategory> categoryColumn;
-    @FXML
-    private TableColumn<CrimeRecord, String> severityColumn;
-    @FXML
-    private TableColumn<CrimeRecord, String> timestampColumn; // String for formatted display of timestamp
-    @FXML
-    private TableColumn<CrimeRecord, String> actionedColumn;
-    @FXML
-    private ComboBox<CrimeCategory> categoryComboBox;
-    @FXML
-    private Label idLabel, severityLabel;
-    @FXML
-    private DatePicker datePicker;
-    @FXML
-    private ComboBox<String> hourBox, minuteBox, ampmBox;
-    @FXML
-    private TextField reporterField, locationField;
-    @FXML
-    private TextArea descriptionArea;
+    @FXML private TableView<CrimeRecord> crimeTable;
+    @FXML private TableColumn<CrimeRecord, Integer> idColumn;
+    @FXML private TableColumn<CrimeRecord, CrimeCategory> categoryColumn;
+    @FXML private TableColumn<CrimeRecord, String> severityColumn;
+    @FXML private TableColumn<CrimeRecord, String> timestampColumn;
+    @FXML private TableColumn<CrimeRecord, String> actionedColumn;
+    @FXML private ListView<CrimeRecord> crimeListView;
+    @FXML private VBox detailPanel;
+    @FXML private Pane detailBackdrop;
+    @FXML private Button saveBtn, markDealtBtn;
+    @FXML private ComboBox<CrimeCategory> categoryComboBox;
+    @FXML private Label idLabel, severityLabel, actionedStatusLabel;
+    @FXML private DatePicker datePicker;
+    @FXML private ComboBox<String> hourBox, minuteBox, ampmBox;
+    @FXML private TextField reporterField, locationField;
+    @FXML private TextArea descriptionArea;
+    @FXML private NavBarController navBarController;
+    @FXML private Button hamburgerBtn;
+    @FXML private StackPane policeCrimesRoot;
 
-    @FXML
-    private NavBarController navBarController;
+    private HamburgerMenu hamburgerMenu;
+    private final java.util.Map<Integer, String> addressCache = new java.util.HashMap<>();
 
     private IAppDAO dao;
 
@@ -91,7 +95,7 @@ public class PoliceCrimesController {
             if (newVal != null) {
                 populateForm(newVal);
             } else {
-                clearForm(); // This ensures the form empties when nothing is selected
+                clearForm();
             }
         });
 
@@ -99,8 +103,22 @@ public class PoliceCrimesController {
         refreshList();
         // Update selected list element after populating
         updateSelectionAfterChange();
+        // Wire up styled ListView
+        setupListView();
         //  Initialize address autocomplete suggestions for location input
         setupAddressAutocomplete();
+
+        // Wire hamburger menu after scene is attached
+        hamburgerBtn.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+                hamburgerMenu = new HamburgerMenu(stage);
+                hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
+                hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
+                policeCrimesRoot.getChildren().add(hamburgerMenu);
+                hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+            }
+        });
 
     }
 
@@ -200,13 +218,117 @@ public class PoliceCrimesController {
         UIUtils.switchScene(stage, "dashboard-view.fxml");
     }
 
-    // Helper function to refresh crime table with updated crime data
+    // Helper function to refresh crime table and list view with updated crime data
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
         crimeTable.getItems().setAll(dao.getAllCrimes());
         if (selectedIndex >= 0) {
             crimeTable.getSelectionModel().select(selectedIndex);
         }
+        if (crimeListView != null) {
+            crimeListView.getItems().setAll(crimeTable.getItems());
+        }
+    }
+
+    private void setupListView() {
+        crimeListView.getItems().setAll(crimeTable.getItems());
+
+        crimeListView.setCellFactory(lv -> new ListCell<CrimeRecord>() {
+            {
+                getStyleClass().add("crime-list-cell");
+            }
+
+            @Override
+            protected void updateItem(CrimeRecord crime, boolean empty) {
+                super.updateItem(crime, empty);
+                if (empty || crime == null) {
+                    setGraphic(null);
+                    setText(null);
+                    getStyleClass().remove("crime-list-cell-populated");
+                    return;
+                }
+                getStyleClass().add("crime-list-cell-populated");
+
+                String dotColor = switch (crime.getCategory().getSeverity()) {
+                    case CRITICAL -> "#DC143C";
+                    case MEDIUM   -> "#FF8C00";
+                    default       -> "#FFD700";
+                };
+
+                Label dot = new Label("●");
+                dot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 14px;");
+
+                Label category = new Label(crime.getCategory().toString());
+                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1A1A2E;");
+
+                String statusText = crime.isActioned() ? "Police Dispatched" : "Pending";
+                Label status = new Label(statusText);
+                status.setStyle("-fx-font-size: 11px; -fx-text-fill: #6B7280;");
+
+                String locationText = addressCache.containsKey(crime.getId())
+                        ? addressCache.get(crime.getId())
+                        : String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
+                Label location = new Label(locationText);
+                location.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+
+                VBox textBlock = new VBox(2, category, status, location);
+
+                Label time = new Label(getRelativeTime(crime.getTimestamp()));
+                time.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                HBox row = new HBox(10, dot, textBlock, spacer, time);
+                row.setAlignment(Pos.CENTER_LEFT);
+                row.setStyle("-fx-padding: 12 20 12 20; -fx-cursor: hand;");
+
+                setGraphic(row);
+            }
+        });
+
+        crimeListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                crimeTable.getSelectionModel().select(newVal);
+                showDetailPanel();
+            }
+        });
+
+        crimeListView.setStyle("-fx-background-color: transparent; " +
+                "-fx-background: transparent; -fx-border-width: 0;");
+    }
+
+    private void showDetailPanel() {
+        detailBackdrop.setVisible(true);
+        detailBackdrop.setManaged(true);
+        detailPanel.setVisible(true);
+        detailPanel.setManaged(true);
+        detailPanel.setTranslateY(600);
+        TranslateTransition slide = new TranslateTransition(Duration.millis(320), detailPanel);
+        slide.setToY(0);
+        slide.play();
+    }
+
+    @FXML
+    public void onCloseDetail() {
+        TranslateTransition slide = new TranslateTransition(Duration.millis(280), detailPanel);
+        slide.setToY(detailPanel.getHeight() + 40);
+        slide.setOnFinished(e -> {
+            detailPanel.setVisible(false);
+            detailPanel.setManaged(false);
+            detailBackdrop.setVisible(false);
+            detailBackdrop.setManaged(false);
+            crimeListView.getSelectionModel().clearSelection();
+        });
+        slide.play();
+    }
+
+    private String getRelativeTime(LocalDateTime dt) {
+        long mins = java.time.Duration.between(dt, LocalDateTime.now()).toMinutes();
+        if (mins < 60) return mins + "m ago";
+        long hrs = mins / 60;
+        if (hrs < 24) return hrs + "h ago";
+        return (hrs / 24) + "d ago";
     }
 
     // Helper method to initialize table columns
@@ -284,6 +406,7 @@ public class PoliceCrimesController {
 
         descriptionArea.setText(crime.getDescription());
         reporterField.setText(crime.getReporterDisplayName());
+        actionedStatusLabel.setText(crime.isActioned() ? "Police Dispatched" : "Pending");
 
         setFormEditable(true);
         isCreatingNew = (crime.getId() == 0);
@@ -342,6 +465,7 @@ public class PoliceCrimesController {
         locationField.clear();
         descriptionArea.clear();
         reporterField.clear();
+        actionedStatusLabel.setText("-");
         setFormEditable(true);
     }
 
