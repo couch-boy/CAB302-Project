@@ -42,7 +42,8 @@ public class PoliceCrimesController {
     @FXML
     private TextArea descriptionArea;
 
-
+    @FXML
+    private NavBarController navBarController;
 
     private IAppDAO dao;
 
@@ -68,6 +69,11 @@ public class PoliceCrimesController {
     public void initialize() {
         // Initialize table columns
         setupTableColumns();
+
+        // Mark Crimes tab as active in bottom nav
+        if (navBarController != null) {
+            navBarController.setActiveTab("crimes");
+        }
 
         // Initialize date and time UI elements
         setupDateTimeControls();

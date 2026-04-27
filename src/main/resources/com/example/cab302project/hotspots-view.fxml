@@ -13,4 +13,8 @@
 
     <Button text="Back to Dashboard" onAction="#onBackButtonClick"/>
     <WebView fx:id="mapView" prefHeight="600.0" prefWidth="900.0" />
+
+    <!-- Bottom navigation bar -->
+    <fx:include fx:id="navBar" source="nav-bar.fxml"/>
+    
 </VBox>

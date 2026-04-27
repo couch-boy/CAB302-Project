@@ -41,6 +41,9 @@
 
         </VBox>
 
+        <!-- Bottom navigation bar -->
+        <fx:include fx:id="navBar" source="nav-bar.fxml"/>
+
     </VBox>
 
     <!-- HamburgerMenu is added programmatically in DashboardController.initialize() -->

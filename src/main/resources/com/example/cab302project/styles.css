@@ -316,3 +316,49 @@
 .crime-list-cell:selected {
     -fx-background-color: #E8EBF0;
 }
+/* ── Bottom Navigation Bar ─────────────────────────────────────────── */
+.nav-bar {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1 0 0 0;
+    -fx-min-height: 60;
+    -fx-max-height: 60;
+    -fx-pref-height: 60;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0.2, 0, -2);
+}
+
+.nav-btn {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-padding: 4 0 4 0;
+    -fx-background-radius: 0;
+    -fx-alignment: CENTER;
+    -fx-graphic-text-gap: 2;
+}
+
+.nav-btn:hover {
+    -fx-background-color: rgba(42,54,78,0.05);
+}
+
+.nav-btn-icon {
+    -fx-text-fill: #9CA3AF;
+    -fx-font-size: 20px;
+}
+
+.nav-btn-label {
+    -fx-text-fill: #9CA3AF;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.nav-btn-icon-active {
+    -fx-text-fill: #2A364E;
+    -fx-font-size: 20px;
+}
+
+.nav-btn-label-active {
+    -fx-text-fill: #2A364E;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}

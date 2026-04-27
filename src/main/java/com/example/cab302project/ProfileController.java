@@ -15,6 +15,8 @@ public class ProfileController {
     private PasswordField passwordField;
     @FXML
     private CheckBox darkModeCheckBox;
+    @FXML
+    private NavBarController navBarController;
 
     private IAppDAO dao;
     private User currentUser;
@@ -36,6 +38,11 @@ public class ProfileController {
         if (currentUser != null) {
             // Populate UI fields with user data
             populateFields();
+        }
+
+        // Mark Profile tab as active in bottom nav
+        if (navBarController != null) {
+            navBarController.setActiveTab("profile");
         }
     }
 

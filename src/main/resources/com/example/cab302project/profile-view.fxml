@@ -47,4 +47,8 @@
         <Button text="Save Changes" onAction="#onSave" />
         <Button text="Back" onAction="#onBack" />
     </HBox>
+
+    <!-- Bottom navigation bar -->
+    <fx:include fx:id="navBar" source="nav-bar.fxml"/>
+
 </VBox>
