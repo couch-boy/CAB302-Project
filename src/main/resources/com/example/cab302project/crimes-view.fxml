@@ -130,6 +130,9 @@
                         style="-fx-padding: 14 0 14 0;"/>
             </VBox>
 
+            <!-- Bottom navigation bar -->
+            <fx:include fx:id="navBar" source="nav-bar.fxml"/>
+
         </VBox>
 
     </VBox>

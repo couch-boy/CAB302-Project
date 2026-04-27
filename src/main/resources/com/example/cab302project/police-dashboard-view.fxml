@@ -38,6 +38,9 @@
 
         </VBox>
 
+        <!-- Bottom navigation bar -->
+        <fx:include fx:id="navBar" source="nav-bar.fxml"/>
+
     </VBox>
 
 </StackPane>

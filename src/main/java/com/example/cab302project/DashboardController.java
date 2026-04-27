@@ -21,6 +21,8 @@ public class DashboardController {
     private Button hamburgerBtn;
     @FXML
     private StackPane dashboardRoot;
+    @FXML
+    private NavBarController navBarController;
 
     private IAppDAO dao;
     private HamburgerMenu hamburgerMenu;
@@ -147,6 +149,11 @@ public class DashboardController {
     @FXML
     public void initialize() {
         Platform.runLater(this::loadMap);
+
+        // Mark Map tab as active in bottom nav
+        if (navBarController != null) {
+            navBarController.setActiveTab("map");
+        }
 
         // Wire hamburger menu after scene is attached
         // Platform.runLater ensures getScene().getWindow() is not null

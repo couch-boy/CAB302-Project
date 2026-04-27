@@ -13,6 +13,9 @@ public class HotspotsController {
     @FXML
     private WebView mapView;
 
+    @FXML
+    private NavBarController navBarController;
+
     private IAppDAO dao;
 
     public HotspotsController() {
@@ -22,6 +25,9 @@ public class HotspotsController {
     @FXML
     public void initialize() {
         loadHotspotMap();
+        if (navBarController != null) {
+            navBarController.setActiveTab("map");
+        }
     }
 
     @FXML
