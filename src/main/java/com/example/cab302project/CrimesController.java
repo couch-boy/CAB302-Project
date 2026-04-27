@@ -132,6 +132,7 @@ public class CrimesController {
         if (navBarController != null) {
             navBarController.setActiveTab("crimes");
         }
+
         // Initialize date and time UI elements
         setupDateTimeControls();
 
