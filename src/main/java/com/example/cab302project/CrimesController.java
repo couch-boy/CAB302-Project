@@ -69,6 +69,9 @@ public class CrimesController {
     @FXML
     private Button saveBtn;
 
+    @FXML
+    private NavBarController navBarController;
+
     private IAppDAO dao;
 
     private IGeocodingService geocoder = new OpenStreetMapGeoCoder();
@@ -98,6 +101,10 @@ public class CrimesController {
         // Initialize table columns (still required for all existing controller logic)
         setupTableColumns();
 
+        // Mark Crimes tab as active in bottom nav
+        if (navBarController != null) {
+            navBarController.setActiveTab("crimes");
+        }
         // Initialize date and time UI elements
         setupDateTimeControls();
 
