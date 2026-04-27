@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- Bottom navigation bar - embedded via fx:include in each screen -->
+<HBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.cab302project.NavBarController"
+      styleClass="nav-bar"
+      stylesheets="@styles.css"
+      alignment="CENTER"
+      fillHeight="true">
+
+    <!-- Map / Dashboard button -->
+    <Button fx:id="btnMap"
+            onAction="#onMap"
+            styleClass="nav-btn"
+            maxWidth="Infinity" maxHeight="Infinity"
+            HBox.hgrow="ALWAYS">
+        <graphic>
+            <VBox alignment="CENTER" spacing="2">
+                <Label fx:id="iconMap" text="🗺" styleClass="nav-btn-icon"/>
+                <Label text="Map" styleClass="nav-btn-label" fx:id="labelMap"/>
+            </VBox>
+        </graphic>
+    </Button>
+
+    <!-- Crimes / Reports button -->
+    <Button fx:id="btnCrimes"
+            onAction="#onCrimes"
+            styleClass="nav-btn"
+            maxWidth="Infinity" maxHeight="Infinity"
+            HBox.hgrow="ALWAYS">
+        <graphic>
+            <VBox alignment="CENTER" spacing="2">
+                <Label fx:id="iconCrimes" text="📋" styleClass="nav-btn-icon"/>
+                <Label text="Reports" styleClass="nav-btn-label" fx:id="labelCrimes"/>
+            </VBox>
+        </graphic>
+    </Button>
+
+    <!-- Profile button -->
+    <Button fx:id="btnProfile"
+            onAction="#onProfile"
+            styleClass="nav-btn"
+            maxWidth="Infinity" maxHeight="Infinity"
+            HBox.hgrow="ALWAYS">
+        <graphic>
+            <VBox alignment="CENTER" spacing="2">
+                <Label fx:id="iconProfile" text="👤" styleClass="nav-btn-icon"/>
+                <Label text="Profile" styleClass="nav-btn-label" fx:id="labelProfile"/>
+            </VBox>
+        </graphic>
+    </Button>
+
+</HBox>
