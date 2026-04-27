@@ -72,6 +72,7 @@ public class HamburgerMenu extends StackPane {
         loaded.lookup("#btnNewReport").setOnMouseClicked(e -> onNewReport());
         loaded.lookup("#btnProfile").setOnMouseClicked(e -> onProfile());
         loaded.lookup("#btnSettings").setOnMouseClicked(e -> onSettings());
+        loaded.lookup("#btnLogout").setOnMouseClicked(e -> onLogout());
         if (darkModeToggle != null) darkModeToggle.setOnAction(e -> onDarkModeToggle());
     }
 
