@@ -103,7 +103,21 @@
 
         <!-- Map pane - hidden by default, shown when Map tab is active -->
         <VBox fx:id="mapPane" VBox.vgrow="ALWAYS" spacing="0" visible="false" managed="false">
+
             <WebView fx:id="crimeMapView" VBox.vgrow="ALWAYS"/>
+
+            <!-- Submit Report pinned to bottom of map pane -->
+            <VBox style="-fx-background-color: #FFFFFF;
+                         -fx-border-color: #E5E7EB;
+                         -fx-border-width: 1 0 0 0;
+                         -fx-padding: 12 20 12 20;">
+                <Button text="SUBMIT REPORT"
+                        onAction="#onAddNewCrime"
+                        maxWidth="Infinity"
+                        styleClass="btn-primary"
+                        style="-fx-padding: 14 0 14 0;"/>
+            </VBox>
+
         </VBox>
 
     </VBox>
@@ -225,5 +239,7 @@
         </VBox>
 
     </VBox>
+
     <!-- HamburgerMenu is added programmatically in CrimesController.initialize() -->
+
 </StackPane>

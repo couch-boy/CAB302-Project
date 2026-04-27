@@ -198,4 +198,13 @@ public class DashboardController {
         Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
         UIUtils.switchScene(stage, "hotspots-view.fxml");
     }
+
+    /**
+     * Go to crimes view to submit a new report
+     */
+    @FXML
+    public void onSubmitReport() {
+        Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+        UIUtils.switchScene(stage, "crimes-view.fxml");
+    }
 }
