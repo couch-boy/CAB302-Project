@@ -30,6 +30,18 @@
         <!-- Hotspots map fills remaining height -->
         <WebView fx:id="mapView" VBox.vgrow="ALWAYS"/>
 
+        <!-- Hotspot intensity legend -->
+        <HBox alignment="CENTER_LEFT" spacing="16"
+              style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
+                     -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;">
+            <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
+            <Label text="High Activity" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+            <Label text="●" style="-fx-text-fill: #FF8C00; -fx-font-size: 11px;"/>
+            <Label text="Moderate Activity" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+            <Label text="●" style="-fx-text-fill: #FFD700; -fx-font-size: 11px;"/>
+            <Label text="Low Activity" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+        </HBox>
+
         <!-- Submit Report pinned to bottom -->
         <VBox style="-fx-background-color: #FFFFFF;
                      -fx-border-color: #E5E7EB;

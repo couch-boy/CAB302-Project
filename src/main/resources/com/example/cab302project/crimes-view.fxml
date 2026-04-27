@@ -104,6 +104,18 @@
         <!-- Map pane - hidden by default, shown when Map tab is active -->
         <VBox fx:id="mapPane" VBox.vgrow="ALWAYS" spacing="0" visible="false" managed="false">
 
+            <!-- Severity legend mirrored from list view -->
+            <HBox alignment="CENTER_LEFT" spacing="16"
+                  style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
+                         -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;">
+                <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
+                <Label text="Severe" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+                <Label text="●" style="-fx-text-fill: #FF8C00; -fx-font-size: 11px;"/>
+                <Label text="Moderate" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+                <Label text="●" style="-fx-text-fill: #FFD700; -fx-font-size: 11px;"/>
+                <Label text="Low" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+            </HBox>
+
             <WebView fx:id="crimeMapView" VBox.vgrow="ALWAYS"/>
 
             <!-- Submit Report pinned to bottom of map pane -->
