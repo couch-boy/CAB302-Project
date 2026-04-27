@@ -3,6 +3,7 @@ package com.example.cab302project;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+import javafx.scene.layout.StackPane;
 
 public class ProfileController {
 
@@ -17,7 +18,12 @@ public class ProfileController {
     private CheckBox darkModeCheckBox;
     @FXML
     private NavBarController navBarController;
+    @FXML
+    private Button hamburgerBtn;
+    @FXML
+    private StackPane profileRoot;
 
+    private HamburgerMenu hamburgerMenu;
     private IAppDAO dao;
     private User currentUser;
 
@@ -44,6 +50,19 @@ public class ProfileController {
         if (navBarController != null) {
             navBarController.setActiveTab("profile");
         }
+
+        // Wire hamburger menu after scene is attached
+        hamburgerBtn.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+                hamburgerMenu = new HamburgerMenu(stage);
+                hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
+                hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
+                profileRoot.getChildren().add(hamburgerMenu);
+                hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+            }
+        });
+
     }
 
     /**
@@ -70,18 +89,9 @@ public class ProfileController {
         }
     }
 
-    /**
-     * Return to the dashboard view
-     */
-    @FXML
-    public void onBack() {
-        Stage stage = (Stage) usernameLabel.getScene().getWindow();
-        UIUtils.switchScene(stage, "dashboard-view.fxml");
-    }
-
     // Helper method to fill UI elements with the User object data
     private void populateFields() {
-        usernameLabel.setText(currentUser.getUsername());
+        usernameLabel.setText("Logged in as " + currentUser.getUsername());
         emailField.setText(currentUser.getEmail());
         phoneField.setText(currentUser.getPhone());
         darkModeCheckBox.setSelected(currentUser.isDarkMode());

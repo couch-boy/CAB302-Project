@@ -4,51 +4,89 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox alignment="TOP_CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.cab302project.ProfileController">
-    <padding>
-        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
-    </padding>
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.example.cab302project.ProfileController"
+           fx:id="profileRoot"
+           stylesheets="@styles.css">
 
-    <Label text="User Profile" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+    <VBox alignment="TOP_LEFT" spacing="0">
 
-    <GridPane hgap="10.0" vgap="15.0" alignment="CENTER">
-        <columnConstraints>
-            <ColumnConstraints minWidth="100" halignment="RIGHT"/>
-            <ColumnConstraints hgrow="ALWAYS" minWidth="200"/>
-        </columnConstraints>
+        <!-- App bar -->
+        <HBox styleClass="app-bar" alignment="CENTER_LEFT" spacing="0">
+            <Button fx:id="hamburgerBtn" text="☰" styleClass="hamburger-btn"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="RADIUS" styleClass="app-bar-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Region minWidth="40"/>
+        </HBox>
 
-        <Label text="Username:" GridPane.rowIndex="0" />
-        <Label fx:id="usernameLabel" style="-fx-font-weight: bold;"
-               GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <!-- Form content - centred, no scroll -->
+        <VBox alignment="TOP_CENTER" VBox.vgrow="ALWAYS">
+            <padding><Insets top="32" right="24" bottom="24" left="24"/></padding>
 
-        <Label text="New Password:" GridPane.rowIndex="1" />
-        <PasswordField fx:id="passwordField" promptText="Leave blank to keep current password" onAction="#onSave"
-                       GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <VBox styleClass="auth-card" maxWidth="380" spacing="16">
 
-        <Label text="Email:" GridPane.rowIndex="2" />
-        <TextField fx:id="emailField" onAction="#onSave"
-                   GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                <!-- Heading -->
+                <VBox spacing="4">
+                    <Label text="My Profile" styleClass="auth-title"/>
+                    <Label fx:id="usernameLabel" styleClass="auth-subtitle"/>
+                </VBox>
 
-        <Label text="Phone:" GridPane.rowIndex="3" />
-        <TextField fx:id="phoneField" onAction="#onSave"
-                   GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                <!-- New Password -->
+                <VBox spacing="6">
+                    <Label text="New Password" styleClass="auth-label"/>
+                    <PasswordField fx:id="passwordField"
+                                   promptText="Leave blank to keep current"
+                                   styleClass="auth-field"
+                                   onAction="#onSave"/>
+                </VBox>
 
-        <Label text="Home Location:" GridPane.rowIndex="4" />
-        <TextField fx:id="locationField" promptText="latitude, longitude" onAction="#onSave"
-                   GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                <!-- Email -->
+                <VBox spacing="6">
+                    <Label text="Email" styleClass="auth-label"/>
+                    <TextField fx:id="emailField"
+                               styleClass="auth-field"
+                               onAction="#onSave"/>
+                </VBox>
 
-        <Label text="Settings:" GridPane.rowIndex="5" />
-        <CheckBox fx:id="darkModeCheckBox" text="Enable Dark Mode"
-                  GridPane.columnIndex="1" GridPane.rowIndex="5" />
-    </GridPane>
+                <!-- Phone -->
+                <VBox spacing="6">
+                    <Label text="Phone" styleClass="auth-label"/>
+                    <TextField fx:id="phoneField"
+                               styleClass="auth-field"
+                               onAction="#onSave"/>
+                </VBox>
 
-    <HBox spacing="15.0" alignment="CENTER">
-        <Button text="Save Changes" onAction="#onSave" />
-        <Button text="Back" onAction="#onBack" />
-    </HBox>
+                <!-- Home Location -->
+                <VBox spacing="6">
+                    <Label text="Home Location" styleClass="auth-label"/>
+                    <TextField fx:id="locationField"
+                               promptText="latitude, longitude"
+                               styleClass="auth-field"
+                               onAction="#onSave"/>
+                </VBox>
 
-    <!-- Bottom navigation bar -->
-    <fx:include fx:id="navBar" source="nav-bar.fxml"/>
+                <!-- Settings -->
+                <VBox spacing="6">
+                    <Label text="Settings" styleClass="auth-label"/>
+                    <CheckBox fx:id="darkModeCheckBox" text="Enable Dark Mode"
+                              style="-fx-font-size: 13px; -fx-text-fill: #374151;"/>
+                </VBox>
 
-</VBox>
+                <!-- Save button inline in card -->
+                <Button text="SAVE CHANGES"
+                        onAction="#onSave"
+                        maxWidth="Infinity"
+                        styleClass="btn-primary"/>
+
+            </VBox>
+        </VBox>
+
+        <!-- Bottom navigation bar -->
+        <fx:include fx:id="navBar" source="nav-bar.fxml"/>
+
+    </VBox>
+
+    <!-- HamburgerMenu overlay -->
+
+</StackPane>
