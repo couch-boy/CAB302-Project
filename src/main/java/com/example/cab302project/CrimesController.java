@@ -17,6 +17,7 @@ import java.util.Map;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.concurrent.Worker;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.control.CustomMenuItem;
@@ -26,7 +27,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
 import javafx.util.Duration;
 
 import java.util.List;
@@ -69,6 +73,26 @@ public class CrimesController {
     @FXML
     private Button saveBtn;
 
+    // Tab bar buttons and content panes
+    @FXML
+    private Button listTabBtn;
+    @FXML
+    private Button mapTabBtn;
+    @FXML
+    private VBox listPane;
+    @FXML
+    private VBox mapPane;
+    @FXML
+    private WebView crimeMapView;
+
+    // Hamburger menu
+    @FXML
+    private StackPane crimesRoot;
+    @FXML
+    private Button hamburgerBtn;
+
+    private HamburgerMenu hamburgerMenu;
+
     @FXML
     private NavBarController navBarController;
 
@@ -81,6 +105,9 @@ public class CrimesController {
     private final PauseTransition suggestionDelay = new PauseTransition(Duration.millis(400));
 
     private boolean isCreatingNew = false;
+
+    // Tracks whether the crime map has been loaded yet (loaded lazily on first Map tab open)
+    private boolean crimeMapLoaded = false;
 
     // Cache of geocoded addresses keyed by crime ID.
     // Populated on list load and on row selection.
@@ -105,6 +132,7 @@ public class CrimesController {
         if (navBarController != null) {
             navBarController.setActiveTab("crimes");
         }
+
         // Initialize date and time UI elements
         setupDateTimeControls();
 
@@ -137,6 +165,114 @@ public class CrimesController {
 
         // Preload addresses for all crimes so list cells show locations immediately
         preloadAddresses();
+
+        // Set List tab as active by default
+        setActiveTab(true);
+
+        // Wire hamburger menu after scene is attached
+        // Platform.runLater ensures getScene().getWindow() is not null
+        Platform.runLater(() -> {
+            Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+            hamburgerMenu = new HamburgerMenu(stage);
+            hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
+            hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
+            crimesRoot.getChildren().add(hamburgerMenu);
+            hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+        });
+    }
+
+    /**
+     * Switch to the List tab - shows the crime list, hides the map
+     */
+    @FXML
+    public void onListTabClick() {
+        setActiveTab(true);
+    }
+
+    /**
+     * Switch to the Map tab - shows the crime map, hides the list.
+     * The crime map is loaded lazily on first open.
+     */
+    @FXML
+    public void onMapTabClick() {
+        setActiveTab(false);
+        if (!crimeMapLoaded) {
+            loadCrimeMap();
+            crimeMapLoaded = true;
+        }
+    }
+
+    /**
+     * Applies active/inactive styling to tab buttons and shows the correct pane.
+     * listActive=true shows the list pane; listActive=false shows the map pane.
+     */
+    private void setActiveTab(boolean listActive) {
+        if (listActive) {
+            listTabBtn.getStyleClass().add("tab-btn-active");
+            mapTabBtn.getStyleClass().remove("tab-btn-active");
+            listPane.setVisible(true);
+            listPane.setManaged(true);
+            mapPane.setVisible(false);
+            mapPane.setManaged(false);
+        } else {
+            mapTabBtn.getStyleClass().add("tab-btn-active");
+            listTabBtn.getStyleClass().remove("tab-btn-active");
+            mapPane.setVisible(true);
+            mapPane.setManaged(true);
+            listPane.setVisible(false);
+            listPane.setManaged(false);
+        }
+    }
+
+    /**
+     * Loads crime-map.html into the crimeMapView WebView and injects crime markers.
+     */
+    private void loadCrimeMap() {
+        if (crimeMapView == null) return;
+
+        WebEngine engine = crimeMapView.getEngine();
+
+        var resource = getClass().getResource("/com/example/cab302project/crime-map.html");
+        if (resource == null) {
+            System.out.println("crime-map.html not found");
+            return;
+        }
+
+        engine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
+            if (newState == Worker.State.SUCCEEDED) {
+                List<CrimeRecord> crimes = dao.getAllCrimes();
+                final String json = buildCrimeJson(crimes)
+                        .replace("\\", "\\\\")
+                        .replace("'", "\\'");
+                Platform.runLater(() -> {
+                    try {
+                        engine.executeScript("loadCrimeMarkers('" + json + "')");
+                    } catch (Exception e) {
+                        System.out.println("JS execution failed: " + e.getMessage());
+                    }
+                });
+            }
+        });
+
+        engine.load(resource.toExternalForm());
+    }
+
+    // Builds the JSON array of crime markers for the crime map
+    private String buildCrimeJson(List<CrimeRecord> crimes) {
+        StringBuilder sb = new StringBuilder("[");
+
+        for (int i = 0; i < crimes.size(); i++) {
+            CrimeRecord c = crimes.get(i);
+            sb.append("{")
+                    .append("\"lat\":").append(c.getLatitude()).append(",")
+                    .append("\"lon\":").append(c.getLongitude()).append(",")
+                    .append("\"severity\":\"").append(c.getCategory().getSeverity().toString()).append("\"")
+                    .append("}");
+            if (i < crimes.size() - 1) sb.append(",");
+        }
+
+        sb.append("]");
+        return sb.toString();
     }
 
     /**

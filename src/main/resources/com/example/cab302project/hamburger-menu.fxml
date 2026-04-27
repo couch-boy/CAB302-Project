@@ -46,8 +46,6 @@
                     styleClass="drawer-item" maxWidth="Infinity"/>
             <Button fx:id="btnSettings" text="⚙  Settings"
                     styleClass="drawer-item" maxWidth="Infinity"/>
-            <Button fx:id="btnPolice" text="🛡  Law Enforcement Portal"
-                    styleClass="drawer-item" maxWidth="Infinity"/>
 
             <Region VBox.vgrow="ALWAYS"/>
             <Pane styleClass="drawer-divider"/>

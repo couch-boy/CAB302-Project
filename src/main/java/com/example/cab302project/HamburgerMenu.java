@@ -72,8 +72,6 @@ public class HamburgerMenu extends StackPane {
         loaded.lookup("#btnNewReport").setOnMouseClicked(e -> onNewReport());
         loaded.lookup("#btnProfile").setOnMouseClicked(e -> onProfile());
         loaded.lookup("#btnSettings").setOnMouseClicked(e -> onSettings());
-        loaded.lookup("#btnPolice").setOnMouseClicked(e -> onPolice());
-        loaded.lookup("#btnLogout").setOnMouseClicked(e -> onLogout());
         if (darkModeToggle != null) darkModeToggle.setOnAction(e -> onDarkModeToggle());
     }
 
@@ -121,9 +119,12 @@ public class HamburgerMenu extends StackPane {
         isOpen = false;
     }
 
-    private void onMap()      { close(); }
+    private void onMap() {
+        close();
+        UIUtils.switchScene(stage, "dashboard-view.fxml");
+    }
+
     private void onSettings() { close(); }
-    private void onPolice()   { close(); }
 
     private void onMyReports() {
         close();
