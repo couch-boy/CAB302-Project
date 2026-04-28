@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <StackPane xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.example.cab302project.ProfileController"
@@ -13,7 +14,9 @@
 
         <!-- App bar -->
         <HBox styleClass="app-bar" alignment="CENTER_LEFT" spacing="0">
-            <Button fx:id="hamburgerBtn" text="☰" styleClass="hamburger-btn"/>
+            <Button fx:id="hamburgerBtn" styleClass="hamburger-btn">
+                <graphic><FontIcon iconLiteral="fas-bars" iconSize="18" iconColor="#2A364E"/></graphic>
+            </Button>
             <Region HBox.hgrow="ALWAYS"/>
             <Label text="RADIUS" styleClass="app-bar-title"/>
             <Region HBox.hgrow="ALWAYS"/>
