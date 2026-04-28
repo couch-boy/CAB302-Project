@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<!-- No fx:controller here - PoliceHamburgerMenu.java wires nodes programmatically -->
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           pickOnBounds="false"
+           stylesheets="@styles.css">
+
+    <!-- Dim backdrop, clicking it closes the drawer -->
+    <Pane fx:id="drawerOverlay"
+          visible="false" managed="false"
+          style="-fx-background-color: rgba(0,0,0,0.42);"
+          StackPane.alignment="CENTER"/>
+
+    <!-- Drawer panel + transparent click catcher -->
+    <HBox fx:id="drawerContainer"
+          visible="false" managed="false"
+          StackPane.alignment="CENTER_LEFT">
+
+        <VBox styleClass="drawer-pane" VBox.vgrow="ALWAYS">
+
+            <!-- Header with user info -->
+            <VBox styleClass="drawer-header" spacing="4">
+                <Label text="RADIUS" styleClass="drawer-logo"/>
+                <Label fx:id="drawerUsername" text="" styleClass="drawer-username"/>
+                <Label fx:id="drawerEmail" text="" styleClass="drawer-email"/>
+            </VBox>
+
+            <Pane styleClass="drawer-divider"/>
+            <Label text="NAVIGATION" styleClass="drawer-section"/>
+
+            <Button fx:id="btnMap" text="🗺  Hotspot Map"
+                    styleClass="drawer-item" maxWidth="Infinity"/>
+            <Button fx:id="btnReports" text="📋  Crime Reports"
+                    styleClass="drawer-item" maxWidth="Infinity"/>
+
+            <Pane styleClass="drawer-divider"/>
+            <Label text="ACCOUNT" styleClass="drawer-section"/>
+
+            <Button fx:id="btnProfile" text="👤  Profile"
+                    styleClass="drawer-item" maxWidth="Infinity"/>
+            <Button fx:id="btnSettings" text="⚙  Settings"
+                    styleClass="drawer-item" maxWidth="Infinity"/>
+
+            <Region VBox.vgrow="ALWAYS"/>
+            <Pane styleClass="drawer-divider"/>
+
+            <!-- Dark mode toggle -->
+            <HBox alignment="CENTER_LEFT" spacing="12"
+                  style="-fx-padding: 14 20 14 20;">
+                <Label text="Dark Mode" styleClass="drawer-toggle-label"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <CheckBox fx:id="darkModeToggle" style="-fx-cursor: hand;"/>
+            </HBox>
+
+            <Button fx:id="btnLogout" text="⇤  Logout"
+                    styleClass="drawer-item, drawer-item-danger"
+                    maxWidth="Infinity"
+                    style="-fx-padding: 14 20 14 20;"/>
+
+        </VBox>
+
+        <!-- Transparent area - clicking closes drawer -->
+        <Pane fx:id="transparentCatcher"
+              HBox.hgrow="ALWAYS"
+              style="-fx-background-color: transparent;"/>
+    </HBox>
+
+</StackPane>

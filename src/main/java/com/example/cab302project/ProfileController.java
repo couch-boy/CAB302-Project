@@ -1,9 +1,10 @@
 package com.example.cab302project;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.stage.Stage;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
 
 public class ProfileController {
 
@@ -23,7 +24,9 @@ public class ProfileController {
     @FXML
     private StackPane profileRoot;
 
-    private HamburgerMenu hamburgerMenu;
+    // Holds either HamburgerMenu or PoliceHamburgerMenu depending on user type
+    private StackPane hamburgerMenu;
+
     private IAppDAO dao;
     private User currentUser;
 
@@ -52,17 +55,26 @@ public class ProfileController {
         }
 
         // Wire hamburger menu after scene is attached
-        hamburgerBtn.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+        // Platform.runLater ensures getScene().getWindow() is not null
+        // Use police version if logged in as police, public version otherwise
+        Platform.runLater(() -> {
+            Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+            if (UserSession.isPolice()) {
+                hamburgerMenu = new PoliceHamburgerMenu(stage);
+            } else {
                 hamburgerMenu = new HamburgerMenu(stage);
-                hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
-                hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
-                profileRoot.getChildren().add(hamburgerMenu);
-                hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
             }
+            hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
+            hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
+            profileRoot.getChildren().add(hamburgerMenu);
+            hamburgerBtn.setOnAction(e -> {
+                if (hamburgerMenu instanceof HamburgerMenu hm) {
+                    hm.toggle();
+                } else if (hamburgerMenu instanceof PoliceHamburgerMenu phm) {
+                    phm.toggle();
+                }
+            });
         });
-
     }
 
     /**
