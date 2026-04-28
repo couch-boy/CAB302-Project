@@ -129,7 +129,7 @@ public class HamburgerMenu extends StackPane {
 
     private void onMyReports() {
         close();
-        UIUtils.switchScene(stage, "crimes-view.fxml");
+        UIUtils.switchScene(stage, "my-reports-view.fxml");
     }
 
     private void onNewReport() {

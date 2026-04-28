@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.example.cab302project.MyReportsController">
+
+    <VBox spacing="10" style="-fx-padding: 10;">
+
+        <Label text="My Reports"/>
+
+        <ListView fx:id="crimeListView"
+                  VBox.vgrow="ALWAYS"/>
+
+        <TableView fx:id="crimeTable"
+                   visible="false"
+                   managed="false"/>
+
+    </VBox>
+
+</StackPane>
