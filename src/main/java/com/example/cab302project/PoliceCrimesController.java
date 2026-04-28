@@ -46,7 +46,7 @@ public class PoliceCrimesController {
     @FXML private Button hamburgerBtn;
     @FXML private StackPane policeCrimesRoot;
 
-    private HamburgerMenu hamburgerMenu;
+    private PoliceHamburgerMenu hamburgerMenu;
     private final java.util.Map<Integer, String> addressCache = new java.util.HashMap<>();
 
     private IAppDAO dao;
@@ -108,17 +108,17 @@ public class PoliceCrimesController {
         //  Initialize address autocomplete suggestions for location input
         setupAddressAutocomplete();
 
-        // Wire hamburger menu after scene is attached
-        hamburgerBtn.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
-                hamburgerMenu = new HamburgerMenu(stage);
-                hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
-                hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
-                policeCrimesRoot.getChildren().add(hamburgerMenu);
-                hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
-            }
+        // Wire police hamburger menu after scene is attached
+        // Platform.runLater ensures getScene().getWindow() is not null
+        Platform.runLater(() -> {
+            Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+            hamburgerMenu = new PoliceHamburgerMenu(stage);
+            hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
+            hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
+            policeCrimesRoot.getChildren().add(hamburgerMenu);
+            hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
         });
+
 
     }
 

@@ -8,6 +8,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.web.WebView?>
 
+<!-- Root is StackPane so PoliceHamburgerMenu can overlay on top of all content -->
 <StackPane xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.example.cab302project.PoliceDashboardController"
            fx:id="dashboardRoot"
@@ -19,28 +20,36 @@
         <HBox styleClass="app-bar" alignment="CENTER_LEFT" spacing="0">
             <Button fx:id="hamburgerBtn" text="☰" styleClass="hamburger-btn"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label text="RADIUS" styleClass="app-bar-title"/>
+            <VBox alignment="CENTER" spacing="2">
+                <Label text="RADIUS" styleClass="app-bar-title"/>
+                <Label text="Law Enforcement"
+                       style="-fx-text-fill: #6B7280; -fx-font-size: 10px;"/>
+            </VBox>
             <Region HBox.hgrow="ALWAYS"/>
+            <!-- Spacer to balance hamburger button and keep title centred -->
             <Region minWidth="40"/>
         </HBox>
 
-        <!-- Main content below app bar -->
-        <VBox spacing="12" VBox.vgrow="ALWAYS">
-            <padding><Insets bottom="16" left="20" right="20" top="16"/></padding>
+        <!-- Hotspots map fills remaining height -->
+        <WebView fx:id="mapView" VBox.vgrow="ALWAYS"/>
 
-            <Label fx:id="welcomeLabel" text="Loading user details..."/>
-            <Label fx:id="emailLabel" text="Loading user details..."/>
-            <Button text="Logout" onAction="#onLogout"/>
-            <Button text="View Crimes" onAction="#viewCrimes"/>
-            <Button text="View Hotspots" onAction="#viewHotspots"/>
-            <Button text="View Profile" onAction="#viewProfile"/>
-            <WebView fx:id="mapView" VBox.vgrow="ALWAYS"/>
-
-        </VBox>
+        <!-- Hotspot intensity legend -->
+        <HBox alignment="CENTER_LEFT" spacing="16"
+              style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
+                     -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;">
+            <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
+            <Label text="High Activity" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+            <Label text="●" style="-fx-text-fill: #FF8C00; -fx-font-size: 11px;"/>
+            <Label text="Moderate Activity" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+            <Label text="●" style="-fx-text-fill: #FFD700; -fx-font-size: 11px;"/>
+            <Label text="Low Activity" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+        </HBox>
 
         <!-- Bottom navigation bar -->
         <fx:include fx:id="navBar" source="nav-bar.fxml"/>
 
     </VBox>
+
+    <!-- PoliceHamburgerMenu is added programmatically in PoliceDashboardController.initialize() -->
 
 </StackPane>
