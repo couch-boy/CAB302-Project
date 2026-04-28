@@ -3,7 +3,9 @@ package com.example.cab302project;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 /**
  * Controller for the shared bottom navigation bar (nav-bar.fxml).
@@ -17,12 +19,14 @@ public class NavBarController {
     @FXML private Button btnCrimes;
     @FXML private Button btnProfile;
 
-    @FXML private Label iconMap;
     @FXML private Label labelMap;
-    @FXML private Label iconCrimes;
     @FXML private Label labelCrimes;
-    @FXML private Label iconProfile;
     @FXML private Label labelProfile;
+
+    // VBox wrappers used to look up FontIcon children for active colouring
+    @FXML private VBox navMap;
+    @FXML private VBox navCrimes;
+    @FXML private VBox navProfile;
 
     // ── Navigation handlers ──────────────────────────────────────────
 
@@ -60,20 +64,26 @@ public class NavBarController {
      */
     public void setActiveTab(String tab) {
         switch (tab) {
-            case "map" -> {
-                setActive(iconMap, labelMap);
-            }
-            case "crimes" -> {
-                setActive(iconCrimes, labelCrimes);
-            }
-            case "profile" -> {
-                setActive(iconProfile, labelProfile);
-            }
+            case "map"     -> setActive(navMap, labelMap);
+            case "crimes"  -> setActive(navCrimes, labelCrimes);
+            case "profile" -> setActive(navProfile, labelProfile);
         }
     }
 
-    private void setActive(Label icon, Label label) {
-        icon.getStyleClass().setAll("nav-btn-icon-active");
+    /**
+     * Highlights the label text and recolours the FontIcon child of the VBox.
+     * FontIcon is looked up by type from the VBox children rather than fx:id
+     * since FontIcon cannot be injected directly via FXML.
+     */
+    private void setActive(VBox navBox, Label label) {
         label.getStyleClass().setAll("nav-btn-label-active");
+
+        // Find the FontIcon child and apply the active colour
+        navBox.getChildren().stream()
+                .filter(node -> node instanceof FontIcon)
+                .map(node -> (FontIcon) node)
+                .findFirst()
+                .ifPresent(icon -> icon.setIconColor(
+                        javafx.scene.paint.Color.web("#2A364E")));
     }
 }

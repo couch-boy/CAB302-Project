@@ -7,6 +7,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.web.WebView?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <!-- Root is StackPane so PoliceHamburgerMenu can overlay on top of all content -->
 <StackPane xmlns:fx="http://javafx.com/fxml"
@@ -18,7 +19,9 @@
 
         <!-- App bar with hamburger button and RADIUS title -->
         <HBox styleClass="app-bar" alignment="CENTER_LEFT" spacing="0">
-            <Button fx:id="hamburgerBtn" text="☰" styleClass="hamburger-btn"/>
+            <Button fx:id="hamburgerBtn" styleClass="hamburger-btn">
+                <graphic><FontIcon iconLiteral="fas-bars" iconSize="18" iconColor="#2A364E"/></graphic>
+            </Button>
             <Region HBox.hgrow="ALWAYS"/>
             <VBox alignment="CENTER" spacing="2">
                 <Label text="RADIUS" styleClass="app-bar-title"/>

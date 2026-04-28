@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <!-- Bottom navigation bar - embedded via fx:include in each screen -->
 <HBox xmlns:fx="http://javafx.com/fxml"
@@ -18,8 +19,8 @@
             maxWidth="Infinity" maxHeight="Infinity"
             HBox.hgrow="ALWAYS">
         <graphic>
-            <VBox alignment="CENTER" spacing="2">
-                <Label fx:id="iconMap" text="🗺" styleClass="nav-btn-icon"/>
+            <VBox fx:id="navMap" alignment="CENTER" spacing="2">
+                <FontIcon iconLiteral="fas-map" iconSize="20" iconColor="#9CA3AF"/>
                 <Label text="Map" styleClass="nav-btn-label" fx:id="labelMap"/>
             </VBox>
         </graphic>
@@ -32,10 +33,11 @@
             maxWidth="Infinity" maxHeight="Infinity"
             HBox.hgrow="ALWAYS">
         <graphic>
-            <VBox alignment="CENTER" spacing="2">
-                <Label fx:id="iconCrimes" text="📋" styleClass="nav-btn-icon"/>
+            <VBox fx:id="navCrimes" alignment="CENTER" spacing="2">
+                <FontIcon iconLiteral="fas-clipboard-list" iconSize="20" iconColor="#9CA3AF"/>
                 <Label text="Reports" styleClass="nav-btn-label" fx:id="labelCrimes"/>
             </VBox>
+
         </graphic>
     </Button>
 
@@ -46,8 +48,8 @@
             maxWidth="Infinity" maxHeight="Infinity"
             HBox.hgrow="ALWAYS">
         <graphic>
-            <VBox alignment="CENTER" spacing="2">
-                <Label fx:id="iconProfile" text="👤" styleClass="nav-btn-icon"/>
+            <VBox fx:id="navProfile" alignment="CENTER" spacing="2">
+                <FontIcon iconLiteral="fas-user" iconSize="20" iconColor="#9CA3AF"/>
                 <Label text="Profile" styleClass="nav-btn-label" fx:id="labelProfile"/>
             </VBox>
         </graphic>
