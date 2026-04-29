@@ -120,7 +120,11 @@ public class CrimesController {
     // Static so the cache persists across screen navigations and avoids re-geocoding
     private static final Map<Integer, String> addressCache = new HashMap<>();
 
-    // Constructor
+    /**
+     * Constructs the CrimesController and initialises the database access object (DAO).
+     * This allows the controller to interact with the shared application database
+     * for managing and retrieving crime records.
+     */
     public CrimesController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
@@ -394,6 +398,10 @@ public class CrimesController {
         slide.play();
     }
 
+    /**
+     * Refreshes the crime list by loading non-actioned records
+     * and keeping the current selection in sync.
+     */
     // Helper function to refresh crime table with updated crime data
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
@@ -407,6 +415,9 @@ public class CrimesController {
         }
     }
 
+    /**
+     * Sets up table columns and binds them to crime data fields.
+     */
     // Helper method to initialize table columns
     private void setupTableColumns() {
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
@@ -424,7 +435,9 @@ public class CrimesController {
                 new SimpleStringProperty(cd.getValue().isActioned() ? "Police Dispatched" : "Pending"));
     }
 
-    // Helper method to initialize date and time UI elements
+    /**
+     * Initialises date and time input controls with values and defaults.
+     */
     private void setupDateTimeControls() {
         // Hours 1-12
         for (int i = 1; i <= 12; i++) hourBox.getItems().add(String.format("%02d", i));
@@ -641,7 +654,9 @@ public class CrimesController {
         isCreatingNew = (crime.getId() == 0);
     }
 
-    // Helper method to create CrimeRecord object from form data
+    /**
+     * Creates a CrimeRecord from form input, including date/time and location.
+     */
     private CrimeRecord createRecordFromForm(CrimeRecord original) throws Exception {
         // Capture hour, minute, ap/pm values from UI
         int hour = Integer.parseInt(hourBox.getValue());
@@ -681,7 +696,9 @@ public class CrimesController {
         );
     }
 
-    // Helper method to clear form data
+    /**
+     * Clears all form fields and resets them to default values.
+     */
     private void clearForm() {
         idLabel.setText("-");
         severityLabel.setText("-");
@@ -696,6 +713,9 @@ public class CrimesController {
         setFormEditable(true);
     }
 
+    /**
+     * Enables or disables form fields based on edit mode.
+     */
     private void setFormEditable(boolean editable) {
         categoryComboBox.setDisable(!editable);
         datePicker.setDisable(!editable);
@@ -715,8 +735,9 @@ public class CrimesController {
         }
     }
 
-    // Ensures the UI state is consistent after a list refresh or deletion
-    // Selects the first item if available, otherwise clears the form
+    /**
+     * Updates selection after changes, selecting the first item or clearing the form.
+     */
     private void updateSelectionAfterChange() {
         if (!crimeTable.getItems().isEmpty()) {
             crimeTable.getSelectionModel().selectFirst();
@@ -756,6 +777,10 @@ public class CrimesController {
         });
     }
 
+
+    /**
+     * Fetches address suggestions asynchronously and updates the UI.
+     */
     private void fetchSuggestions(String query) {
         new Thread(() -> {
             try {
@@ -767,6 +792,9 @@ public class CrimesController {
         }).start();
     }
 
+    /**
+     * Displays address suggestions in a popup and handles selection.
+     */
     private void showSuggestions(List<String> suggestions) {
         suggestionsPopup.getItems().clear();
 

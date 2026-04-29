@@ -59,6 +59,9 @@ public class NavBarController {
             UIUtils.switchScene(stage, "crimes-view.fxml");
         }
     }
+    /**
+     * Navigates to the profile view.
+     */
 
     /**
      * Navigates to the user profile screen.

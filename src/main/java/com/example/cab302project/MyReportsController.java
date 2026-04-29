@@ -12,14 +12,11 @@ import javafx.util.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 /**
- * Controller for the My Reports screen (my-reports-view.fxml).
- *
- * Displays a filterable list of crime reports submitted by the currently
- * logged-in user. Selecting a report slides up a read-only detail panel
- * showing all fields for that record. Users can also navigate to the
- * crimes screen to submit a new report
+ * Controller responsible for displaying and managing the user's submitted crime reports.
+ * It loads reports specific to the logged-in user, displays them in both list and table views,
+ * and provides a detailed panel for viewing individual report information. It also integrates
+ * geocoding services to resolve and display readable addresses.
  */
 public class MyReportsController {
 
@@ -54,6 +51,7 @@ public class MyReportsController {
      * the DAO from the main application database instance.
      */
     public MyReportsController() {
+
         this.dao = HelloApplication.DATABASE;
     }
 
@@ -261,8 +259,7 @@ public class MyReportsController {
     // ── Actions ───────────────────────────────────────────────────────
 
     /**
-     * Navigates to the crimes screen so the user can submit a new report.
-     * Triggered by the "Submit New Report" button.
+     * Navigates to the report submission view.
      */
     @FXML
     public void onSubmitNewReport() {
