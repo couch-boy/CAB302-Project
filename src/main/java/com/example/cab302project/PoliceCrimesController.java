@@ -23,9 +23,20 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+/**
+ * Controller for the Police Crime Reports screen (Police-crimes-view.fxml).
+ *
+ * Provides police officers with a full crime management interface. A styled
+ * {@link ListView} lists all crime records with severity indicators. Selecting
+ * a record slides up a detail panel where the officer can edit the record,
+ * save changes, or mark it as dealt with. A hidden {@link TableView} is retained
+ * for internal data management; all visible display is driven by the ListView
+ *
+ * Also supports creating new crime reports and includes address autocomplete
+ * via {@link IGeocodingService} when the officer is entering a location.
+ */
 public class PoliceCrimesController {
 
-    // FXML UI elements
     @FXML private TableView<CrimeRecord> crimeTable;
     @FXML private TableColumn<CrimeRecord, Integer> idColumn;
     @FXML private TableColumn<CrimeRecord, CrimeCategory> categoryColumn;
@@ -35,39 +46,58 @@ public class PoliceCrimesController {
     @FXML private ListView<CrimeRecord> crimeListView;
     @FXML private VBox detailPanel;
     @FXML private Pane detailBackdrop;
-    @FXML private Button saveBtn, markDealtBtn;
+    @FXML private Button saveBtn;
+    @FXML private Button markDealtBtn;
     @FXML private ComboBox<CrimeCategory> categoryComboBox;
-    @FXML private Label idLabel, severityLabel, actionedStatusLabel;
+    @FXML private Label idLabel;
+    @FXML private Label severityLabel;
+    @FXML private Label actionedStatusLabel;
     @FXML private DatePicker datePicker;
-    @FXML private ComboBox<String> hourBox, minuteBox, ampmBox;
-    @FXML private TextField reporterField, locationField;
+    @FXML private ComboBox<String> hourBox;
+    @FXML private ComboBox<String> minuteBox;
+    @FXML private ComboBox<String> ampmBox;
+    @FXML private TextField reporterField;
+    @FXML private TextField locationField;
     @FXML private TextArea descriptionArea;
     @FXML private NavBarController navBarController;
     @FXML private Button hamburgerBtn;
     @FXML private StackPane policeCrimesRoot;
 
     private PoliceHamburgerMenu hamburgerMenu;
+
+    /**
+     * Cache of reverse-geocoded addresses keyed by crime record ID.
+     * Avoids redundant network calls when the same record is viewed multiple times.
+     */
     private final java.util.Map<Integer, String> addressCache = new java.util.HashMap<>();
 
     private IAppDAO dao;
-
     private IGeocodingService geocoder = new OpenStreetMapGeoCoder();
     @FXML
-
     private final ContextMenu suggestionsPopup = new ContextMenu();
+
+    /**
+     * Debounce timer that delays geocoding requests until the user pauses typing,
+     * reducing unnecessary API calls during fast input.
+     */
     private final PauseTransition suggestionDelay = new PauseTransition(Duration.millis(400));
 
     private boolean isCreatingNew = false;
 
-    // Constructor
+    /**
+     * Constructs a new PoliceCrimesController and initialises
+     * the DAO from the main application database instance.
+     */
     public PoliceCrimesController() {
-
-        //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
 
     /**
-     * This method runs automatically after the FXML has loaded
+     * Initialises the screen after the FXML has loaded.
+     *
+     * Sets up table columns, date/time controls, category dropdown,
+     * change listeners, loads data, wires up the styled ListView, configures
+     * address autocomplete, and attaches the police hamburger menu overlay.
      */
     @FXML
     public void initialize() {
@@ -85,12 +115,12 @@ public class PoliceCrimesController {
         // Set dropdown values
         categoryComboBox.getItems().setAll(CrimeCategory.values());
 
-        // Initialize Listener -> Auto-update Severity Label when Category changes
+        // Auto-update severity label when the category selection changes
         categoryComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) severityLabel.setText(newVal.getSeverity().toString());
         });
 
-        // Initialize Listener -> Update displayed CrimeRecord data when there are changes
+        // Populate form fields whenever a different row is selected in the table
         crimeTable.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 populateForm(newVal);
@@ -105,7 +135,7 @@ public class PoliceCrimesController {
         updateSelectionAfterChange();
         // Wire up styled ListView
         setupListView();
-        //  Initialize address autocomplete suggestions for location input
+        // Initialize address autocomplete suggestions for location input
         setupAddressAutocomplete();
 
         // Wire police hamburger menu after scene is attached
@@ -118,25 +148,23 @@ public class PoliceCrimesController {
             policeCrimesRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
         });
-
-
     }
 
     /**
-     * Handles saving a crime report based on form input.
-     * If the selected record is new (id == 0), it is added to the database.
-     * Existing records are treated as read-only and cannot be modified.
+     * Handles saving a crime report based on current form input.
+     *
+     * If the selected record has an ID of 0 it is treated as a new record
+     * and added to the database. Existing records with a valid ID are updated.
+     * Displays a success or error alert to confirm the outcome.
      */
     @FXML
     public void onSave() {
-        // Capture current CrimeRecord information to pass information for update
         CrimeRecord selected = crimeTable.getSelectionModel().getSelectedItem();
 
         // Avoid writing null to database
         if (selected == null) return;
 
         try {
-            // Create new CrimeRecord object using helper method to capture form data
             CrimeRecord recordFromForm = createRecordFromForm(selected);
 
             if (selected.getId() == 0) {
@@ -146,17 +174,13 @@ public class PoliceCrimesController {
                     refreshList();
                     updateSelectionAfterChange();
                 }
-            }
-            else
-            {
+            } else {
                 // Police can update existing crimes
                 if (dao.updateCrime(recordFromForm)) {
                     UIUtils.showAlert(Alert.AlertType.INFORMATION, "Updated", "Crime report updated successfully.");
                     refreshList();
                     updateSelectionAfterChange();
-                }
-                else
-                {
+                } else {
                     UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not update crime.");
                 }
             }
@@ -164,8 +188,13 @@ public class PoliceCrimesController {
             UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not save: " + e.getMessage());
         }
     }
+
     /**
-     * Add a new crime to the database after entering details
+     * Creates a blank crime record template and adds it to the list,
+     * prompting the officer to fill in the details before saving.
+     *
+     * Defaults to the Brisbane CBD coordinates and the current timestamp.
+     * Warns the officer if an unsaved new record already exists.
      */
     @FXML
     public void onAddNewCrime() {
@@ -176,41 +205,30 @@ public class PoliceCrimesController {
             return;
         }
 
-        // Create blank CrimeRecord object template
-        // Set id to 0
-        // Default lat/lon for Brisbane CBD
-        // UserSession.getInstance().getUser().getUsername() provides the reporter username
         isCreatingNew = true;
         CrimeRecord newRecord = new CrimeRecord(
                 0,
                 CrimeCategory.OTHER,
                 LocalDateTime.now(),
-                -27.4709,
-                153.0235,
+                -27.4709,  // Default latitude: Brisbane CBD
+                153.0235,  // Default longitude: Brisbane CBD
                 "",
                 UserSession.getInstance().getUser().getUsername(),
                 false
         );
 
-        // Add template to the table temporarily
+        // Add template to the table and select it so the form populates
         crimeTable.getItems().add(newRecord);
-
-        // Select template so the form populates with default values from the template
         crimeTable.getSelectionModel().select(newRecord);
-
-        // Scroll to the template in the crime table so the user sees the new entry
         crimeTable.scrollTo(newRecord);
 
-        // Display popup prompting user to fill in template details and save to store in database
         UIUtils.showAlert(Alert.AlertType.INFORMATION, "New Report",
                 "A new blank report has been created. Fill in the details and click 'Save Changes'.");
-
     }
 
-
-
     /**
-     * Return to the previous menu (dashboard)
+     * Navigates back to the dashboard screen.
+     * Used if the back button is still present in the FXML.
      */
     @FXML
     public void onBackButtonClick() {
@@ -218,7 +236,10 @@ public class PoliceCrimesController {
         UIUtils.switchScene(stage, "dashboard-view.fxml");
     }
 
-    // Helper function to refresh crime table and list view with updated crime data
+    /**
+     * Refreshes both the hidden table view and the visible list view with
+     * the latest data from the database, preserving the current selection index.
+     */
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
         crimeTable.getItems().setAll(dao.getAllCrimes());
@@ -230,6 +251,13 @@ public class PoliceCrimesController {
         }
     }
 
+    /**
+     * Configures the cell factory for the crime list view.
+     *
+     * Each cell renders a severity colour dot, crime category, dispatch status,
+     * geocoded location, and relative timestamp. Selecting a cell syncs the
+     * hidden table selection and slides up the detail panel.
+     */
     private void setupListView() {
         crimeListView.getItems().setAll(crimeTable.getItems());
 
@@ -249,6 +277,7 @@ public class PoliceCrimesController {
                 }
                 getStyleClass().add("crime-list-cell-populated");
 
+                // Choose dot colour based on severity tier
                 String dotColor = switch (crime.getCategory().getSeverity()) {
                     case CRITICAL -> "#DC143C";
                     case MEDIUM   -> "#FF8C00";
@@ -265,6 +294,7 @@ public class PoliceCrimesController {
                 Label status = new Label(statusText);
                 status.setStyle("-fx-font-size: 11px; -fx-text-fill: #6B7280;");
 
+                // Show cached address if available, otherwise show raw coordinates
                 String locationText = addressCache.containsKey(crime.getId())
                         ? addressCache.get(crime.getId())
                         : String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
@@ -298,6 +328,10 @@ public class PoliceCrimesController {
                 "-fx-background: transparent; -fx-border-width: 0;");
     }
 
+    /**
+     * Makes the detail panel visible and animates it sliding up from the bottom of the screen.
+     * The semi-transparent backdrop is also shown behind it.
+     */
     private void showDetailPanel() {
         detailBackdrop.setVisible(true);
         detailBackdrop.setManaged(true);
@@ -309,6 +343,10 @@ public class PoliceCrimesController {
         slide.play();
     }
 
+    /**
+     * Closes the detail panel by animating it sliding back down off-screen.
+     * Clears the list selection and hides the backdrop once the animation completes.
+     */
     @FXML
     public void onCloseDetail() {
         TranslateTransition slide = new TranslateTransition(Duration.millis(280), detailPanel);
@@ -323,6 +361,12 @@ public class PoliceCrimesController {
         slide.play();
     }
 
+    /**
+     * Returns a human-readable relative time string for the given timestamp.
+     *
+     * @param dt the timestamp to describe
+     * @return a string such as {@code "5m ago"}, {@code "2h ago"}, or {@code "3d ago"}
+     */
     private String getRelativeTime(LocalDateTime dt) {
         long mins = java.time.Duration.between(dt, LocalDateTime.now()).toMinutes();
         if (mins < 60) return mins + "m ago";
@@ -331,16 +375,19 @@ public class PoliceCrimesController {
         return (hrs / 24) + "d ago";
     }
 
-    // Helper method to initialize table columns
+    /**
+     * Configures the hidden table view's column cell value factories.
+     * Severity and timestamp columns use custom string converters for display formatting.
+     */
     private void setupTableColumns() {
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
         categoryColumn.setCellValueFactory(new PropertyValueFactory<>("category"));
 
-        // Check enum value for severity
+        // Derive severity string from the category's severity enum
         severityColumn.setCellValueFactory(cd ->
                 new SimpleStringProperty(cd.getValue().getCategory().getSeverity().toString()));
 
-        // Get formatted string from LocalDateTime timestamp
+        // Format LocalDateTime as a readable display string
         timestampColumn.setCellValueFactory(cd ->
                 new SimpleStringProperty(UIUtils.formatLocalDateTime(cd.getValue().getTimestamp())));
 
@@ -349,49 +396,55 @@ public class PoliceCrimesController {
         );
     }
 
-    // Helper method to initialize date and time UI elements
+    /**
+     * Populates the hour, minute, and AM/PM dropdowns with their valid options
+     * and sets default values of 12:00 PM.
+     */
     private void setupDateTimeControls() {
         // Hours 1-12
         for (int i = 1; i <= 12; i++) hourBox.getItems().add(String.format("%02d", i));
 
-        // Minutes in 15m increments
+        // Minutes in 15-minute increments
         minuteBox.getItems().addAll("00", "15", "30", "45");
 
         // AM/PM
         ampmBox.getItems().addAll("AM", "PM");
 
-        // Set comboboxes to default values during initialization
+        // Default values
         hourBox.setValue("12");
         minuteBox.setValue("00");
         ampmBox.setValue("PM");
     }
 
     /**
-     * Populates the form fields with data from the selected crime record.
-     * Also performs reverse geocoding to display a readable address instead of coordinates.
+     * Populates the detail form fields with data from the selected crime record.
+     *
+     * The timestamp is converted from 24-hour to 12-hour format for the
+     * hour and AM/PM dropdowns. Location is reverse-geocoded on a background
+     * thread to avoid blocking the UI.
+     *
+     * @param crime the {@link CrimeRecord} whose data should populate the form
      */
     private void populateForm(CrimeRecord crime) {
-        // Set ID label
         idLabel.setText(String.valueOf(crime.getId()));
 
-        // Get LocalDateTime object from CrimeRecord
         LocalDateTime dt = crime.getTimestamp();
-
         categoryComboBox.setValue(crime.getCategory());
         datePicker.setValue(dt.toLocalDate());
 
-        // Set AM/PM box based on 24hr time input value
+        // Set AM/PM based on 24-hour value
         int hour = dt.getHour();
         ampmBox.setValue(hour >= 12 ? "PM" : "AM");
 
-        // Display hours in 12hr format instead of 24hr (modulo 12)
+        // Convert to 12-hour display format
         int displayHour = (hour % 12 == 0) ? 12 : hour % 12;
         hourBox.setValue(String.format("%02d", displayHour));
 
-        // Display minutes by closest 15min interval (via integer division)
+        // Round minutes down to nearest 15-minute interval
         int mins = dt.getMinute();
         minuteBox.setValue(String.format("%02d", (mins / 15) * 15));
 
+        // Reverse geocode coordinates to address on a background thread
         new Thread(() -> {
             try {
                 String address = geocoder.reverseGeocode(crime.getLatitude(), crime.getLongitude());
@@ -412,22 +465,29 @@ public class PoliceCrimesController {
         isCreatingNew = (crime.getId() == 0);
     }
 
-    // Helper method to create CrimeRecord object from form data
+    /**
+     * Builds a {@link CrimeRecord} from the current form field values.
+     *
+     * Converts the 12-hour time selection back to 24-hour format, geocodes
+     * the entered address string to coordinates, and assembles a new record
+     * preserving the original ID and reporter from the existing record.
+     *
+     * @param original the existing record being edited, used to preserve immutable fields
+     * @return a new {@link CrimeRecord} populated with the form data
+     * @throws Exception if the address field is empty or geocoding fails
+     */
     private CrimeRecord createRecordFromForm(CrimeRecord original) throws Exception {
-        // Capture hour, minute, ap/pm values from UI
         int hour = Integer.parseInt(hourBox.getValue());
         int min = Integer.parseInt(minuteBox.getValue());
         String ampm = ampmBox.getValue();
 
-        // Convert back to 24h format for LocalDateTime
+        // Convert back to 24-hour format
         if (ampm.equals("PM") && hour < 12) hour += 12;
         if (ampm.equals("AM") && hour == 12) hour = 0;
 
         LocalDateTime newTimestamp = LocalDateTime.of(datePicker.getValue(), LocalTime.of(hour, min));
 
-        // Parse coordinates using regex to handle spaces automatically
         String address = locationField.getText().trim();
-
         if (address.isEmpty()) {
             throw new IllegalArgumentException("Please enter an address.");
         }
@@ -439,7 +499,6 @@ public class PoliceCrimesController {
         System.out.println("Address entered: " + address);
         System.out.println("Resolved coordinates: " + lat + ", " + lon);
 
-        // Bundle everything into the updated object
         return new CrimeRecord(
                 original.getId(),
                 categoryComboBox.getValue(),
@@ -447,13 +506,15 @@ public class PoliceCrimesController {
                 lat,
                 lon,
                 descriptionArea.getText(),
-                original.getReporter() ,
-                original.isActioned()// Preserve original raw reporter data (username/null)
-
+                original.getReporter(),
+                original.isActioned()
         );
     }
 
-    // Helper method to clear form data
+    /**
+     * Clears all form fields and resets labels to their default placeholder values.
+     * Called when no record is selected in the table.
+     */
     private void clearForm() {
         idLabel.setText("-");
         severityLabel.setText("-");
@@ -469,13 +530,20 @@ public class PoliceCrimesController {
         setFormEditable(true);
     }
 
+    /**
+     * Enables or disables all editable form fields.
+     *
+     * When {@code editable} is {@code false}, text fields are styled
+     * with a grey background to visually indicate they are read-only.
+     *
+     * @param editable {@code true} to make fields editable, {@code false} to lock them
+     */
     private void setFormEditable(boolean editable) {
         categoryComboBox.setDisable(!editable);
         datePicker.setDisable(!editable);
         hourBox.setDisable(!editable);
         minuteBox.setDisable(!editable);
         ampmBox.setDisable(!editable);
-
         locationField.setEditable(editable);
         descriptionArea.setEditable(editable);
 
@@ -488,8 +556,10 @@ public class PoliceCrimesController {
         }
     }
 
-    // Ensures the UI state is consistent after a list refresh or deletion
-    // Selects the first item if available, otherwise clears the form
+    /**
+     * Selects the first item in the table after a refresh or deletion,
+     * or clears the form if no items remain.
+     */
     private void updateSelectionAfterChange() {
         if (!crimeTable.getItems().isEmpty()) {
             crimeTable.getSelectionModel().selectFirst();
@@ -499,14 +569,15 @@ public class PoliceCrimesController {
     }
 
     /**
-     * Initializes address autocomplete for the location input, dynamically retrieving
-     * suggestions as the user types. Functionality is restricted to report creation mode
-     * to improve usability and prevent unnecessary interactions during viewing.
+     * Sets up real-time address autocomplete for the location text field.
+     *
+     * A {@link PauseTransition} debounces input so suggestions are only
+     * fetched after the user stops typing for 400ms. Autocomplete is suppressed
+     * when not in new-record creation mode to avoid unnecessary API calls
+     * while browsing existing records.
      */
-
     private void setupAddressAutocomplete() {
         locationField.textProperty().addListener((obs, oldText, newText) -> {
-
             if (!isCreatingNew) {
                 suggestionsPopup.hide();
                 return;
@@ -530,11 +601,16 @@ public class PoliceCrimesController {
         });
     }
 
+    /**
+     * Fetches address suggestions for the given query string on a background thread
+     * and updates the suggestions popup on the JavaFX thread when results arrive.
+     *
+     * @param query the partial address string to search for
+     */
     private void fetchSuggestions(String query) {
         new Thread(() -> {
             try {
                 List<String> suggestions = geocoder.getAddressSuggestions(query);
-
                 Platform.runLater(() -> showSuggestions(suggestions));
             } catch (Exception e) {
                 Platform.runLater(suggestionsPopup::hide);
@@ -542,6 +618,13 @@ public class PoliceCrimesController {
         }).start();
     }
 
+    /**
+     * Populates and shows the suggestions popup with the provided list of addresses.
+     * Each item, when clicked, fills the location field and hides the popup.
+     * Hides the popup if the suggestions list is null or empty.
+     *
+     * @param suggestions the list of address strings to display as menu items
+     */
     private void showSuggestions(List<String> suggestions) {
         suggestionsPopup.getItems().clear();
 
@@ -569,6 +652,13 @@ public class PoliceCrimesController {
         }
     }
 
+    /**
+     * Marks the currently selected crime record as dealt with by police.
+     *
+     * Sets the record's actioned flag to {@code true}, persists the change
+     * to the database, and refreshes the list. Displays a warning if no
+     * record is selected, or an error if the database update fails.
+     */
     @FXML
     public void onMarkAsDealt() {
         CrimeRecord selected = crimeTable.getSelectionModel().getSelectedItem();
@@ -578,14 +668,11 @@ public class PoliceCrimesController {
             return;
         }
 
-        // mark as actioned
         selected.setActioned(true);
 
-        // update database
         if (dao.updateCrime(selected)) {
             UIUtils.showAlert(Alert.AlertType.INFORMATION, "Updated", "Crime marked as dealt with.");
-
-            refreshList(); // reload table
+            refreshList();
             updateSelectionAfterChange();
         } else {
             UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not update crime.");
