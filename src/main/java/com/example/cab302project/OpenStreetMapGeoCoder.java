@@ -12,8 +12,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * Implementation of the geocoding service using OpenStreetMap Nominatim API.
+ * Provides functionality to convert addresses to coordinates, generate
+ * address suggestions, and perform reverse geocoding.
+ */
+
 public class OpenStreetMapGeoCoder implements IGeocodingService {
 
+    /**
+     * Converts an address into latitude and longitude using the API.
+     */
     @Override
     public  double[] geocodeAddress(String address) throws Exception {
         String encoded = URLEncoder.encode(address, StandardCharsets.UTF_8);
@@ -52,6 +61,9 @@ public class OpenStreetMapGeoCoder implements IGeocodingService {
         return new double[]{lat, lon};
     }
 
+    /**
+     * Retrieves address suggestions based on user input.
+     */
     @Override
     public List<String> getAddressSuggestions(String query) throws Exception {
         List<String> suggestions = new ArrayList<>();

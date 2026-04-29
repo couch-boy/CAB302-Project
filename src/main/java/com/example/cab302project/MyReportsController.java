@@ -12,7 +12,12 @@ import javafx.util.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+/**
+ * Controller responsible for displaying and managing the user's submitted crime reports.
+ * It loads reports specific to the logged-in user, displays them in both list and table views,
+ * and provides a detailed panel for viewing individual report information. It also integrates
+ * geocoding services to resolve and display readable addresses.
+ */
 public class MyReportsController {
 
     // FXML bindings
@@ -41,10 +46,17 @@ public class MyReportsController {
     private IGeocodingService geocoder = new OpenStreetMapGeoCoder();
     private static final Map<Integer, String> addressCache = new HashMap<>();
 
+    /**
+     * Initialises the controller with the shared database instance.
+     */
     public MyReportsController() {
+
         this.dao = HelloApplication.DATABASE;
     }
-
+    /**
+     * Loads the current user's reports, sets up UI components,
+     * and prepares the list view and navigation state.
+     */
     @FXML
     public void initialize() {
         // Load only this user's reports
@@ -82,7 +94,9 @@ public class MyReportsController {
     }
 
     // ── List setup ────────────────────────────────────────────────────
-
+    /**
+     * Configures the list view to display styled crime records.
+     */
     private void setupListView() {
         crimeListView.setCellFactory(lv -> new ListCell<CrimeRecord>() {
             {
@@ -149,7 +163,9 @@ public class MyReportsController {
     }
 
     // ── Detail panel ─────────────────────────────────────────────────
-
+    /**
+     * Populates the detail panel with selected crime information.
+     */
     private void populateDetailPanel(CrimeRecord crime) {
         detailIdLabel.setText(String.valueOf(crime.getId()));
         detailCategoryLabel.setText(crime.getCategory().toString());
@@ -186,6 +202,9 @@ public class MyReportsController {
         detailSeverityLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: " + colour + ";");
     }
 
+    /**
+     * Displays the detail panel with an animation.
+     */
     private void showDetailPanel() {
         detailBackdrop.setVisible(true);
         detailBackdrop.setManaged(true);
@@ -198,6 +217,9 @@ public class MyReportsController {
         slide.play();
     }
 
+    /**
+     * Closes the detail panel and clears the current selection.
+     */
     @FXML
     public void onCloseDetail() {
         TranslateTransition slide = new TranslateTransition(Duration.millis(280), detailPanel);
@@ -214,6 +236,9 @@ public class MyReportsController {
 
     // ── Actions ───────────────────────────────────────────────────────
 
+    /**
+     * Navigates to the report submission view.
+     */
     @FXML
     public void onSubmitNewReport() {
         Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
@@ -221,7 +246,9 @@ public class MyReportsController {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────
-
+    /**
+     * Loads and caches addresses for crimes in the background.
+     */
     private void preloadAddresses(List<CrimeRecord> crimes) {
         new Thread(() -> {
             for (CrimeRecord crime : crimes) {
@@ -240,7 +267,9 @@ public class MyReportsController {
             }
         }).start();
     }
-
+    /**
+     * Returns a human-readable relative time for a given date.
+     */
     private String getRelativeTime(java.time.LocalDateTime dt) {
         long days = java.time.temporal.ChronoUnit.DAYS.between(
                 dt.toLocalDate(), java.time.LocalDate.now());

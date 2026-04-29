@@ -18,10 +18,16 @@ public class HotspotsController {
 
     private IAppDAO dao;
 
+    /**
+     * Initialises the controller with the shared database instance.
+     */
     public HotspotsController() {
         this.dao = HelloApplication.DATABASE;
     }
 
+    /**
+     * Loads the hotspot map and sets the active navigation tab.
+     */
     @FXML
     public void initialize() {
         loadHotspotMap();
@@ -30,12 +36,18 @@ public class HotspotsController {
         }
     }
 
+    /**
+     * Navigates back to the dashboard view.
+     */
     @FXML
     public void onBackButtonClick() {
         Stage stage = (Stage) mapView.getScene().getWindow();
         UIUtils.switchScene(stage, "dashboard-view.fxml");
     }
 
+    /**
+     * Loads the map and injects hotspot data after it finishes loading.
+     */
     private void loadHotspotMap() {
         WebEngine engine = mapView.getEngine();
 
@@ -62,6 +74,9 @@ public class HotspotsController {
         engine.load(url);
     }
 
+    /**
+     * Groups nearby crimes into hotspots based on a radius.
+     */
     private List<Hotspot> buildHotspots(List<CrimeRecord> crimes, double radiusKm) {
         List<Hotspot> hotspots = new ArrayList<>();
         boolean[] used = new boolean[crimes.size()];
@@ -99,6 +114,9 @@ public class HotspotsController {
         return hotspots;
     }
 
+    /**
+     * Calculates distance between two coordinates in kilometres.
+     */
     private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
         double earthRadius = 6371.0;
 
@@ -113,6 +131,9 @@ public class HotspotsController {
         return earthRadius * c;
     }
 
+    /**
+     * Converts hotspot data into JSON format for the map.
+     */
     private String buildHotspotJson(List<Hotspot> hotspots) {
         StringBuilder sb = new StringBuilder("[");
 

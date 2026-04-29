@@ -29,7 +29,9 @@ public class NavBarController {
     @FXML private VBox navProfile;
 
     // ── Navigation handlers ──────────────────────────────────────────
-
+    /**
+     * Navigates to the map/dashboard view based on user role.
+     */
     @FXML
     public void onMap() {
         Stage stage = (Stage) btnMap.getScene().getWindow();
@@ -40,6 +42,10 @@ public class NavBarController {
         }
     }
 
+    /**
+     * Navigates to the crimes view based on user role.
+     */
+
     @FXML
     public void onCrimes() {
         Stage stage = (Stage) btnCrimes.getScene().getWindow();
@@ -49,6 +55,9 @@ public class NavBarController {
             UIUtils.switchScene(stage, "crimes-view.fxml");
         }
     }
+    /**
+     * Navigates to the profile view.
+     */
 
     @FXML
     public void onProfile() {

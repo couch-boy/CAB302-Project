@@ -126,6 +126,10 @@ public class DashboardController {
         return sb.toString();
     }
 
+    /**
+     * Loads the map view and, once loaded, retrieves crime data,
+     * generates hotspots, and injects them into the map for display.
+     */
     private void loadMap() {
         if (mapView == null) {
             System.out.println("mapView is null");
@@ -220,6 +224,9 @@ public class DashboardController {
         UIUtils.switchScene(stage, "profile-view.fxml");
     }
 
+    /**
+     * Navigates to the hotspots view scene.
+     */
     @FXML
     public void viewHotspots() {
         Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
