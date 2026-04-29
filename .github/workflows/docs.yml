@@ -1,0 +1,23 @@
+name: Javadoc & GitHub Pages
+
+permissions:
+  contents: write
+
+# Publish javadocs to github pages automatically on every push to main
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Javadoc to GitHub Pages
+        uses: dev-vince/actions-publish-javadoc@v1.0.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          java-version: '21'
+          java-distribution: 'temurin'
+          project: maven
+          branch: 'gh-pages'
