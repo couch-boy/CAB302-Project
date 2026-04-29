@@ -7,87 +7,100 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.stage.Stage;
 
+/**
+ * Controller class for the Login screen (login-view.fxml).
+ *
+ * Handles user authentication by interfacing with the {@link IAppDAO} and
+ * manages navigation between the login, registration, and dashboard screens.
+ */
 public class LoginController {
 
-    // FXML UI elements
+    /** Input field for the user's account username. */
     @FXML
     private TextField usernameField;
+
+    /** Input field for the user's account password. */
     @FXML
     private PasswordField passwordField;
 
+    /** Data Access Object used for user validation. */
     private IAppDAO dao;
 
-    // Constructor
+    /**
+     * Initializes a new LoginController.
+     * Connects to the global database instance defined in {@link HelloApplication}.
+     */
     public LoginController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
 
     /**
-     * Validate user information and attempt to move to the dashboard
+     * Handles the login button action.
+     * Validates that input fields are not empty, verifies credentials via the DAO,
+     * and switches to the appropriate dashboard based on the user's {@link User#isPolice()} status.
+     *
+     * <p>If authentication is successful, the user details are stored in {@link UserSession}.</p>
      */
     @FXML
     public void onLogin() {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
-        //check if fields are empty before hitting the database
+        // Check if fields are empty before hitting the database
         if (username.isEmpty() || password.isEmpty()) {
             UIUtils.showAlert(Alert.AlertType.WARNING, "Form Error!", "Please enter both username and password.");
             return;
         }
 
-        //get user object using dao function
+        // Get user object using dao function
         User authenticatedUser = dao.validateUser(username, password);
 
+        // If user is successfully validated
         if (authenticatedUser != null) {
-            //showAlert(AlertType.INFORMATION, "Login Successful!", "Welcome, " + username + "!");
+
+            // Log user in to UserSession
             UserSession.login(authenticatedUser);
 
-            //get the current stage (window) by referencing an ui element
+            // Get the current stage (window) by referencing a UI element
             Stage stage = (Stage) usernameField.getScene().getWindow();
-            //load dashboard view
 
-            // ========== ADD THIS CODE WHEN DATABASE IS DONE ===========
+            // Directs user to the correct dashboard based on role
             if (authenticatedUser.isPolice()) {
                 UIUtils.switchScene(stage, "police-dashboard-view.fxml");
             } else {
                 UIUtils.switchScene(stage, "dashboard-view.fxml");
             }
 
-
-            /*
-            // ============= DELETE CODE SECTION BELOW=================
-            if (username.equals("QPS 123") && password.equals("Password")) {
-                UIUtils.switchScene(stage, "police-dashboard-view.fxml");
-            } else {
-                UIUtils.switchScene(stage, "dashboard-view.fxml");
-            }
-            */
-
         } else {
             UIUtils.showAlert(AlertType.ERROR, "Login Failed!", "Invalid username or password.");
         }
-
     }
 
     /**
-     * Move to the new user registration screen
+     * Handles the register button action.
+     * Navigates the user to the registration screen.
      */
     @FXML
     public void onRegister() {
 
-        //get the current stage (window) by referencing a ui element
+        // Get the current stage (window) by referencing a UI element
         Stage stage = (Stage) usernameField.getScene().getWindow();
-        //load register view
+        // Load register view
         UIUtils.switchScene(stage, "register-view.fxml");
     }
 
-    /** Tab: Log In - already active, no-op */
+    /**
+     * Action handler for the Login tab button.
+     * Currently a no-op as the user is already on the login screen.
+     */
     @FXML
     public void onTabLogin() {}
 
-    /** Tab: Sign Up - navigate to register */
+    /**
+     * Action handler for the Sign Up tab button.
+     * Redirects the user to the registration screen.
+     */
     @FXML
     public void onTabSignup() {
         onRegister();
