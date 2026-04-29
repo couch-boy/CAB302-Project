@@ -220,6 +220,121 @@ public class AppTest {
     JORDAN APP TESTING END
      */
 
+    /*
+    FINN APP TESTING START
+     */
+
+    // Test 11: User.setHomeLocation() rejects out-of-range coordinates
+    // This test verifies that invalid lat/lon values are silently rejected
+    // and the original valid coordinates are preserved
+    @Test
+    void testUserSetHomeLocationValidation() {
+        User user = new User(
+                "alice", "pass", "alice@email.com",
+                "0400000000", -27.4709, 153.0235, false, UserType.REGULAR
+        );
+
+        // Valid coordinates should update
+        user.setHomeLocation(-33.8688, 151.2093);
+        assertEquals(-33.8688, user.getHomeLatitude(), 0.0001);
+        assertEquals(151.2093, user.getHomeLongitude(), 0.0001);
+
+        // Invalid latitude (outside -90 to 90) should not update
+        user.setHomeLocation(999.0, 151.2093);
+        assertEquals(-33.8688, user.getHomeLatitude(), 0.0001);
+
+        // Invalid longitude (outside -180 to 180) should not update
+        user.setHomeLocation(-33.8688, 999.0);
+        assertEquals(151.2093, user.getHomeLongitude(), 0.0001);
+
+        // Both invalid should not update either field
+        user.setHomeLocation(-999.0, -999.0);
+        assertEquals(-33.8688, user.getHomeLatitude(), 0.0001);
+        assertEquals(151.2093, user.getHomeLongitude(), 0.0001);
+    }
+
+    // Test 12: User.isPolice() returns correct value based on UserType
+    // Verifies User.isPolice() returns true only for police type users,
+    // and UserType.toString() returns readable display name
+    @Test
+    void testUserTypeAndIsPolice() {
+        User regularUser = new User(
+                "bob", "pass", "bob@email.com",
+                "0400000001", 0, 0, false, UserType.REGULAR
+        );
+        User policeUser = new User(
+                "officer", "pass", "cop@law.com",
+                "0400000002", 0, 0, false, UserType.POLICE
+        );
+
+        assertFalse(regularUser.isPolice());
+        assertTrue(policeUser.isPolice());
+
+        // UserType.toString() should return display name, not enum name
+        assertEquals("Regular User",    UserType.REGULAR.toString());
+        assertEquals("Police Officer",  UserType.POLICE.toString());
+        assertEquals("Regular User",    UserType.REGULAR.getDisplayName());
+    }
+
+    // Test 13: UIUtils database date formatting round-trip
+    // Verifies LocalDateTime stays intact through database and back to string
+    @Test
+    void testDatabaseDateTimeRoundTrip() {
+        LocalDateTime original = LocalDateTime.of(2024, 11, 5, 14, 30, 0);
+
+        // Format to DB string then parse back - should match exactly
+        String dbString = UIUtils.formatForDb(original);
+        assertEquals("2024-11-05 14:30:00", dbString);
+
+        LocalDateTime parsed = UIUtils.parseFromDb(dbString);
+        assertEquals(original, parsed);
+
+        // Midnight edge case
+        LocalDateTime midnight = LocalDateTime.of(2025, 1, 1, 0, 0, 0);
+        assertEquals("2025-01-01 00:00:00", UIUtils.formatForDb(midnight));
+        assertEquals(midnight, UIUtils.parseFromDb("2025-01-01 00:00:00"));
+    }
+
+    // Test 14: UIUtils.formatLocalDateTime() produces the correct UI display format
+    // Verifies date format used and null inputs return empty string
+    @Test
+    void testUIDisplayDateFormatting() {
+        LocalDateTime dt = LocalDateTime.of(2024, 6, 15, 9, 5);
+        assertEquals("15/06/2024 09:05", UIUtils.formatLocalDateTime(dt));
+
+        // Single-digit day and month should be zero-padded
+        LocalDateTime padded = LocalDateTime.of(2025, 3, 7, 8, 0);
+        assertEquals("07/03/2025 08:00", UIUtils.formatLocalDateTime(padded));
+
+        // Null input should return empty string, not throw an exception
+        assertEquals("", UIUtils.formatLocalDateTime(null));
+    }
+
+    // Test 15: User username is immutable after construction
+    // Verifies user cannot change username and it always returns original username
+    @Test
+    void testUserUsernameIsImmutable() {
+        User user = new User(
+                "charlie", "pass", "c@email.com",
+                "0400000003", 0, 0, false, UserType.REGULAR
+        );
+
+        assertEquals("charlie", user.getUsername());
+
+        // Confirm no setUsername method exists on User
+        boolean hasSetUsername = false;
+        for (java.lang.reflect.Method m : User.class.getMethods()) {
+            if (m.getName().equals("setUsername")) {
+                hasSetUsername = true;
+                break;
+            }
+        }
+        assertFalse(hasSetUsername, "User should not have a setUsername() method");
+    }
+
+    /*
+    FINN APP TESTING END
+     */
 
 
 }
