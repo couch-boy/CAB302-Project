@@ -13,6 +13,12 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Controller for the police dashboard screen (police-dashboard-view.fxml).
+ *
+ * Displays the hotspot map as the home screen for police users.
+ * Mirrors the public dashboard but uses the police hamburger menu and navigation.
+ */
 public class PoliceDashboardController {
 
     // FXML UI elements
@@ -34,7 +40,12 @@ public class PoliceDashboardController {
         this.dao = HelloApplication.DATABASE;
     }
 
-    // Builds hotspot cluster list from raw crime records
+    /**
+     * Clusters nearby crimes into hotspots based on a radius, averaging their coordinates.
+     * @param crimes list of all crime records to cluster
+     * @param radiusKm the radius in kilometres to group crimes together
+     * @return a list of Hotspot objects representing each cluster
+     */
     private List<Hotspot> buildHotspots(List<CrimeRecord> crimes, double radiusKm) {
         List<Hotspot> hotspots = new ArrayList<>();
         boolean[] used = new boolean[crimes.size()];
@@ -72,6 +83,10 @@ public class PoliceDashboardController {
         return hotspots;
     }
 
+    /**
+     * Calculates the distance in kilometres between two lat/lon coordinates using the Haversine formula.
+     * @return distance in kilometres between the two points
+     */
     private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
         double earthRadius = 6371.0;
 
@@ -86,6 +101,11 @@ public class PoliceDashboardController {
         return earthRadius * c;
     }
 
+    /**
+     * Converts a list of Hotspot objects into a JSON string for passing to the hotspots map.
+     * @param hotspots list of hotspots to serialise
+     * @return a JSON array string of hotspot objects with lat, lon and count fields
+     */
     private String buildHotspotJson(List<Hotspot> hotspots) {
         StringBuilder sb = new StringBuilder("[");
 
@@ -107,6 +127,10 @@ public class PoliceDashboardController {
         return sb.toString();
     }
 
+    /**
+     * Loads hotspots-map.html into the WebView and injects hotspot data via JavaScript
+     * once the page has finished loading.
+     */
     private void loadMap() {
         if (mapView == null) {
             System.out.println("mapView is null");

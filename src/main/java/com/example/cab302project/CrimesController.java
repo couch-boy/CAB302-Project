@@ -35,6 +35,12 @@ import javafx.util.Duration;
 
 import java.util.List;
 
+/**
+ * Controller for the public crime reports screen (crimes-view.fxml).
+ *
+ * Manages the List and Map tab views, the sliding detail panel,
+ * crime report submission, address autocomplete and the hamburger menu.
+ */
 public class CrimesController {
 
     // FXML UI elements
@@ -182,7 +188,7 @@ public class CrimesController {
     }
 
     /**
-     * Switch to the List tab - shows the crime list, hides the map
+     * Shows the list pane and marks the List tab as active.
      */
     @FXML
     public void onListTabClick() {
@@ -190,8 +196,8 @@ public class CrimesController {
     }
 
     /**
-     * Switch to the Map tab - shows the crime map, hides the list.
-     * The crime map is loaded lazily on first open.
+     * Shows the map pane and marks the Map tab as active.
+     * Loads the crime map on first open only.
      */
     @FXML
     public void onMapTabClick() {
@@ -203,8 +209,8 @@ public class CrimesController {
     }
 
     /**
-     * Applies active/inactive styling to tab buttons and shows the correct pane.
-     * listActive=true shows the list pane; listActive=false shows the map pane.
+     * Toggles visibility between the list and map panes and updates tab button styling.
+     * @param listActive true shows the list pane, false shows the map pane
      */
     private void setActiveTab(boolean listActive) {
         if (listActive) {
@@ -225,7 +231,8 @@ public class CrimesController {
     }
 
     /**
-     * Loads crime-map.html into the crimeMapView WebView and injects crime markers.
+     * Loads crime-map.html into the WebView and injects crime marker data via JavaScript
+     * once the page has finished loading.
      */
     private void loadCrimeMap() {
         if (crimeMapView == null) return;
@@ -257,7 +264,11 @@ public class CrimesController {
         engine.load(resource.toExternalForm());
     }
 
-    // Builds the JSON array of crime markers for the crime map
+    /**
+     * Converts a list of CrimeRecord objects into a JSON string for the crime map markers.
+     * @param crimes list of crimes to serialise
+     * @return a JSON array string with lat, lon and severity fields for each crime
+     */
     private String buildCrimeJson(List<CrimeRecord> crimes) {
         StringBuilder sb = new StringBuilder("[");
 
@@ -469,9 +480,8 @@ public class CrimesController {
     }
 
     /**
-     * Sets up the styled ListView with custom cells.
-     * Selection on the ListView mirrors to the hidden TableView so all
-     * existing controller logic continues to work unchanged.
+     * Builds the styled ListView with custom cells showing category, status, location and time.
+     * Selection on the ListView mirrors to the hidden TableView so all existing logic stays intact.
      */
     private void setupListView() {
         crimeListView.getItems().setAll(crimeTable.getItems());
@@ -550,11 +560,8 @@ public class CrimesController {
     }
 
     /**
-     * Shows the detail panel as a bottom sheet that slides up.
-     * showSave determines whether the Save Changes button is visible:
-     *   true when creating a new report (any user type)
-     *   false when a public user is viewing an existing report
-     *   always true for police users regardless of showSave
+     * Slides the detail panel up from the bottom of the screen and dims the background.
+     * @param showSave true shows the Save button, used when creating a new report
      */
     private void showDetailPanel(boolean showSave) {
         boolean canSave = UserSession.isPolice() || showSave;

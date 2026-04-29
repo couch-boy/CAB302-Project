@@ -71,9 +71,9 @@ public class NavBarController {
     }
 
     /**
-     * Highlights the label text and recolours the FontIcon child of the VBox.
-     * FontIcon is looked up by type from the VBox children rather than fx:id
-     * since FontIcon cannot be injected directly via FXML.
+     * Applies active styling to the label and recolours the FontIcon in the given nav VBox.
+     * @param navBox the VBox containing the FontIcon and Label for this tab
+     * @param label the Label to apply the active style to
      */
     private void setActive(VBox navBox, Label label) {
         label.getStyleClass().setAll("nav-btn-label-active");
