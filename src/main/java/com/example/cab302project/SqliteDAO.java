@@ -4,12 +4,24 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * SQLite-based implementation of the {@link IAppDAO} interface.
+ * This class handles all persistent data storage for the application using an
+ * embedded SQLite database. It manages table creation, data mapping, and CRUD
+ * operations for users and crime records.
+ *
+ * <p>The database connection is managed via the {@link SqliteConnection} singleton.</p>
+ */
 public class SqliteDAO implements IAppDAO{
-    //database connection
+
+    // Database connection instance
     private Connection connection;
 
-    //created DAO and get db instance, then ensure tables exist
-    //populate tables with sample data
+    /**
+     * Initializes the SQLite DAO.
+     * Establishes a connection to the database and ensures that the required
+     * 'users' and 'crimes' tables exist.
+     */
     public SqliteDAO() {
         connection = SqliteConnection.getInstance();
         createUserTable();
@@ -20,7 +32,10 @@ public class SqliteDAO implements IAppDAO{
         //insertSampleCrimeData();
     }
 
-    //create user table if it does not exist
+    /**
+     * Creates the 'users' table if it does not already exist in the database.
+     * Schema includes username (PK), password, contact info, preferences, and type.
+     */
     private void createUserTable() {
         try (Statement statement = connection.createStatement()) {
             String query = "CREATE TABLE IF NOT EXISTS users ("
@@ -39,7 +54,11 @@ public class SqliteDAO implements IAppDAO{
         }
     }
 
-    //create crimes table if it does not exist
+    /**
+     * Creates the 'crimes' table if it does not already exist.
+     * Schema includes an auto-incrementing ID (PK), category, timestamp, coordinates,
+     * description, reporter reference, and action status.
+     */
     private void createCrimesTable() {
         try (Statement statement = connection.createStatement()) {
 
@@ -59,7 +78,10 @@ public class SqliteDAO implements IAppDAO{
         }
     }
 
-    //insert sample user data for testing
+    /**
+     * Clears existing user data and inserts pre-defined testing accounts.
+     * <b>Note:</b> This is intended for development and testing environments only.
+     */
     private void insertSampleUserData() {
         try (Statement statement = connection.createStatement()) {
             // Clear before inserting
@@ -75,7 +97,10 @@ public class SqliteDAO implements IAppDAO{
         }
     }
 
-    //insert sample user data for testing
+    /**
+     * Clears existing crime data and inserts pre-defined testing records.
+     * <b>Note:</b> This is intended for development and testing environments only.
+     */
     private void insertSampleCrimeData() {
         try (Statement statement = connection.createStatement()) {
             // Clear before inserting
@@ -93,7 +118,8 @@ public class SqliteDAO implements IAppDAO{
         }
     }
 
-    // User validation used for login request
+    /** {@inheritDoc} */
+    @Override
     public User validateUser(String username, String password) {
         String query = "SELECT * FROM users WHERE username = ? AND password = ?";
 
@@ -114,7 +140,8 @@ public class SqliteDAO implements IAppDAO{
         return null;
     }
 
-    // Add new user for user registration
+    /** {@inheritDoc} */
+    @Override
     public boolean addUser(User user) {
         String query = "INSERT INTO users (username, password, email, phone, homelatitude, homelongitude, darkmode, usertype) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -138,7 +165,8 @@ public class SqliteDAO implements IAppDAO{
         }
     }
 
-    // Update stored user details
+    /** {@inheritDoc} */
+    @Override
     public boolean updateUser(User user) {
         String query = "UPDATE users SET password = ?, email = ?, phone = ?, " +
                 "homelatitude = ?, homelongitude = ?, darkmode = ?, usertype = ? WHERE username = ?";
@@ -160,7 +188,8 @@ public class SqliteDAO implements IAppDAO{
         }
     }
 
-    // Add new crime entry
+    /** {@inheritDoc} */
+    @Override
     public boolean addCrime(CrimeRecord crime) {
 
         String query = "INSERT INTO crimes (category, timestamp, latitude, longitude, description, reporter) " +
@@ -183,7 +212,8 @@ public class SqliteDAO implements IAppDAO{
         }
     }
 
-    // Update stored crime details
+    /** {@inheritDoc} */
+    @Override
     public boolean updateCrime(CrimeRecord crime) {
         //sql statement to update the fields for a specific id
         String query = "UPDATE crimes SET category = ?, timestamp = ?, latitude = ?, longitude = ?, description = ?, reporter = ?, actioned = ? WHERE id = ?";
@@ -210,7 +240,8 @@ public class SqliteDAO implements IAppDAO{
         }
     }
 
-    // Delete a crime record via crime ID
+    /** {@inheritDoc} */
+    @Override
     public boolean deleteCrime(int id) {
         String query = "DELETE FROM crimes WHERE id = ?";
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -222,7 +253,8 @@ public class SqliteDAO implements IAppDAO{
         }
     }
 
-    // Get CrimeRecord by crime ID
+    /** {@inheritDoc} */
+    @Override
     public CrimeRecord getCrimeById(int id) {
         String query = "SELECT * FROM crimes WHERE id = ?";
 
@@ -242,7 +274,8 @@ public class SqliteDAO implements IAppDAO{
         return null;
     }
 
-    // Get list of CrimeRecord objects reported by a specific user
+    /** {@inheritDoc} */
+    @Override
     public List<CrimeRecord> getCrimesByUser(String username) {
         String query = "SELECT * FROM crimes WHERE reporter = ?";
         List<CrimeRecord> crimesList = new ArrayList<>();
@@ -263,7 +296,8 @@ public class SqliteDAO implements IAppDAO{
         return crimesList;
     }
 
-    // Get a list of all CrimeRecord objects
+    /** {@inheritDoc} */
+    @Override
     public List<CrimeRecord> getAllCrimes() {
         String query = "SELECT * FROM crimes";
         List<CrimeRecord> crimesList = new ArrayList<>();
@@ -283,7 +317,14 @@ public class SqliteDAO implements IAppDAO{
         return crimesList;
     }
 
-    // Helper method to parse sql data into CrimeRecord object
+    /**
+     * Maps a single row from the 'crimes' ResultSet into a {@link CrimeRecord} object.
+     * Handles conversion of SQL strings to Java Enums and LocalDateTimes.
+     *
+     * @param resultSet The active ResultSet pointing to a crime record row.
+     * @return A fully populated {@link CrimeRecord} object.
+     * @throws SQLException If database access fails or column names are incorrect.
+     */
     private CrimeRecord mapResultSetToCrime(ResultSet resultSet) throws SQLException {
         return new CrimeRecord(
                 resultSet.getInt("id"),
@@ -297,7 +338,13 @@ public class SqliteDAO implements IAppDAO{
         );
     }
 
-    // Helper method to parse sql data into user object
+    /**
+     * Maps a single row from the 'users' ResultSet into a {@link User} object.
+     *
+     * @param resultSet The active ResultSet pointing to a user record row.
+     * @return A fully populated {@link User} object.
+     * @throws SQLException If database access fails or column names are incorrect.
+     */
     private User mapResultSetToUser(ResultSet resultSet) throws SQLException {
         return new User(
                 resultSet.getString("username"),

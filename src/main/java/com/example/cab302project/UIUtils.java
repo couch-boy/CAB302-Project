@@ -10,46 +10,70 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * A collection of static utility methods for UI management, data validation,
+ * and formatting. This class provides centralized logic for common tasks
+ * such as scene switching, alert display, and date-time parsing.
+ */
 public class UIUtils {
-    // For DB storage
+
+    /**
+     * Formatter for database-compatible timestamp strings.
+     * Format: {@code yyyy-MM-dd HH:mm:ss}
+     */
     public static final DateTimeFormatter DB_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    // For User Interface display
+
+    /**
+     * Formatter for user-friendly display of timestamps.
+     * Format: {@code dd/MM/yyyy HH:mm}
+     */
     public static final DateTimeFormatter DISPLAY_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     /**
-     * @param dateTime A LocalDateTime object to be formatted
-     * @return A String containing timestamp information, formatted for DB insertion
+     * Formats a {@link LocalDateTime} object into a string suitable for SQLite storage.
+     *
+     * @param dateTime The date and time to be formatted.
+     * @return A string representation of the timestamp in DB format.
      */
     public static String formatForDb(LocalDateTime dateTime) {
         return dateTime.format(DB_FORMATTER);
     }
 
     /**
-     * @param dateString A timestamp String directly from the DB
-     * @return A LocalDateTime object for use by the program/UI
+     * Parses a timestamp string retrieved from the database into a {@link LocalDateTime} object.
+     *
+     * @param dateString The raw timestamp string from the database.
+     * @return A {@link LocalDateTime} representation of the input string.
      */
     public static LocalDateTime parseFromDb(String dateString) {
         return LocalDateTime.parse(dateString, DB_FORMATTER);
     }
 
     /**
-     * @param dateTime LocalDateTime object to be formatted
-     * @return A formatted String for displaying a date and time in the UI
+     * Formats a {@link LocalDateTime} for display within the application UI.
+     *
+     * @param dateTime The date and time to format.
+     * @return A formatted string (dd/MM/yyyy HH:mm), or an empty string if input is null.
      */
     public static String formatLocalDateTime(LocalDateTime dateTime) {
         return (dateTime == null) ? "" : dateTime.format(DISPLAY_FORMATTER);
     }
 
     /**
-     * @param value A boolean value
-     * @return A Yes/No representation of the input value
+     * Converts a boolean value into a "Yes" or "No" string for UI display.
+     *
+     * @param value The boolean state to represent.
+     * @return "Yes" if true, "No" if false.
      */
     public static String formatBoolean(boolean value) {
         return value ? "Yes" : "No";
     }
 
     /**
-     * Basic regex email validation.
+     * Validates an email address using a standard regular expression.
+     *
+     * @param email The string to validate.
+     * @return true if the email format is valid; false if null or invalid.
      */
     public static boolean isValidEmail(String email) {
         if (email == null) return false;
@@ -58,7 +82,10 @@ public class UIUtils {
     }
 
     /**
-     * Checks if phone is exactly 10 digits.
+     * Validates that a phone number consists of exactly 10 numeric digits.
+     *
+     * @param phone The string to validate.
+     * @return true if the string contains exactly 10 digits; false otherwise.
      */
     public static boolean isValidPhone(String phone) {
         if (phone == null) return false;
@@ -67,7 +94,22 @@ public class UIUtils {
     }
 
     /**
-     * Shows a standard JavaFX alert dialog.
+     * Validates if a set of coordinates is within global bounds.
+     *
+     * @param lat Latitude to check.
+     * @param lon Longitude to check.
+     * @return true if coordinates are valid, false otherwise.
+     */
+    public static boolean isValidCoordinate(double lat, double lon) {
+        return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+    }
+
+    /**
+     * Displays a standardized JavaFX Alert dialog to the user.
+     *
+     * @param alertType The {@link AlertType} (e.g., INFORMATION, ERROR, WARNING).
+     * @param title The text to display in the window title bar.
+     * @param message The main content text to display in the alert body.
      */
     public static void showAlert(AlertType alertType, String title, String message) {
         Alert alert = new Alert(alertType);
@@ -78,9 +120,11 @@ public class UIUtils {
     }
 
     /**
-     * Swaps the current scene to a new FXML file.
-     * @param stage The stage to update (usually retrieved from a node)
-     * @param fxmlFile The name of the FXML file (e.g., "dashboard-view.fxml")
+     * Transitions the application to a different scene by loading an FXML file.
+     * This method uses the global width and height constants defined in {@link HelloApplication}.
+     *
+     * @param stage The current {@link Stage} to update.
+     * @param fxmlFile The filename of the FXML resource (e.g., "dashboard-view.fxml").
      */
     public static void switchScene(Stage stage, String fxmlFile) {
         try {

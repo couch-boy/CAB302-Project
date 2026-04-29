@@ -6,28 +6,54 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+/**
+ * Controller class for the User Registration screen (register-view.fxml).
+ *
+ * Handles the creation of new user accounts, input validation (email and phone),
+ * and navigation back to the login screen.
+ */
 public class RegisterController {
 
-    // FXML UI elements
+    /** Input field for the desired username. */
     @FXML
     private TextField usernameField;
+
+    /** Input field for the account password. */
     @FXML
     private PasswordField passwordField;
+
+    /** Input field for the user's email address. */
     @FXML
     private TextField emailField;
+
+    /** Input field for the user's phone number. */
     @FXML
     private TextField phoneField;
 
+    /** Data Access Object used for persisting new user records. */
     private IAppDAO dao;
 
-    // Constructor
+    /**
+     * Initializes a new RegisterController.
+     * Links the controller to the global {@link IAppDAO} instance defined in {@link HelloApplication}.
+     */
     public RegisterController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
 
     /**
-     * Attempt to register a new user to the database using entered details
+     * Handles the registration logic when the user submits the form.
+     * <p>
+     * This method performs the following steps:
+     * </p>
+     * <ul>
+     *     <li>Trims and extracts text from all input fields.</li>
+     *     <li>Checks for empty fields.</li>
+     *     <li>Validates the format of the email and phone number via {@link UIUtils}.</li>
+     *     <li>Creates a new {@link User} object with default coordinates (Brisbane CBD).</li>
+     *     <li>Attempts to persist the user via the DAO, checking for username uniqueness.</li>
+     * </ul>
      */
     @FXML
     public void onRegisterAccount() {
@@ -71,7 +97,8 @@ public class RegisterController {
     }
 
     /**
-     * Return to user login view
+     * Navigates the application back to the login screen.
+     * Retrieves the current {@link Stage} from the UI context to perform the scene switch.
      */
     @FXML
     public void onReturnToLogin() {
@@ -81,13 +108,19 @@ public class RegisterController {
         UIUtils.switchScene(stage, "login-view.fxml");
     }
 
-    /** Tab: Log In - navigate to login */
+    /**
+     * Action handler for the Login tab button.
+     * Triggers the navigation back to the login view.
+     */
     @FXML
     public void onTabLogin() {
         onReturnToLogin();
     }
 
-    /** Tab: Sign Up - already active, no-op */
+    /**
+     * Action handler for the Sign Up tab button.
+     * Currently a no-op as the user is already on the registration screen.
+     */
     @FXML
     public void onTabSignup() {}
 }
