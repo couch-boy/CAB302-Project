@@ -456,7 +456,8 @@ public class CrimesController {
 
     /**
      * Returns a human-readable relative time string from a LocalDateTime.
-     * e.g. "Today", "1 day ago", "3 days ago"
+     * @param timestamp the timestamp to describe
+     * @return a string such as "Today", "1 day ago", or "3 days ago"
      */
     private String getRelativeTime(LocalDateTime timestamp) {
         long daysAgo = ChronoUnit.DAYS.between(timestamp.toLocalDate(), LocalDate.now());
@@ -598,6 +599,7 @@ public class CrimesController {
     /**
      * Populates the form fields with data from the selected crime record.
      * Also performs reverse geocoding to display a readable address instead of coordinates.
+     * @param crime the CrimeRecord whose data should populate the form
      */
     private void populateForm(CrimeRecord crime) {
         // Set ID label
@@ -655,7 +657,15 @@ public class CrimesController {
     }
 
     /**
-     * Creates a CrimeRecord from form input, including date/time and location.
+     * Builds a CrimeRecord from the current form field values.
+     * Converts the 12-hour time selection back to 24-hour format, geocodes
+     * the entered address string to coordinates, and assembles a new record
+     * preserving the original ID and reporter from the existing record.
+     *
+     * @param original the existing record being edited, used to preserve immutable fields
+     * @return a new CrimeRecord populated with the form data
+     * @throws IllegalArgumentException if the address field is empty
+     * @throws Exception if geocoding fails
      */
     private CrimeRecord createRecordFromForm(CrimeRecord original) throws Exception {
         // Capture hour, minute, ap/pm values from UI
@@ -715,6 +725,7 @@ public class CrimesController {
 
     /**
      * Enables or disables form fields based on edit mode.
+     * @param editable true to make fields editable, false to lock them as read-only
      */
     private void setFormEditable(boolean editable) {
         categoryComboBox.setDisable(!editable);
@@ -779,7 +790,8 @@ public class CrimesController {
 
 
     /**
-     * Fetches address suggestions asynchronously and updates the UI.
+     * Runs an address search in the background and passes results to showSuggestions on the UI thread.
+     * @param query the partial address string to search for
      */
     private void fetchSuggestions(String query) {
         new Thread(() -> {
@@ -793,7 +805,8 @@ public class CrimesController {
     }
 
     /**
-     * Displays address suggestions in a popup and handles selection.
+     * Populates and displays the address autocomplete dropdown below the location field.
+     * @param suggestions the list of address strings to display as menu items
      */
     private void showSuggestions(List<String> suggestions) {
         suggestionsPopup.getItems().clear();

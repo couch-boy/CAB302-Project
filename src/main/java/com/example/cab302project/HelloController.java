@@ -5,6 +5,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
+/**
+ * Controller for the welcome/splash screen (hello-view.fxml).
+ *
+ * Shown on first launch, providing buttons to navigate to the
+ * login screen or the registration screen.
+ */
 public class HelloController {
 
     // FXML UI elements
