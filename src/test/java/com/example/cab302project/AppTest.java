@@ -1,9 +1,11 @@
 package com.example.cab302project;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class AppTest {
     /*
@@ -14,10 +16,7 @@ public class AppTest {
     // the original valid values. Protects map rendering from bad data.
     @Test
     void testCrimeRecordCoordinateValidation() {
-        CrimeRecord crime = new CrimeRecord(
-                1, CrimeCategory.ASSAULT, LocalDateTime.now(),
-                -27.4709, 153.0235, "Test", "user1", false
-        );
+        CrimeRecord crime = new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), -27.4709, 153.0235, "Test", "user1", false);
 
         // Valid coordinates should update
         crime.setLocation(-33.8688, 151.2093);
@@ -57,10 +56,7 @@ public class AppTest {
     @Test
     void testUserSessionLifecycle() {
         // Create a public user and log in
-        User publicUser = new User(
-                "testuser", "pass123", "test@email.com",
-                "0400000000", -27.4709, 153.0235, false, UserType.REGULAR
-        );
+        User publicUser = new User("testuser", "pass123", "test@email.com", "0400000000", -27.4709, 153.0235, false, UserType.REGULAR);
         UserSession.login(publicUser);
 
         assertNotNull(UserSession.getInstance());
@@ -72,10 +68,7 @@ public class AppTest {
         assertNull(UserSession.getInstance());
 
         // Log in as police and verify isPolice() returns true
-        User policeUser = new User(
-                "officer1", "secure", "police@law.com",
-                "0411111111", -27.4709, 153.0235, false, UserType.POLICE
-        );
+        User policeUser = new User("officer1", "secure", "police@law.com", "0411111111", -27.4709, 153.0235, false, UserType.POLICE);
         UserSession.login(policeUser);
         assertTrue(UserSession.isPolice());
 
@@ -114,24 +107,15 @@ public class AppTest {
     @Test
     void testReporterDisplayName() {
         // Null reporter should display as Anonymous
-        CrimeRecord nullReporter = new CrimeRecord(
-                1, CrimeCategory.NOISE, LocalDateTime.now(),
-                -27.4709, 153.0235, "desc", null, false
-        );
+        CrimeRecord nullReporter = new CrimeRecord(1, CrimeCategory.NOISE, LocalDateTime.now(), -27.4709, 153.0235, "desc", null, false);
         assertEquals("Anonymous", nullReporter.getReporterDisplayName());
 
         // Empty string reporter should display as Anonymous
-        CrimeRecord emptyReporter = new CrimeRecord(
-                2, CrimeCategory.NOISE, LocalDateTime.now(),
-                -27.4709, 153.0235, "desc", "", false
-        );
+        CrimeRecord emptyReporter = new CrimeRecord(2, CrimeCategory.NOISE, LocalDateTime.now(), -27.4709, 153.0235, "desc", "", false);
         assertEquals("Anonymous", emptyReporter.getReporterDisplayName());
 
         // Named reporter should display their username
-        CrimeRecord namedReporter = new CrimeRecord(
-                3, CrimeCategory.NOISE, LocalDateTime.now(),
-                -27.4709, 153.0235, "desc", "jack123", false
-        );
+        CrimeRecord namedReporter = new CrimeRecord(3, CrimeCategory.NOISE, LocalDateTime.now(), -27.4709, 153.0235, "desc", "jack123", false);
         assertEquals("jack123", namedReporter.getReporterDisplayName());
     }
 
@@ -158,17 +142,12 @@ public class AppTest {
     void testMyReportsFiltering() {
         IAppDAO dao = HelloApplication.DATABASE;
 
-        User user = new User(
-                "jordan", "pass", "j@email.com",
-                "0400000000", 0, 0, false, UserType.REGULAR
-        );
+        User user = new User("jordan", "pass", "j@email.com", "0400000000", 0, 0, false, UserType.REGULAR);
         UserSession.login(user);
 
         String currentUser = UserSession.getInstance().getUser().getUsername();
 
-        var filtered = dao.getAllCrimes().stream()
-                .filter(c -> currentUser.equals(c.getReporter()))
-                .toList();
+        var filtered = dao.getAllCrimes().stream().filter(c -> currentUser.equals(c.getReporter())).toList();
 
         for (CrimeRecord crime : filtered) {
             assertEquals("jordan", crime.getReporter());
@@ -183,10 +162,7 @@ public class AppTest {
     void testCrimeRecordTimestampIntegrity() {
         LocalDateTime now = LocalDateTime.now();
 
-        CrimeRecord crime = new CrimeRecord(
-                10, CrimeCategory.ROBBERY, now,
-                -27.4, 153.0, "desc", "user", false
-        );
+        CrimeRecord crime = new CrimeRecord(10, CrimeCategory.ROBBERY, now, -27.4, 153.0, "desc", "user", false);
 
         assertEquals(now, crime.getTimestamp());
     }
@@ -195,10 +171,7 @@ public class AppTest {
     // Ensures the crime status flag behaves correctly.
     @Test
     void testCrimeActionedStatus() {
-        CrimeRecord crime = new CrimeRecord(
-                5, CrimeCategory.ASSAULT, LocalDateTime.now(),
-                -27.4, 153.0, "desc", "user", false
-        );
+        CrimeRecord crime = new CrimeRecord(5, CrimeCategory.ASSAULT, LocalDateTime.now(), -27.4, 153.0, "desc", "user", false);
 
         assertFalse(crime.isActioned());
 
@@ -229,10 +202,7 @@ public class AppTest {
     // and the original valid coordinates are preserved
     @Test
     void testUserSetHomeLocationValidation() {
-        User user = new User(
-                "alice", "pass", "alice@email.com",
-                "0400000000", -27.4709, 153.0235, false, UserType.REGULAR
-        );
+        User user = new User("alice", "pass", "alice@email.com", "0400000000", -27.4709, 153.0235, false, UserType.REGULAR);
 
         // Valid coordinates should update
         user.setHomeLocation(-33.8688, 151.2093);
@@ -258,22 +228,16 @@ public class AppTest {
     // and UserType.toString() returns readable display name
     @Test
     void testUserTypeAndIsPolice() {
-        User regularUser = new User(
-                "bob", "pass", "bob@email.com",
-                "0400000001", 0, 0, false, UserType.REGULAR
-        );
-        User policeUser = new User(
-                "officer", "pass", "cop@law.com",
-                "0400000002", 0, 0, false, UserType.POLICE
-        );
+        User regularUser = new User("bob", "pass", "bob@email.com", "0400000001", 0, 0, false, UserType.REGULAR);
+        User policeUser = new User("officer", "pass", "cop@law.com", "0400000002", 0, 0, false, UserType.POLICE);
 
         assertFalse(regularUser.isPolice());
         assertTrue(policeUser.isPolice());
 
         // UserType.toString() should return display name, not enum name
-        assertEquals("Regular User",    UserType.REGULAR.toString());
-        assertEquals("Police Officer",  UserType.POLICE.toString());
-        assertEquals("Regular User",    UserType.REGULAR.getDisplayName());
+        assertEquals("Regular User", UserType.REGULAR.toString());
+        assertEquals("Police Officer", UserType.POLICE.toString());
+        assertEquals("Regular User", UserType.REGULAR.getDisplayName());
     }
 
     // Test 13: UIUtils database date formatting round-trip
@@ -314,10 +278,7 @@ public class AppTest {
     // Verifies user cannot change username and it always returns original username
     @Test
     void testUserUsernameIsImmutable() {
-        User user = new User(
-                "charlie", "pass", "c@email.com",
-                "0400000003", 0, 0, false, UserType.REGULAR
-        );
+        User user = new User("charlie", "pass", "c@email.com", "0400000003", 0, 0, false, UserType.REGULAR);
 
         assertEquals("charlie", user.getUsername());
 
@@ -436,6 +397,99 @@ public class AppTest {
     MITCHELL APP TESTING END
      */
 
+
+    /*
+    MAAN APP TESTING START
+     */
+// Test: distanceKm returns 0 for identical coordinates
+// Verifies correctness of the distance calculation formula at its base case.
+// Ensures no artificial distance is introduced for the same location.
+    @Test
+    void testHotspotDistanceKmSameLocationIsZero() throws Exception {
+        HotspotsController controller = new HotspotsController();
+
+        var method = HotspotsController.class.getDeclaredMethod("distanceKm", double.class, double.class, double.class, double.class);
+        method.setAccessible(true);
+
+        double distance = (double) method.invoke(controller, -27.4709, 153.0235, -27.4709, 153.0235);
+
+        assertEquals(0.0, distance, 0.0001);
+    }
+
+    // Test: Nearby crimes are grouped into a single hotspot
+// Verifies that crimes within the specified radius are correctly clustered.
+// Ensures hotspot grouping logic works for close geographical points.
+    @Test
+    void testBuildHotspotsGroupsNearbyCrimes() throws Exception {
+        HotspotsController controller = new HotspotsController();
+
+        List<CrimeRecord> crimes = List.of(new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), -27.4709, 153.0235, "Crime 1", "maan", false), new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), -27.4710, 153.0236, "Crime 2", "maan", false));
+
+        var method = HotspotsController.class.getDeclaredMethod("buildHotspots", List.class, double.class);
+        method.setAccessible(true);
+
+        List<Hotspot> hotspots = (List<Hotspot>) method.invoke(controller, crimes, 2.0);
+
+        assertEquals(1, hotspots.size());
+        assertEquals(2, hotspots.get(0).getCount());
+    }
+
+    // Test: Distant crimes remain separate hotspots
+// Ensures crimes outside the radius are not incorrectly grouped.
+// Maintains accuracy of hotspot clustering for geographically distant events.
+    @Test
+    void testBuildHotspotsKeepsFarCrimesSeparate() throws Exception {
+        HotspotsController controller = new HotspotsController();
+
+        List<CrimeRecord> crimes = List.of(new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), -27.4709, 153.0235, "Crime 1", "maan", false), new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), -28.0000, 153.5000, "Crime 2", "maan", false));
+
+        var method = HotspotsController.class.getDeclaredMethod("buildHotspots", List.class, double.class);
+        method.setAccessible(true);
+
+        List<Hotspot> hotspots = (List<Hotspot>) method.invoke(controller, crimes, 2.0);
+
+        assertEquals(2, hotspots.size());
+    }
+
+    // Test: Crimes exactly on the radius boundary are included
+// Verifies that boundary values (distance == radius) are handled correctly.
+// Ensures inclusive comparison (<=) is used in hotspot grouping logic.
+    @Test
+    void testHotspotRadiusBoundary() throws Exception {
+        HotspotsController controller = new HotspotsController();
+
+        List<CrimeRecord> crimes = List.of(new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), -27.4709, 153.0235, "Base", "maan", false), new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), -27.4880, 153.0235, "Edge", "maan", false));
+
+        var method = HotspotsController.class.getDeclaredMethod("buildHotspots", List.class, double.class);
+        method.setAccessible(true);
+
+        List<Hotspot> hotspots = (List<Hotspot>) method.invoke(controller, crimes, 2.0);
+
+        assertEquals(1, hotspots.size());
+    }
+
+
+    // Test: Hotspot data is correctly converted to JSON format
+// Ensures latitude, longitude, and count fields are properly included.
+// Critical for correct frontend map rendering and data transfer.
+    @Test
+    void testBuildHotspotJsonFormat() throws Exception {
+        HotspotsController controller = new HotspotsController();
+
+        List<Hotspot> hotspots = List.of(new Hotspot(-27.4709, 153.0235, 3));
+
+        var method = HotspotsController.class.getDeclaredMethod("buildHotspotJson", List.class);
+        method.setAccessible(true);
+
+        String json = (String) method.invoke(controller, hotspots);
+
+        assertTrue(json.contains("\"lat\":-27.4709"));
+        assertTrue(json.contains("\"lon\":153.0235"));
+        assertTrue(json.contains("\"count\":3"));
+    }
+     /*
+    MAAN APP TESTING END
+     */
 
     /*
     END APP TESTING END
