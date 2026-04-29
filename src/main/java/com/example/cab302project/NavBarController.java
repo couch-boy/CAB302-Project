@@ -10,26 +10,31 @@ import org.kordamp.ikonli.javafx.FontIcon;
 /**
  * Controller for the shared bottom navigation bar (nav-bar.fxml).
  *
- * Usage: call setActiveTab("map" | "crimes" | "profile") from the
- * host screen's initialize() to highlight the current tab.
+ * This controller is embedded in all main screens via {@code <fx:include>}.
+ * It provides three navigation buttons — Map, Reports, and Profile — each
+ * routing to the appropriate screen based on whether the logged-in user is
+ * a regular user or a police officer. Call {@link #setActiveTab(String)} from
+ * the host screen's {@code initialize()} method to highlight the current tab.
  */
 public class NavBarController {
 
     @FXML private Button btnMap;
     @FXML private Button btnCrimes;
     @FXML private Button btnProfile;
-
     @FXML private Label labelMap;
     @FXML private Label labelCrimes;
     @FXML private Label labelProfile;
-
-    // VBox wrappers used to look up FontIcon children for active colouring
     @FXML private VBox navMap;
     @FXML private VBox navCrimes;
     @FXML private VBox navProfile;
 
-    // ── Navigation handlers ──────────────────────────────────────────
+    // Navigation handlers
 
+    /**
+     * Navigates to the map screen.
+     * Routes to {@code police-dashboard-view.fxml} for police users,
+     * or {@code dashboard-view.fxml} for regular users.
+     */
     @FXML
     public void onMap() {
         Stage stage = (Stage) btnMap.getScene().getWindow();
@@ -40,6 +45,11 @@ public class NavBarController {
         }
     }
 
+    /**
+     * Navigates to the crimes / reports screen.
+     * Routes to {@code Police-crimes-view.fxml} for police users,
+     * or {@code crimes-view.fxml} for regular users.
+     */
     @FXML
     public void onCrimes() {
         Stage stage = (Stage) btnCrimes.getScene().getWindow();
@@ -50,17 +60,27 @@ public class NavBarController {
         }
     }
 
+    /**
+     * Navigates to the user profile screen.
+     * Both user types share the same profile view.
+     */
     @FXML
     public void onProfile() {
         Stage stage = (Stage) btnProfile.getScene().getWindow();
         UIUtils.switchScene(stage, "profile-view.fxml");
     }
 
-    // ── Active tab highlighting ───────────────────────────────────────
+    // Active tab highlighting
 
     /**
-     * Call this from the host screen's initialize() to mark the active tab.
-     * @param tab one of "map", "crimes", or "profile"
+     * Marks the specified tab as active by applying the active label style
+     * and recolouring its {@link FontIcon} to the primary navy colour.
+     *
+     * Should be called from the host screen's {@code initialize()} method
+     * so the correct tab is highlighted when the screen loads.
+     *
+     * @param tab the tab to activate; must be one of {@code "map"},
+     *            {@code "crimes"}, or {@code "profile"}
      */
     public void setActiveTab(String tab) {
         switch (tab) {
@@ -71,9 +91,14 @@ public class NavBarController {
     }
 
     /**
-     * Applies active styling to the label and recolours the FontIcon in the given nav VBox.
-     * @param navBox the VBox containing the FontIcon and Label for this tab
-     * @param label the Label to apply the active style to
+     * Applies active styling to a single navigation tab.
+     *
+     * Updates the label's CSS style class to the active variant and
+     * finds the first {@link FontIcon} child of the given VBox, setting
+     * its colour to the primary navy ({@code #2A364E}).
+     *
+     * @param navBox the VBox containing the {@link FontIcon} and {@link Label} for this tab
+     * @param label  the label to apply the active style class to
      */
     private void setActive(VBox navBox, Label label) {
         label.getStyleClass().setAll("nav-btn-label-active");

@@ -6,46 +6,60 @@ import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
+/**
+ * Controller for the User Profile screen (profile-view.fxml).
+ *
+ * Allows the logged-in user to view and update their personal details
+ * including email, phone number, home location, password, and dark mode
+ * preference. Changes are validated before being persisted to the database.
+ *
+ * The screen is accessible to both regular users and police officers.
+ * The appropriate hamburger menu variant ({@link HamburgerMenu} or
+ * {@link PoliceHamburgerMenu}) is selected at runtime based on the
+ * current user's role from {@link UserSession}.
+ */
 public class ProfileController {
 
-    // FXML UI elements
-    @FXML
-    private Label usernameLabel;
-    @FXML
-    private TextField emailField, phoneField, locationField;
-    @FXML
-    private PasswordField passwordField;
-    @FXML
-    private CheckBox darkModeCheckBox;
-    @FXML
-    private NavBarController navBarController;
-    @FXML
-    private Button hamburgerBtn;
-    @FXML
-    private StackPane profileRoot;
+    @FXML private Label usernameLabel;
+    @FXML private TextField emailField;
+    @FXML private TextField phoneField;
+    @FXML private TextField locationField;
+    @FXML private PasswordField passwordField;
+    @FXML private CheckBox darkModeCheckBox;
+    @FXML private NavBarController navBarController;
+    @FXML private Button hamburgerBtn;
+    @FXML private StackPane profileRoot;
 
-    // Holds either HamburgerMenu or PoliceHamburgerMenu depending on user type
+    /**
+     * Holds either a {@link HamburgerMenu} or {@link PoliceHamburgerMenu} depending
+     * on the logged-in user's role. Typed as {@link StackPane} (the shared superclass)
+     * to avoid casting at the field level.
+     */
     private StackPane hamburgerMenu;
-
     private IAppDAO dao;
     private User currentUser;
 
-    // Constructor
+    /**
+     * Constructs a new ProfileController and initialises
+     * the DAO from the main application database instance.
+     */
     public ProfileController() {
         this.dao = HelloApplication.DATABASE;
     }
 
     /**
-     * This method runs automatically after the FXML has loaded
+     * Initialises the screen after the FXML has loaded.
+     *
+     * Loads the current user from the session, populates the form fields,
+     * marks the Profile tab active in the nav bar, and wires up the correct
+     * hamburger menu variant based on the user's role.
      */
     @FXML
     public void initialize() {
-        // Get User object from UserSession
+        // Load the current user from the active session
         currentUser = UserSession.getInstance().getUser();
 
-        // If User is not null
         if (currentUser != null) {
-            // Populate UI fields with user data
             populateFields();
         }
 
@@ -55,18 +69,22 @@ public class ProfileController {
         }
 
         // Wire hamburger menu after scene is attached
-        // Platform.runLater ensures getScene().getWindow() is not null
-        // Use police version if logged in as police, public version otherwise
+        // Platform.runLater ensures getScene().getWindow() is not null at the time of access
         Platform.runLater(() -> {
             Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
+
+            // Use the police drawer for police officers, standard drawer for regular users
             if (UserSession.isPolice()) {
                 hamburgerMenu = new PoliceHamburgerMenu(stage);
             } else {
                 hamburgerMenu = new HamburgerMenu(stage);
             }
+
             hamburgerMenu.setMaxWidth(Double.MAX_VALUE);
             hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
             profileRoot.getChildren().add(hamburgerMenu);
+
+            // Toggle the correct menu type at runtime using pattern matching
             hamburgerBtn.setOnAction(e -> {
                 if (hamburgerMenu instanceof HamburgerMenu hm) {
                     hm.toggle();
@@ -78,19 +96,20 @@ public class ProfileController {
     }
 
     /**
-     * Attempt to update stored user information using entered details
+     * Validates and saves the user's updated profile information to the database.
+     *
+     * Reads form values, validates email and phone format and coordinate structure,
+     * then updates the {@link User} object and persists it via the DAO. Displays
+     * an appropriate alert for success, validation errors, or database failures.
      */
     @FXML
     public void onSave() {
         try {
-            // Use the helper to process the form
             updateUserFromForm();
-            // Form updates are now applied to the User object in the UserSession
 
-            // Push updated User from UserSession into the database
             if (dao.updateUser(currentUser)) {
                 UIUtils.showAlert(Alert.AlertType.INFORMATION, "Success", "Profile updated successfully.");
-                populateFields(); // Refresh UI to confirm state
+                populateFields(); // Refresh UI to confirm saved state
             } else {
                 UIUtils.showAlert(Alert.AlertType.ERROR, "Database Error", "Could not save changes.");
             }
@@ -101,7 +120,11 @@ public class ProfileController {
         }
     }
 
-    // Helper method to fill UI elements with the User object data
+    /**
+     * Populates all form fields with the current user's stored data.
+     * The password field is intentionally cleared for security — it never
+     * displays the existing password.
+     */
     private void populateFields() {
         usernameLabel.setText("Logged in as " + currentUser.getUsername());
         emailField.setText(currentUser.getEmail());
@@ -109,21 +132,28 @@ public class ProfileController {
         darkModeCheckBox.setSelected(currentUser.isDarkMode());
         locationField.setText(String.format("%.4f, %.4f",
                 currentUser.getHomeLatitude(), currentUser.getHomeLongitude()));
-        passwordField.clear(); // Clear for security
+        passwordField.clear();
     }
 
-    // Helper method to capture data from UI and update the User object
-    // Throws an exception if data is incorrectly formatted
-    // Error message is passed to parent function (onSave)
+    /**
+     * Reads and validates the form field values, then applies them to the
+     * current {@link User} object in the active session.
+     *
+     * Password is only updated if a non-empty value was entered, avoiding
+     * accidental overwrites with an empty string. Coordinates are split on a
+     * comma with optional surrounding whitespace.
+     *
+     * @throws IllegalArgumentException if email format, phone format, or coordinate structure is invalid
+     * @throws NumberFormatException    if latitude or longitude cannot be parsed as a double
+     */
     private void updateUserFromForm() throws Exception {
         String email = emailField.getText().trim();
         String phone = phoneField.getText().trim();
         String newPassword = passwordField.getText();
 
-        // Split into lat/lon by a comma followed by zero or more whitespace characters
+        // Split into lat/lon on a comma followed by zero or more whitespace characters
         String[] coords = locationField.getText().split(",\\s*");
 
-        // Validate entered data and throw exception if invalid
         if (!UIUtils.isValidEmail(email)) {
             throw new IllegalArgumentException("Invalid email format.");
         }
@@ -134,16 +164,14 @@ public class ProfileController {
             throw new IllegalArgumentException("Location must be 'lat, lon'.");
         }
 
-        // Convert coords to lat/lon (no trim required due to regex)
         double lat = Double.parseDouble(coords[0]);
         double lon = Double.parseDouble(coords[1]);
 
-        // Update the User Object
-        // Only update password if not null, and if a new password was actually entered
-        // Avoids updating password to empty string
+        // Only update password if a new one was actually entered
         if (newPassword != null && !newPassword.isEmpty()) {
             currentUser.setPassword(newPassword);
         }
+
         currentUser.setEmail(email);
         currentUser.setPhone(phone);
         currentUser.setHomeLocation(lat, lon);

@@ -13,14 +13,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Controller for the My Reports screen (my-reports-view.fxml).
+ *
+ * Displays a filterable list of crime reports submitted by the currently
+ * logged-in user. Selecting a report slides up a read-only detail panel
+ * showing all fields for that record. Users can also navigate to the
+ * crimes screen to submit a new report
+ */
 public class MyReportsController {
 
-    // FXML bindings
     @FXML private ListView<CrimeRecord> crimeListView;
     @FXML private TableView<CrimeRecord> crimeTable;
     @FXML private Label reportCountLabel;
-
-    // Detail panel
     @FXML private VBox detailPanel;
     @FXML private Pane detailBackdrop;
     @FXML private Label detailIdLabel;
@@ -30,8 +35,6 @@ public class MyReportsController {
     @FXML private TextField detailLocationField;
     @FXML private TextArea detailDescriptionArea;
     @FXML private Label detailStatusLabel;
-
-    // App bar / nav
     @FXML private Button hamburgerBtn;
     @FXML private StackPane myReportsRoot;
     @FXML private NavBarController navBarController;
@@ -39,12 +42,29 @@ public class MyReportsController {
     private HamburgerMenu hamburgerMenu;
     private IAppDAO dao;
     private IGeocodingService geocoder = new OpenStreetMapGeoCoder();
+
+    /**
+     * Shared cache of reverse-geocoded addresses keyed by crime record ID.
+     * Declared static so addresses persist across navigations without re-fetching.
+     */
     private static final Map<Integer, String> addressCache = new HashMap<>();
 
+    /**
+     * Constructs a new MyReportsController and initialises
+     * the DAO from the main application database instance.
+     */
     public MyReportsController() {
         this.dao = HelloApplication.DATABASE;
     }
 
+    /**
+     * Initialises the screen after the FXML has loaded.
+     *
+     * Filters all crime records to only those submitted by the current user,
+     * populates the list view, sets the report count label, activates the
+     * correct nav bar tab, begins background address preloading, and wires
+     * up the hamburger menu overlay.
+     */
     @FXML
     public void initialize() {
         // Load only this user's reports
@@ -70,7 +90,7 @@ public class MyReportsController {
         // Preload addresses in background
         preloadAddresses(myReports);
 
-        // Wire hamburger menu
+        // Wire hamburger menu after scene is attached
         Platform.runLater(() -> {
             Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
             hamburgerMenu = new HamburgerMenu(stage);
@@ -83,6 +103,13 @@ public class MyReportsController {
 
     // ── List setup ────────────────────────────────────────────────────
 
+    /**
+     * Configures the cell factory for the crime list view.
+     *
+     * Each cell displays a severity colour dot, crime category, dispatch
+     * status, geocoded location, and a relative timestamp. Selecting a cell
+     * populates and slides up the detail panel.
+     */
     private void setupListView() {
         crimeListView.setCellFactory(lv -> new ListCell<CrimeRecord>() {
             {
@@ -102,6 +129,7 @@ public class MyReportsController {
 
                 getStyleClass().add("crime-list-cell-populated");
 
+                // Choose dot colour based on severity tier
                 String dotColor = switch (crime.getCategory().getSeverity()) {
                     case CRITICAL -> "#DC143C";
                     case MEDIUM   -> "#FF8C00";
@@ -118,6 +146,7 @@ public class MyReportsController {
                 Label status = new Label(statusText);
                 status.setStyle("-fx-font-size: 11px; -fx-text-fill: #6B7280;");
 
+                // Show cached address if available, otherwise show raw coordinates
                 String locationText = addressCache.containsKey(crime.getId())
                         ? addressCache.get(crime.getId())
                         : String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
@@ -150,6 +179,15 @@ public class MyReportsController {
 
     // ── Detail panel ─────────────────────────────────────────────────
 
+    /**
+     * Populates all fields in the detail panel with data from the selected crime record.
+     *
+     * If a cached address exists for the record it is shown immediately.
+     * Otherwise, the raw coordinates are displayed while a background thread
+     * performs reverse geocoding and updates the field when complete.
+     *
+     * @param crime the selected {@link CrimeRecord} whose details are to be displayed
+     */
     private void populateDetailPanel(CrimeRecord crime) {
         detailIdLabel.setText(String.valueOf(crime.getId()));
         detailCategoryLabel.setText(crime.getCategory().toString());
@@ -177,7 +215,7 @@ public class MyReportsController {
             }).start();
         }
 
-        // Colour severity label
+        // Colour the severity label based on severity tier
         String colour = switch (crime.getCategory().getSeverity()) {
             case CRITICAL -> "#DC143C";
             case MEDIUM   -> "#FF8C00";
@@ -186,6 +224,10 @@ public class MyReportsController {
         detailSeverityLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: " + colour + ";");
     }
 
+    /**
+     * Makes the detail panel visible and animates it sliding up from the bottom of the screen.
+     * The semi-transparent backdrop is also shown to focus attention on the panel.
+     */
     private void showDetailPanel() {
         detailBackdrop.setVisible(true);
         detailBackdrop.setManaged(true);
@@ -198,6 +240,10 @@ public class MyReportsController {
         slide.play();
     }
 
+    /**
+     * Closes the detail panel by animating it sliding back down off-screen.
+     * Clears the list selection and hides the backdrop once the animation completes.
+     */
     @FXML
     public void onCloseDetail() {
         TranslateTransition slide = new TranslateTransition(Duration.millis(280), detailPanel);
@@ -214,6 +260,10 @@ public class MyReportsController {
 
     // ── Actions ───────────────────────────────────────────────────────
 
+    /**
+     * Navigates to the crimes screen so the user can submit a new report.
+     * Triggered by the "Submit New Report" button.
+     */
     @FXML
     public void onSubmitNewReport() {
         Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
@@ -222,6 +272,15 @@ public class MyReportsController {
 
     // ── Helpers ───────────────────────────────────────────────────────
 
+    /**
+     * Preloads human-readable addresses for all provided crime records in a background thread.
+     *
+     * Addresses are stored in {@link #addressCache} and the list view is
+     * refreshed on the JavaFX thread each time a new address is resolved, so
+     * cells update progressively without blocking the UI.
+     *
+     * @param crimes the list of crime records whose coordinates should be geocoded
+     */
     private void preloadAddresses(List<CrimeRecord> crimes) {
         new Thread(() -> {
             for (CrimeRecord crime : crimes) {
@@ -229,6 +288,7 @@ public class MyReportsController {
                     try {
                         String address = geocoder.reverseGeocode(
                                 crime.getLatitude(), crime.getLongitude());
+                        // Shorten to first two comma-separated parts for display
                         String[] parts = address.split(",");
                         String shortAddress = parts.length >= 2
                                 ? parts[0].trim() + ", " + parts[1].trim()
@@ -241,6 +301,12 @@ public class MyReportsController {
         }).start();
     }
 
+    /**
+     * Returns a human-readable relative time string for the given timestamp.
+     *
+     * @param dt the timestamp to describe
+     * @return {@code "Today"}, {@code "1 day ago"}, or {@code "N days ago"}
+     */
     private String getRelativeTime(java.time.LocalDateTime dt) {
         long days = java.time.temporal.ChronoUnit.DAYS.between(
                 dt.toLocalDate(), java.time.LocalDate.now());
