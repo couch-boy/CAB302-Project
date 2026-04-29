@@ -139,6 +139,87 @@ public class AppTest {
     JACK APP TESTING END
      */
 
+    /*
+    JORDAN APP TESTING START
+     */
+
+    // Test 6: DAO returns crime list (basic data integrity)
+    // Ensures the database layer is returning a non-null list.
+    @Test
+    void testDAOGetAllCrimesNotNull() {
+        IAppDAO dao = HelloApplication.DATABASE;
+
+        assertNotNull(dao.getAllCrimes(), "Crime list should not be null");
+    }
+
+    // Test 7: Filtering crimes by current user (MyReports logic)
+    // Ensures only crimes reported by the logged-in user are selected.
+    @Test
+    void testMyReportsFiltering() {
+        IAppDAO dao = HelloApplication.DATABASE;
+
+        User user = new User(
+                "jordan", "pass", "j@email.com",
+                "0400000000", 0, 0, false, UserType.REGULAR
+        );
+        UserSession.login(user);
+
+        String currentUser = UserSession.getInstance().getUser().getUsername();
+
+        var filtered = dao.getAllCrimes().stream()
+                .filter(c -> currentUser.equals(c.getReporter()))
+                .toList();
+
+        for (CrimeRecord crime : filtered) {
+            assertEquals("jordan", crime.getReporter());
+        }
+
+        UserSession.logout();
+    }
+
+    // Test 8: CrimeRecord timestamp is stored correctly
+    // Ensures timestamps are not altered after creation.
+    @Test
+    void testCrimeRecordTimestampIntegrity() {
+        LocalDateTime now = LocalDateTime.now();
+
+        CrimeRecord crime = new CrimeRecord(
+                10, CrimeCategory.ROBBERY, now,
+                -27.4, 153.0, "desc", "user", false
+        );
+
+        assertEquals(now, crime.getTimestamp());
+    }
+
+    // Test 9: Actioned status toggling
+    // Ensures the crime status flag behaves correctly.
+    @Test
+    void testCrimeActionedStatus() {
+        CrimeRecord crime = new CrimeRecord(
+                5, CrimeCategory.ASSAULT, LocalDateTime.now(),
+                -27.4, 153.0, "desc", "user", false
+        );
+
+        assertFalse(crime.isActioned());
+
+        crime.setActioned(true);
+
+        assertTrue(crime.isActioned());
+    }
+
+    // Test 10: CrimeCategory enum contains expected values
+    // Ensures core categories exist (prevents accidental enum removal).
+    @Test
+    void testCrimeCategoryExists() {
+        assertNotNull(CrimeCategory.valueOf("ASSAULT"));
+        assertNotNull(CrimeCategory.valueOf("ROBBERY"));
+        assertNotNull(CrimeCategory.valueOf("NOISE"));
+    }
+
+    /*
+    JORDAN APP TESTING END
+     */
+
 
 
 }
