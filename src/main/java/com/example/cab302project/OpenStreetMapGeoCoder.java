@@ -21,7 +21,11 @@ import java.util.ArrayList;
 public class OpenStreetMapGeoCoder implements IGeocodingService {
 
     /**
-     * Converts an address into latitude and longitude using the API.
+     * Converts an address into latitude and longitude using the Nominatim API.
+     * @param address the address string to geocode
+     * @return a double array where index 0 is latitude and index 1 is longitude
+     * @throws IllegalArgumentException if the address is not found
+     * @throws Exception if the HTTP request fails
      */
     @Override
     public  double[] geocodeAddress(String address) throws Exception {
@@ -62,7 +66,10 @@ public class OpenStreetMapGeoCoder implements IGeocodingService {
     }
 
     /**
-     * Retrieves address suggestions based on user input.
+     * Retrieves up to 5 address suggestions for the given query using the Nominatim API.
+     * @param query the partial address string to search for
+     * @return a list of matching display name strings, or an empty list if the query is too short
+     * @throws Exception if the HTTP request fails
      */
     @Override
     public List<String> getAddressSuggestions(String query) throws Exception {
@@ -105,8 +112,11 @@ public class OpenStreetMapGeoCoder implements IGeocodingService {
     /**
      * Converts latitude and longitude coordinates into a human-readable address
      * using the OpenStreetMap Nominatim reverse geocoding service.
+     * @param lat the latitude coordinate to reverse geocode
+     * @param lon the longitude coordinate to reverse geocode
+     * @return a readable address string, or a formatted coordinate string if no address is found
+     * @throws Exception if the HTTP request fails
      */
-
     @Override
     public String reverseGeocode(double lat, double lon) throws Exception {
         String url = "https://nominatim.openstreetmap.org/reverse?format=json&lat="

@@ -8,6 +8,13 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Controller for the dedicated hotspots map screen (hotspots-view.fxml).
+ *
+ * Loads and displays the hotspot cluster map, grouping nearby crime records
+ * into hotspots using the Haversine distance formula. Accessible from the
+ * hamburger menu as a standalone full-screen map view.
+ */
 public class HotspotsController {
 
     @FXML
@@ -75,7 +82,10 @@ public class HotspotsController {
     }
 
     /**
-     * Groups nearby crimes into hotspots based on a radius.
+     * Clusters nearby crimes into hotspots based on a radius, averaging their coordinates.
+     * @param crimes list of all crime records to cluster
+     * @param radiusKm the radius in kilometres to group crimes together
+     * @return a list of Hotspot objects representing each cluster
      */
     private List<Hotspot> buildHotspots(List<CrimeRecord> crimes, double radiusKm) {
         List<Hotspot> hotspots = new ArrayList<>();
@@ -115,7 +125,12 @@ public class HotspotsController {
     }
 
     /**
-     * Calculates distance between two coordinates in kilometres.
+     * Calculates the distance in kilometres between two lat/lon coordinates using the Haversine formula.
+     * @param lat1 latitude of the first point
+     * @param lon1 longitude of the first point
+     * @param lat2 latitude of the second point
+     * @param lon2 longitude of the second point
+     * @return distance in kilometres between the two points
      */
     private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
         double earthRadius = 6371.0;
@@ -132,7 +147,9 @@ public class HotspotsController {
     }
 
     /**
-     * Converts hotspot data into JSON format for the map.
+     * Converts a list of Hotspot objects into a JSON string for passing to the hotspots map.
+     * @param hotspots list of hotspots to serialise
+     * @return a JSON array string of hotspot objects with lat, lon and count fields
      */
     private String buildHotspotJson(List<Hotspot> hotspots) {
         StringBuilder sb = new StringBuilder("[");
