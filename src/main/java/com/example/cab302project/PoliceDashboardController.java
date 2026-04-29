@@ -35,6 +35,9 @@ public class PoliceDashboardController {
     private PoliceHamburgerMenu hamburgerMenu;
 
     // Constructor
+    /**
+     * Initialises the controller and retrieves the shared DAO instance.
+     */
     public PoliceDashboardController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
@@ -225,6 +228,9 @@ public class PoliceDashboardController {
         UIUtils.switchScene(stage, "profile-view.fxml");
     }
 
+    /**
+     * Navigates to the hotspots view screen.
+     */
     @FXML
     public void viewHotspots() {
         Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
