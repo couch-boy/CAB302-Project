@@ -34,6 +34,9 @@ public class DashboardController {
     private HamburgerMenu hamburgerMenu;
 
     // Constructor
+    /**
+     * Initialises the controller and retrieves the shared DAO instance.
+     */
     public DashboardController() {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
