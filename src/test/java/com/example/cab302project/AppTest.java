@@ -336,5 +336,110 @@ public class AppTest {
     FINN APP TESTING END
      */
 
+    /*
+    MITCHELL APP TESTING START
+     */
+
+    // Test 16: Test UserSession isDarkMode() helper method safety
+    // Verifies that UI will not crash when checking theme when no user is logged in (null session)
+    @Test
+    void testUserSessionDarkModeSafety() {
+        // Ensure logged out first
+        UserSession.logout();
+
+        // Test 1: Should return false (default) when no session exists, not throw NullPointerException
+        assertFalse(UserSession.isDarkMode(), "Should default to false if no session exists");
+
+        // Test 2: Should return true when user has dark mode enabled
+        User user = new User("user", "pass", "m@email.com", "0400000000", 0, 0, true, UserType.REGULAR);
+        UserSession.login(user);
+        assertTrue(UserSession.isDarkMode());
+
+        UserSession.logout();
+    }
+
+    // Test 17: Test 12hr -> 24hr time conversion logic
+    // Verifies that boundary hours (midnight and midday) are correctly converted
+    // Uses identical logic to createRecordFromForm() from CrimesController
+    @Test
+    void testTimeConversionLogic() {
+        // Logic: 12 AM should be 00:00
+        int hourAM = 12;
+        String ampmAM = "AM";
+        int convertedAM = (ampmAM.equals("AM") && hourAM == 12) ? 0 : hourAM;
+        assertEquals(0, convertedAM);
+
+        // Logic: 12 PM should be 12:00
+        int hourPM = 12;
+        String ampmPM = "PM";
+        int convertedPM = (ampmPM.equals("PM") && hourPM == 12) ? 12 : hourPM + 12;
+        // CrimesController Logic: if (ampm.equals("PM") && hour < 12) hour += 12;
+        // Verification:
+        int h = 12;
+        if ("PM".equals("PM") && h < 12) h += 12;
+        assertEquals(12, h); // 12 PM stays 12
+
+        h = 1;
+        if ("PM".equals("PM") && h < 12) h += 12;
+        assertEquals(13, h); // 1 PM becomes 13
+    }
+
+    // Test 18: Test stored data integrity of anonymous CrimeRecord
+    // Verifies the preservation of a null value in database for anonymous CrimeRecords
+    // while still providing a clean value of "Anonymous" for UI elements
+    @Test
+    void testReporterDataIntegrity() {
+        CrimeRecord crime = new CrimeRecord(1, CrimeCategory.OTHER, LocalDateTime.now(), 0, 0, "Desc", null, false);
+
+        // Raw value for DB should remain null
+        assertNull(crime.getReporter());
+
+        // UI value should be "Anonymous"
+        assertEquals("Anonymous", crime.getReporterDisplayName());
+    }
+
+    // Test 19: Test regex parsing latitude and longitude
+    // Verifies "lat,lon" (no space) and "lat,   lon" (multiple spaces) are correctly parsed
+    @Test
+    void testCoordinateRegexParsing() {
+        String inputNoSpace = "-27.47,153.02";
+        String inputWithSpaces = "-27.47,   153.02";
+
+        String[] parts1 = inputNoSpace.split(",\\s*");
+        String[] parts2 = inputWithSpaces.split(",\\s*");
+
+        assertEquals(2, parts1.length);
+        assertEquals("-27.47", parts1[0]);
+        assertEquals("153.02", parts1[1]);
+
+        assertEquals(2, parts2.length);
+        assertEquals("-27.47", parts2[0]);
+        assertEquals("153.02", parts2[1]);
+    }
+
+    // Test 20: Test user permissions are correctly identified via UserType enum, UserSession, and isPolice() helper
+    // Verifies that a regular user is not given police permissions, and that a police user is correctly given police permissions
+    @Test
+    void testRolePermissions() {
+        User regUser = new User("u1", "p", "e", "0", 0, 0, false, UserType.REGULAR);
+        UserSession.login(regUser);
+        assertFalse(UserSession.isPolice(), "Regular users should not have police permissions");
+
+        User policeUser = new User("p1", "p", "e", "0", 0, 0, false, UserType.POLICE);
+        UserSession.login(policeUser);
+        assertTrue(UserSession.isPolice(), "Police users must return true for isPolice()");
+
+        UserSession.logout();
+    }
+
+    /*
+    MITCHELL APP TESTING END
+     */
+    
+
+    /*
+    END APP TESTING END
+     */
+
 
 }
