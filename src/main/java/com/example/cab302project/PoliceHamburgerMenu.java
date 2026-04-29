@@ -12,6 +12,12 @@ import javafx.util.Duration;
 
 import java.io.IOException;
 
+/**
+ * Side drawer navigation menu for police users (police-hamburger-menu.fxml).
+ *
+ * Loaded programmatically and added to the root StackPane of each police screen.
+ * Call toggle() from the hamburger button's onAction handler to open or close it.
+ */
 public class PoliceHamburgerMenu extends StackPane {
 
     private Pane      drawerOverlay;
@@ -25,6 +31,10 @@ public class PoliceHamburgerMenu extends StackPane {
     private IAppDAO   dao;
     private StackPane loaded;
 
+    /**
+     * Loads the police hamburger menu FXML and attaches it to the scene graph.
+     * @param stage the current application stage used for scene navigation
+     */
     public PoliceHamburgerMenu(Stage stage) {
         this.stage = stage;
         this.dao   = HelloApplication.DATABASE;
@@ -50,6 +60,9 @@ public class PoliceHamburgerMenu extends StackPane {
         });
     }
 
+    /**
+     * Looks up all drawer nodes by fx:id and wires click handlers to each menu button.
+     */
     private void wireNodes() {
         drawerOverlay   = (Pane)     loaded.lookup("#drawerOverlay");
         drawerContainer = (HBox)     loaded.lookup("#drawerContainer");
@@ -75,12 +88,18 @@ public class PoliceHamburgerMenu extends StackPane {
         if (darkModeToggle != null) darkModeToggle.setOnAction(e -> onDarkModeToggle());
     }
 
-    /** Toggle the drawer open or closed */
+    /**
+     * Toggles the drawer open or closed depending on its current state.
+     */
     public void toggle() {
         if (isOpen) close();
         else        open();
     }
 
+    /**
+     * Opens the drawer by sliding it in from the left and showing the dim backdrop.
+     * Also populates the username, email and dark mode toggle from the current session.
+     */
     public void open() {
         if (drawerOverlay == null || drawerContainer == null) return;
 
@@ -104,6 +123,9 @@ public class PoliceHamburgerMenu extends StackPane {
         isOpen = true;
     }
 
+    /**
+     * Closes the drawer by sliding it back off screen and hiding the backdrop.
+     */
     public void close() {
         if (drawerContainer == null) return;
 
@@ -118,24 +140,38 @@ public class PoliceHamburgerMenu extends StackPane {
         slide.play();
         isOpen = false;
     }
-
+    /**
+     * Closes the drawer and navigates to the police hotspot map.
+     */
     private void onMap() {
         close();
         UIUtils.switchScene(stage, "police-dashboard-view.fxml");
     }
 
+    /**
+     * Closes the drawer with no further action. Placeholder for settings screen.
+     */
     private void onSettings() { close(); }
 
+    /**
+     * Closes the drawer and navigates to the police crime reports screen.
+     */
     private void onReports() {
         close();
         UIUtils.switchScene(stage, "Police-crimes-view.fxml");
     }
 
+    /**
+     * Closes the drawer and navigates to the profile screen.
+     */
     private void onProfile() {
         close();
         UIUtils.switchScene(stage, "profile-view.fxml");
     }
 
+    /**
+     * Saves the user's dark mode preference to the database when the toggle is changed.
+     */
     private void onDarkModeToggle() {
         UserSession session = UserSession.getInstance();
         if (session != null && session.getUser() != null) {
@@ -144,6 +180,9 @@ public class PoliceHamburgerMenu extends StackPane {
         }
     }
 
+    /**
+     * Logs the user out, clears the session and navigates back to the login screen.
+     */
     private void onLogout() {
         close();
         UserSession.logout();

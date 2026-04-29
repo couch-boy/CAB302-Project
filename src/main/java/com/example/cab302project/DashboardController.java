@@ -12,6 +12,12 @@ import javafx.concurrent.Worker;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Controller for the public dashboard screen (dashboard-view.fxml).
+ *
+ * Displays the hotspot map as the home screen for public users.
+ * Manages the hamburger menu, hotspot clustering and map loading.
+ */
 public class DashboardController {
 
     // FXML UI elements
@@ -32,8 +38,12 @@ public class DashboardController {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
-
-    // Builds hotspot cluster list from raw crime records
+    /**
+     * Clusters nearby crimes into hotspots based on a radius, averaging their coordinates.
+     * @param crimes list of all crime records to cluster
+     * @param radiusKm the radius in kilometres to group crimes together
+     * @return a list of Hotspot objects representing each cluster
+     */
     private List<Hotspot> buildHotspots(List<CrimeRecord> crimes, double radiusKm) {
         List<Hotspot> hotspots = new ArrayList<>();
         boolean[] used = new boolean[crimes.size()];
@@ -71,6 +81,10 @@ public class DashboardController {
         return hotspots;
     }
 
+    /**
+     * Calculates the distance in kilometres between two lat/lon coordinates using the Haversine formula.
+     * @return distance in kilometres between the two points
+     */
     private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
         double earthRadius = 6371.0;
 
@@ -85,6 +99,12 @@ public class DashboardController {
         return earthRadius * c;
     }
 
+
+    /**
+     * Converts a list of Hotspot objects into a JSON string for passing to the hotspots map.
+     * @param hotspots list of hotspots to serialise
+     * @return a JSON array string of hotspot objects with lat, lon and count fields
+     */
     private String buildHotspotJson(List<Hotspot> hotspots) {
         StringBuilder sb = new StringBuilder("[");
 
@@ -207,7 +227,7 @@ public class DashboardController {
     }
 
     /**
-     * Go to crimes view to submit a new report
+     * Navigates to the crimes screen so the user can submit a new report.
      */
     @FXML
     public void onSubmitReport() {
