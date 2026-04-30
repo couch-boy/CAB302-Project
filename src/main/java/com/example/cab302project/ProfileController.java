@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import org.mindrot.jbcrypt.BCrypt;
 
 /**
  * Controller for the User Profile screen (profile-view.fxml).
@@ -169,7 +170,11 @@ public class ProfileController {
 
         // Only update password if a new one was actually entered
         if (newPassword != null && !newPassword.isEmpty()) {
-            currentUser.setPassword(newPassword);
+
+            // Hash the plaintext password - salt is generated and embedded automatically
+            String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+
+            currentUser.setPassword(hashedPassword);
         }
 
         currentUser.setEmail(email);

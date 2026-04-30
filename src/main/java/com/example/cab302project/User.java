@@ -105,8 +105,8 @@ public class User {
     // No setter for username, as this is the database primary key
 
     /**
-     * Updates the account password.
-     * @param password The new password to set for the account.
+     * Updates the stored password hash.
+     * @param password The hash of the new password to set for the account.
      */
     public void setPassword(String password) { this.password = password; }
 

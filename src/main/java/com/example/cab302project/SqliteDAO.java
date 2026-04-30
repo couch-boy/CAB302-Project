@@ -1,8 +1,13 @@
 package com.example.cab302project;
 
+import org.mindrot.jbcrypt.BCrypt;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 
 /**
  * SQLite-based implementation of the {@link IAppDAO} interface.
@@ -83,15 +88,44 @@ public class SqliteDAO implements IAppDAO{
      * <b>Note:</b> This is intended for development and testing environments only.
      */
     private void insertSampleUserData() {
-        try (Statement statement = connection.createStatement()) {
-            // Clear before inserting
+        String insertQuery = "INSERT INTO users (username, password, email, phone, homelatitude, homelongitude, darkmode, usertype) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (Statement statement = connection.createStatement();
+             PreparedStatement preparedStatement = connection.prepareStatement(insertQuery)) {
+
+            // Clear existing data
             statement.execute("DELETE FROM users");
-            String insertQuery = "INSERT INTO users (username, password, email, phone, homelatitude, homelongitude, darkmode, usertype) VALUES "
-                    + "('QPS123', 'Password', 'police@officer.com', '0412356798', '-27.4760', '153.0280', FALSE, 'POLICE'),"
-                    + "('test1', 'test', 'johndoe@example.com', '0423423423', '-27.4765', '153.0285', FALSE, 'REGULAR'),"
-                    + "('test2', 'test', 'janedoe@example.com', '0423423424', '-27.4770', '153.0290', TRUE, 'REGULAR'),"
-                    + "('test3', 'test', 'jaydoe@example.com', '0423423425', '-27.4775', '153.0295', FALSE, 'REGULAR')";
-            statement.execute(insertQuery);
+
+            // Define array of test users (Username, Raw Password, Email, Phone, Lat, Lon, DarkMode, Type)
+            Object[][] testUsers = {
+                    {"QPS123", "Password", "police@officer.com", "0412356798", -27.4760, 153.0280, FALSE, "POLICE"},
+                    {"test1", "test", "johndoe@example.com", "0423423423", -27.4765, 153.0285, FALSE, "REGULAR"},
+                    {"test2", "test", "janedoe@example.com", "0423423424", -27.4770, 153.0290, TRUE, "REGULAR"},
+                    {"test3", "test", "jaydoe@example.com", "0423423425", -27.4775, 153.0295, FALSE, "REGULAR"}
+            };
+
+            for (Object[] data : testUsers) {
+                preparedStatement.setString(1, (String) data[0]);
+
+                // Hash the plaintext password for each specific user
+                String hashedPassword = BCrypt.hashpw((String) data[1], BCrypt.gensalt());
+                preparedStatement.setString(2, hashedPassword);
+
+                preparedStatement.setString(3, (String) data[2]);
+                preparedStatement.setString(4, (String) data[3]);
+                preparedStatement.setDouble(5, (Double) data[4]);
+                preparedStatement.setDouble(6, (Double) data[5]);
+                preparedStatement.setBoolean(7, (Boolean) data[6]);
+                preparedStatement.setString(8, (String) data[7]);
+
+                // Add to batch insert
+                preparedStatement.addBatch();
+            }
+
+            // Execute all inserts at once
+            preparedStatement.executeBatch();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -120,20 +154,24 @@ public class SqliteDAO implements IAppDAO{
 
     /** {@inheritDoc} */
     @Override
-    public User validateUser(String username, String password) {
-        String query = "SELECT * FROM users WHERE username = ? AND password = ?";
+    public User validateUser(String username, String plaintextPassword) {
+        String query = "SELECT * FROM users WHERE username = ?";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, username);
-            preparedStatement.setString(2, password);
 
             ResultSet resultSet = preparedStatement.executeQuery();
 
-            //if user is found, create a User object with the data from db
+            //if user is found, hash entered password and validate against stored value
             if (resultSet.next()) {
-                return mapResultSetToUser(resultSet);
-            }
+                String storedHash = resultSet.getString("password");
 
+                // Use BCrypt to check if the plaintext matches the hash
+                if (BCrypt.checkpw(plaintextPassword, storedHash)) {
+                    // Passwords match, map the full result set to User object
+                    return mapResultSetToUser(resultSet);
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
