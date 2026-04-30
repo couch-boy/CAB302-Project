@@ -5,6 +5,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.mindrot.jbcrypt.BCrypt;
 
 /**
  * Controller class for the User Registration screen (register-view.fxml).
@@ -59,12 +60,12 @@ public class RegisterController {
     public void onRegisterAccount() {
         // Trim whitespace from end of non-password fields
         String username = usernameField.getText().trim();
-        String password = passwordField.getText();
+        String plaintextPassword = passwordField.getText();
         String email = emailField.getText().trim();
         String phone = phoneField.getText().trim();
 
         //check for empty fields
-        if (username.isEmpty() || password.isEmpty() || email.isEmpty() || phone.isEmpty()) {
+        if (username.isEmpty() || plaintextPassword.isEmpty() || email.isEmpty() || phone.isEmpty()) {
             UIUtils.showAlert(AlertType.WARNING, "Registration Error", "All fields are required.");
             return;
         }
@@ -81,8 +82,11 @@ public class RegisterController {
             return;
         }
 
-        // Create new regular user User object using Brisbane CBD lat/lon and default darkmode to off
-        User newUser = new User(username, password, email, phone, -27.4709, 153.0235, false, UserType.REGULAR);
+        // Hash the plaintext password - salt is generated and embedded automatically
+        String hashedPassword = BCrypt.hashpw(plaintextPassword, BCrypt.gensalt());
+
+        // Create new regular user User object using Brisbane CBD lat/lon and default darkmode to off with hashed password
+        User newUser = new User(username, hashedPassword, email, phone, -27.4709, 153.0235, false, UserType.REGULAR);
 
         // Attempt to add to db
         boolean success = dao.addUser(newUser);
