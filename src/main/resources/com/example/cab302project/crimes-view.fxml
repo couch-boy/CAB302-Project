@@ -73,12 +73,41 @@
                 </TableView>
 
                 <!-- Section header -->
-                <HBox alignment="CENTER_LEFT"
+                <HBox alignment="CENTER_LEFT" spacing="10"
                       style="-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;">
                     <Label text="Recent"
                            style="-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;"/>
                     <Region HBox.hgrow="ALWAYS"/>
-                    <Label text="All" style="-fx-text-fill: #6B7280; -fx-font-size: 12px;"/>
+                    <MenuButton fx:id="filterMenuButton"
+                                text="Filter"
+                                popupSide="BOTTOM">
+                        <items>
+                            <MenuItem text="Filter By" disable="true"/>
+                            <SeparatorMenuItem/>
+                            <MenuItem text="Severity" disable="true"/>
+                            <RadioMenuItem fx:id="severityAllItem" text="All" selected="true" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="severitySevereItem" text="Severe" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="severityModerateItem" text="Moderate" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="severityLowItem" text="Low" onAction="#onFilterChanged"/>
+                            <SeparatorMenuItem/>
+                            <MenuItem text="Crime Type" disable="true"/>
+                            <RadioMenuItem fx:id="crimeTypeAllItem" text="All" selected="true" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="crimeTypeAssaultItem" text="Assault" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="crimeTypeTrespassingItem" text="Trespassing" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="crimeTypeDomesticAbuseItem" text="Domestic Abuse" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="crimeTypeHomicideItem" text="Homicide" onAction="#onFilterChanged"/>
+                            <SeparatorMenuItem/>
+                            <MenuItem text="Status" disable="true"/>
+                            <RadioMenuItem fx:id="statusAllItem" text="All" selected="true" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="statusPendingItem" text="Pending" onAction="#onFilterChanged"/>
+                            <SeparatorMenuItem/>
+                            <MenuItem text="Date" disable="true"/>
+                            <RadioMenuItem fx:id="dateAllItem" text="All" selected="true" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="dateTodayItem" text="Today" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="dateLast7DaysItem" text="Last 7 Days" onAction="#onFilterChanged"/>
+                            <RadioMenuItem fx:id="dateLast30DaysItem" text="Last 30 Days" onAction="#onFilterChanged"/>
+                        </items>
+                    </MenuButton>
                 </HBox>
 
                 <!-- Styled list view - custom cells built in controller -->
