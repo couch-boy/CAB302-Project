@@ -73,6 +73,17 @@ public class CrimesController {
     @FXML
     private ListView<CrimeRecord> crimeListView;
     @FXML
+    private MenuButton filterMenuButton;
+    @FXML
+    private RadioMenuItem severityAllItem, severitySevereItem, severityModerateItem, severityLowItem;
+    @FXML
+    private RadioMenuItem crimeTypeAllItem, crimeTypeAssaultItem, crimeTypeTrespassingItem,
+            crimeTypeDomesticAbuseItem, crimeTypeHomicideItem;
+    @FXML
+    private RadioMenuItem statusAllItem, statusPendingItem;
+    @FXML
+    private RadioMenuItem dateAllItem, dateTodayItem, dateLast7DaysItem, dateLast30DaysItem;
+    @FXML
     private VBox detailPanel;
     @FXML
     private Pane detailBackdrop;
@@ -111,6 +122,7 @@ public class CrimesController {
     private final PauseTransition suggestionDelay = new PauseTransition(Duration.millis(400));
 
     private boolean isCreatingNew = false;
+    private List<CrimeRecord> allCrimeRecords = new ArrayList<>();
 
     // Tracks whether the crime map has been loaded yet (loaded lazily on first Map tab open)
     private boolean crimeMapLoaded = false;
@@ -148,6 +160,7 @@ public class CrimesController {
 
         // Set dropdown values
         categoryComboBox.getItems().setAll(CrimeCategory.values());
+        setupFilters();
 
         // Initialize Listener -> Auto-update Severity Label when Category changes
         categoryComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -405,14 +418,142 @@ public class CrimesController {
     // Helper function to refresh crime table with updated crime data
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
-        crimeTable.getItems().setAll(dao.getAllCrimes().stream().filter(c -> !c.isActioned()).toList());
+        allCrimeRecords = dao.getAllCrimes().stream().filter(c -> !c.isActioned()).toList();
+        applyFilters();
         if (selectedIndex >= 0) {
             crimeTable.getSelectionModel().select(selectedIndex);
         }
-        // Keep list view in sync with table
+    }
+
+    /**
+     * Groups filter menu options so one item can be active in each section.
+     */
+    private void setupFilters() {
+        ToggleGroup severityGroup = new ToggleGroup();
+        severityAllItem.setToggleGroup(severityGroup);
+        severitySevereItem.setToggleGroup(severityGroup);
+        severityModerateItem.setToggleGroup(severityGroup);
+        severityLowItem.setToggleGroup(severityGroup);
+
+        ToggleGroup crimeTypeGroup = new ToggleGroup();
+        crimeTypeAllItem.setToggleGroup(crimeTypeGroup);
+        crimeTypeAssaultItem.setToggleGroup(crimeTypeGroup);
+        crimeTypeTrespassingItem.setToggleGroup(crimeTypeGroup);
+        crimeTypeDomesticAbuseItem.setToggleGroup(crimeTypeGroup);
+        crimeTypeHomicideItem.setToggleGroup(crimeTypeGroup);
+
+        ToggleGroup statusGroup = new ToggleGroup();
+        statusAllItem.setToggleGroup(statusGroup);
+        statusPendingItem.setToggleGroup(statusGroup);
+
+        ToggleGroup dateGroup = new ToggleGroup();
+        dateAllItem.setToggleGroup(dateGroup);
+        dateTodayItem.setToggleGroup(dateGroup);
+        dateLast7DaysItem.setToggleGroup(dateGroup);
+        dateLast30DaysItem.setToggleGroup(dateGroup);
+    }
+
+    /**
+     * Handles changes from any filter menu option.
+     */
+    @FXML
+    public void onFilterChanged() {
+        applyFilters();
+        updateFilterButtonText();
+    }
+
+    /**
+     * Applies the selected filter values to the table and styled list view.
+     */
+    private void applyFilters() {
+        List<CrimeRecord> filteredCrimes = allCrimeRecords.stream()
+                .filter(this::matchesSeverityFilter)
+                .filter(this::matchesCrimeTypeFilter)
+                .filter(this::matchesStatusFilter)
+                .filter(this::matchesDateFilter)
+                .toList();
+
+        crimeTable.getItems().setAll(filteredCrimes);
         if (crimeListView != null) {
-            crimeListView.getItems().setAll(crimeTable.getItems());
+            crimeListView.getItems().setAll(filteredCrimes);
         }
+    }
+
+    /**
+     * Checks whether a crime record matches the currently selected severity filter.
+     * Returns true if no specific severity filter is selected.
+     */
+    private boolean matchesSeverityFilter(CrimeRecord crime) {
+        if (severitySevereItem.isSelected()) {
+            return crime.getCategory().getSeverity() == CrimeCategory.Severity.CRITICAL;
+        }
+        if (severityModerateItem.isSelected()) {
+            return crime.getCategory().getSeverity() == CrimeCategory.Severity.MEDIUM;
+        }
+        if (severityLowItem.isSelected()) {
+            return crime.getCategory().getSeverity() == CrimeCategory.Severity.LOW;
+        }
+        return true;
+    }
+    /**
+     * Checks whether a crime record matches the currently selected crime type filter.
+     * Returns true if no specific crime type filter is selected.
+     */
+    private boolean matchesCrimeTypeFilter(CrimeRecord crime) {
+        if (crimeTypeAssaultItem.isSelected()) {
+            return crime.getCategory() == CrimeCategory.ASSAULT;
+        }
+        if (crimeTypeTrespassingItem.isSelected()) {
+            return crime.getCategory() == CrimeCategory.TRESPASSING;
+        }
+        if (crimeTypeDomesticAbuseItem.isSelected()) {
+            return crime.getCategory() == CrimeCategory.DOMESTICABUSE;
+        }
+        if (crimeTypeHomicideItem.isSelected()) {
+            return crime.getCategory() == CrimeCategory.HOMICIDE;
+        }
+        return true;
+    }
+    /**
+     * Checks whether a crime record matches the currently selected status filter.
+     * Pending crimes are identified as records that have not yet been actioned.
+     */
+
+    private boolean matchesStatusFilter(CrimeRecord crime) {
+        if (statusPendingItem.isSelected()) {
+            return !crime.isActioned();
+        }
+        return true;
+    }
+
+    private boolean matchesDateFilter(CrimeRecord crime) {
+        LocalDate crimeDate = crime.getTimestamp().toLocalDate();
+        LocalDate today = LocalDate.now();
+
+        if (dateTodayItem.isSelected()) {
+            return crimeDate.isEqual(today);
+        }
+        if (dateLast7DaysItem.isSelected()) {
+            return !crimeDate.isBefore(today.minusDays(6)) && !crimeDate.isAfter(today);
+        }
+        if (dateLast30DaysItem.isSelected()) {
+            return !crimeDate.isBefore(today.minusDays(29)) && !crimeDate.isAfter(today);
+        }
+        return true;
+    }
+
+    /**
+     * Updates the filter button text to display the number
+     * of currently active filter categories.
+     */
+    private void updateFilterButtonText() {
+        int activeFilters = 0;
+        if (!severityAllItem.isSelected()) activeFilters++;
+        if (!crimeTypeAllItem.isSelected()) activeFilters++;
+        if (!statusAllItem.isSelected()) activeFilters++;
+        if (!dateAllItem.isSelected()) activeFilters++;
+
+        filterMenuButton.setText(activeFilters == 0 ? "Filter" : "Filter (" + activeFilters + ")");
     }
 
     /**

@@ -10,6 +10,7 @@ import javafx.geometry.Side;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.Button;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -19,9 +20,11 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Controller for the police crime management screen.
@@ -41,6 +44,12 @@ public class PoliceCrimesController {
 
     // Styled list view used for UI display (linked to table)
     @FXML private ListView<CrimeRecord> crimeListView;
+    @FXML private MenuButton filterMenuButton;
+    @FXML private RadioMenuItem severityAllItem, severitySevereItem, severityModerateItem, severityLowItem;
+    @FXML private RadioMenuItem crimeTypeAllItem, crimeTypeAssaultItem, crimeTypeTrespassingItem,
+            crimeTypeDomesticAbuseItem, crimeTypeHomicideItem;
+    @FXML private RadioMenuItem statusAllItem, statusPendingItem, statusActionedItem;
+    @FXML private RadioMenuItem dateAllItem, dateTodayItem, dateLast7DaysItem, dateLast30DaysItem;
 
     // Detail panel and backdrop for viewing/editing a crime
     @FXML private VBox detailPanel;
@@ -70,6 +79,7 @@ public class PoliceCrimesController {
 
     // Data access object for database operations
     private IAppDAO dao;
+    private List<CrimeRecord> allCrimeRecords = new ArrayList<>();
 
     // Service used to convert between coordinates and addresses
     private IGeocodingService geocoder = new OpenStreetMapGeoCoder();
@@ -109,6 +119,7 @@ public class PoliceCrimesController {
 
         // Set dropdown values
         categoryComboBox.getItems().setAll(CrimeCategory.values());
+        setupFilters();
 
         // Initialize Listener -> Auto-update Severity Label when Category changes
         categoryComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -248,13 +259,131 @@ public class PoliceCrimesController {
      */
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
-        crimeTable.getItems().setAll(dao.getAllCrimes());
+        allCrimeRecords = dao.getAllCrimes();
+        applyFilters();
         if (selectedIndex >= 0) {
             crimeTable.getSelectionModel().select(selectedIndex);
         }
+    }
+
+    /**
+     * Groups filter menu options so one item can be active in each section.
+     */
+    private void setupFilters() {
+        ToggleGroup severityGroup = new ToggleGroup();
+        severityAllItem.setToggleGroup(severityGroup);
+        severitySevereItem.setToggleGroup(severityGroup);
+        severityModerateItem.setToggleGroup(severityGroup);
+        severityLowItem.setToggleGroup(severityGroup);
+
+        ToggleGroup crimeTypeGroup = new ToggleGroup();
+        crimeTypeAllItem.setToggleGroup(crimeTypeGroup);
+        crimeTypeAssaultItem.setToggleGroup(crimeTypeGroup);
+        crimeTypeTrespassingItem.setToggleGroup(crimeTypeGroup);
+        crimeTypeDomesticAbuseItem.setToggleGroup(crimeTypeGroup);
+        crimeTypeHomicideItem.setToggleGroup(crimeTypeGroup);
+
+        ToggleGroup statusGroup = new ToggleGroup();
+        statusAllItem.setToggleGroup(statusGroup);
+        statusPendingItem.setToggleGroup(statusGroup);
+        statusActionedItem.setToggleGroup(statusGroup);
+
+        ToggleGroup dateGroup = new ToggleGroup();
+        dateAllItem.setToggleGroup(dateGroup);
+        dateTodayItem.setToggleGroup(dateGroup);
+        dateLast7DaysItem.setToggleGroup(dateGroup);
+        dateLast30DaysItem.setToggleGroup(dateGroup);
+    }
+
+    /**
+     * Handles changes from any filter menu option.
+     */
+    @FXML
+    public void onFilterChanged() {
+        applyFilters();
+        updateFilterButtonText();
+    }
+
+    /**
+     * Applies the selected filter values to the table and styled list view.
+     */
+    private void applyFilters() {
+        List<CrimeRecord> filteredCrimes = allCrimeRecords.stream()
+                .filter(this::matchesSeverityFilter)
+                .filter(this::matchesCrimeTypeFilter)
+                .filter(this::matchesStatusFilter)
+                .filter(this::matchesDateFilter)
+                .toList();
+
+        crimeTable.getItems().setAll(filteredCrimes);
         if (crimeListView != null) {
-            crimeListView.getItems().setAll(crimeTable.getItems());
+            crimeListView.getItems().setAll(filteredCrimes);
         }
+    }
+
+    private boolean matchesSeverityFilter(CrimeRecord crime) {
+        if (severitySevereItem.isSelected()) {
+            return crime.getCategory().getSeverity() == CrimeCategory.Severity.CRITICAL;
+        }
+        if (severityModerateItem.isSelected()) {
+            return crime.getCategory().getSeverity() == CrimeCategory.Severity.MEDIUM;
+        }
+        if (severityLowItem.isSelected()) {
+            return crime.getCategory().getSeverity() == CrimeCategory.Severity.LOW;
+        }
+        return true;
+    }
+
+    private boolean matchesCrimeTypeFilter(CrimeRecord crime) {
+        if (crimeTypeAssaultItem.isSelected()) {
+            return crime.getCategory() == CrimeCategory.ASSAULT;
+        }
+        if (crimeTypeTrespassingItem.isSelected()) {
+            return crime.getCategory() == CrimeCategory.TRESPASSING;
+        }
+        if (crimeTypeDomesticAbuseItem.isSelected()) {
+            return crime.getCategory() == CrimeCategory.DOMESTICABUSE;
+        }
+        if (crimeTypeHomicideItem.isSelected()) {
+            return crime.getCategory() == CrimeCategory.HOMICIDE;
+        }
+        return true;
+    }
+
+    private boolean matchesStatusFilter(CrimeRecord crime) {
+        if (statusPendingItem.isSelected()) {
+            return !crime.isActioned();
+        }
+        if (statusActionedItem.isSelected()) {
+            return crime.isActioned();
+        }
+        return true;
+    }
+
+    private boolean matchesDateFilter(CrimeRecord crime) {
+        LocalDate crimeDate = crime.getTimestamp().toLocalDate();
+        LocalDate today = LocalDate.now();
+
+        if (dateTodayItem.isSelected()) {
+            return crimeDate.isEqual(today);
+        }
+        if (dateLast7DaysItem.isSelected()) {
+            return !crimeDate.isBefore(today.minusDays(6)) && !crimeDate.isAfter(today);
+        }
+        if (dateLast30DaysItem.isSelected()) {
+            return !crimeDate.isBefore(today.minusDays(29)) && !crimeDate.isAfter(today);
+        }
+        return true;
+    }
+
+    private void updateFilterButtonText() {
+        int activeFilters = 0;
+        if (!severityAllItem.isSelected()) activeFilters++;
+        if (!crimeTypeAllItem.isSelected()) activeFilters++;
+        if (!statusAllItem.isSelected()) activeFilters++;
+        if (!dateAllItem.isSelected()) activeFilters++;
+
+        filterMenuButton.setText(activeFilters == 0 ? "Filter" : "Filter (" + activeFilters + ")");
     }
 
     /**

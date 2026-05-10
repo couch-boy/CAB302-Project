@@ -401,90 +401,229 @@ public class AppTest {
     /*
     MAAN APP TESTING START
      */
-// Test: distanceKm returns 0 for identical coordinates
-// Verifies correctness of the distance calculation formula at its base case.
-// Ensures no artificial distance is introduced for the same location.
-    @Test
-    void testHotspotDistanceKmSameLocationIsZero() throws Exception {
-        HotspotsController controller = new HotspotsController();
+    private CrimeRecord maanCrime(int id, CrimeCategory category, double latitude, double longitude) {
+        return new CrimeRecord(id, category, LocalDateTime.now(), latitude, longitude, "Maan test crime", "maan", false);
+    }
 
+    private double invokeDistanceKm(double lat1, double lon1, double lat2, double lon2) throws Exception {
+        HotspotsController controller = new HotspotsController();
         var method = HotspotsController.class.getDeclaredMethod("distanceKm", double.class, double.class, double.class, double.class);
         method.setAccessible(true);
+        return (double) method.invoke(controller, lat1, lon1, lat2, lon2);
+    }
 
-        double distance = (double) method.invoke(controller, -27.4709, 153.0235, -27.4709, 153.0235);
+    private List<Hotspot> invokeBuildHotspots(List<CrimeRecord> crimes, double radiusKm) throws Exception {
+        HotspotsController controller = new HotspotsController();
+        var method = HotspotsController.class.getDeclaredMethod("buildHotspots", List.class, double.class);
+        method.setAccessible(true);
+        return (List<Hotspot>) method.invoke(controller, crimes, radiusKm);
+    }
+
+    private String invokeBuildHotspotJson(List<Hotspot> hotspots) throws Exception {
+        HotspotsController controller = new HotspotsController();
+        var method = HotspotsController.class.getDeclaredMethod("buildHotspotJson", List.class);
+        method.setAccessible(true);
+        return (String) method.invoke(controller, hotspots);
+    }
+
+    // Test 1: distanceKm returns 0 for identical coordinates.
+    @Test
+    void testHotspotDistanceKmSameLocationIsZero() throws Exception {
+        double distance = invokeDistanceKm(-27.4709, 153.0235, -27.4709, 153.0235);
 
         assertEquals(0.0, distance, 0.0001);
     }
 
-    // Test: Nearby crimes are grouped into a single hotspot
-// Verifies that crimes within the specified radius are correctly clustered.
-// Ensures hotspot grouping logic works for close geographical points.
+    // Test 2: distanceKm returns a positive value for different coordinates.
     @Test
-    void testBuildHotspotsGroupsNearbyCrimes() throws Exception {
-        HotspotsController controller = new HotspotsController();
+    void testHotspotDistanceKmDifferentLocationsIsPositive() throws Exception {
+        double distance = invokeDistanceKm(-27.4709, 153.0235, -27.4710, 153.0236);
 
-        List<CrimeRecord> crimes = List.of(new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), -27.4709, 153.0235, "Crime 1", "maan", false), new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), -27.4710, 153.0236, "Crime 2", "maan", false));
+        assertTrue(distance > 0);
+    }
 
-        var method = HotspotsController.class.getDeclaredMethod("buildHotspots", List.class, double.class);
-        method.setAccessible(true);
+    // Test 3: distanceKm gives the same result when locations are reversed.
+    @Test
+    void testHotspotDistanceKmIsSymmetric() throws Exception {
+        double forward = invokeDistanceKm(-27.4709, 153.0235, -33.8688, 151.2093);
+        double backward = invokeDistanceKm(-33.8688, 151.2093, -27.4709, 153.0235);
 
-        List<Hotspot> hotspots = (List<Hotspot>) method.invoke(controller, crimes, 2.0);
+        assertEquals(forward, backward, 0.0001);
+    }
+
+    // Test 4: distanceKm returns the expected approximate Brisbane-to-Sydney distance.
+    @Test
+    void testHotspotDistanceKmKnownCityDistance() throws Exception {
+        double distance = invokeDistanceKm(-27.4705, 153.0260, -33.8688, 151.2093);
+
+        assertEquals(731.0, distance, 5.0);
+    }
+
+    // Test 5: an empty crime list produces no hotspots.
+    @Test
+    void testBuildHotspotsEmptyCrimeListReturnsNoHotspots() throws Exception {
+        List<Hotspot> hotspots = invokeBuildHotspots(List.of(), 2.0);
+
+        assertTrue(hotspots.isEmpty());
+    }
+
+    // Test 6: a single crime creates one hotspot.
+    @Test
+    void testBuildHotspotsSingleCrimeCreatesOneHotspot() throws Exception {
+        List<Hotspot> hotspots = invokeBuildHotspots(List.of(maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235)), 2.0);
 
         assertEquals(1, hotspots.size());
+    }
+
+    // Test 7: a single-crime hotspot has a count of one.
+    @Test
+    void testBuildHotspotsSingleCrimeCountIsOne() throws Exception {
+        List<Hotspot> hotspots = invokeBuildHotspots(List.of(maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235)), 2.0);
+
+        assertEquals(1, hotspots.get(0).getCount());
+    }
+
+    // Test 8: a single-crime hotspot keeps the original latitude.
+    @Test
+    void testBuildHotspotsSingleCrimeLatitudeMatchesCrime() throws Exception {
+        List<Hotspot> hotspots = invokeBuildHotspots(List.of(maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235)), 2.0);
+
+        assertEquals(-27.4709, hotspots.get(0).getLatitude(), 0.0001);
+    }
+
+    // Test 9: a single-crime hotspot keeps the original longitude.
+    @Test
+    void testBuildHotspotsSingleCrimeLongitudeMatchesCrime() throws Exception {
+        List<Hotspot> hotspots = invokeBuildHotspots(List.of(maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235)), 2.0);
+
+        assertEquals(153.0235, hotspots.get(0).getLongitude(), 0.0001);
+    }
+
+    // Test 10: nearby crimes are grouped into one hotspot.
+    @Test
+    void testBuildHotspotsGroupsNearbyCrimes() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235),
+                maanCrime(2, CrimeCategory.ROBBERY, -27.4710, 153.0236)
+        );
+
+        List<Hotspot> hotspots = invokeBuildHotspots(crimes, 2.0);
+
+        assertEquals(1, hotspots.size());
+    }
+
+    // Test 11: grouped nearby crimes increase the hotspot count.
+    @Test
+    void testBuildHotspotsNearbyCrimeCountIsTwo() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235),
+                maanCrime(2, CrimeCategory.ROBBERY, -27.4710, 153.0236)
+        );
+
+        List<Hotspot> hotspots = invokeBuildHotspots(crimes, 2.0);
+
         assertEquals(2, hotspots.get(0).getCount());
     }
 
-    // Test: Distant crimes remain separate hotspots
-// Ensures crimes outside the radius are not incorrectly grouped.
-// Maintains accuracy of hotspot clustering for geographically distant events.
+    // Test 12: distant crimes remain separate hotspots.
     @Test
     void testBuildHotspotsKeepsFarCrimesSeparate() throws Exception {
-        HotspotsController controller = new HotspotsController();
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235),
+                maanCrime(2, CrimeCategory.ROBBERY, -28.0000, 153.5000)
+        );
 
-        List<CrimeRecord> crimes = List.of(new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), -27.4709, 153.0235, "Crime 1", "maan", false), new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), -28.0000, 153.5000, "Crime 2", "maan", false));
-
-        var method = HotspotsController.class.getDeclaredMethod("buildHotspots", List.class, double.class);
-        method.setAccessible(true);
-
-        List<Hotspot> hotspots = (List<Hotspot>) method.invoke(controller, crimes, 2.0);
+        List<Hotspot> hotspots = invokeBuildHotspots(crimes, 2.0);
 
         assertEquals(2, hotspots.size());
     }
 
-    // Test: Crimes exactly on the radius boundary are included
-// Verifies that boundary values (distance == radius) are handled correctly.
-// Ensures inclusive comparison (<=) is used in hotspot grouping logic.
+    // Test 13: crimes on the radius boundary are included.
     @Test
-    void testHotspotRadiusBoundary() throws Exception {
-        HotspotsController controller = new HotspotsController();
+    void testHotspotRadiusBoundaryIsIncluded() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235),
+                maanCrime(2, CrimeCategory.ROBBERY, -27.4880, 153.0235)
+        );
 
-        List<CrimeRecord> crimes = List.of(new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), -27.4709, 153.0235, "Base", "maan", false), new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), -27.4880, 153.0235, "Edge", "maan", false));
-
-        var method = HotspotsController.class.getDeclaredMethod("buildHotspots", List.class, double.class);
-        method.setAccessible(true);
-
-        List<Hotspot> hotspots = (List<Hotspot>) method.invoke(controller, crimes, 2.0);
+        List<Hotspot> hotspots = invokeBuildHotspots(crimes, 2.0);
 
         assertEquals(1, hotspots.size());
     }
 
-
-    // Test: Hotspot data is correctly converted to JSON format
-// Ensures latitude, longitude, and count fields are properly included.
-// Critical for correct frontend map rendering and data transfer.
+    // Test 14: a zero radius groups crimes at exactly the same location.
     @Test
-    void testBuildHotspotJsonFormat() throws Exception {
-        HotspotsController controller = new HotspotsController();
+    void testBuildHotspotsZeroRadiusGroupsIdenticalLocations() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235),
+                maanCrime(2, CrimeCategory.ROBBERY, -27.4709, 153.0235)
+        );
 
-        List<Hotspot> hotspots = List.of(new Hotspot(-27.4709, 153.0235, 3));
+        List<Hotspot> hotspots = invokeBuildHotspots(crimes, 0.0);
 
-        var method = HotspotsController.class.getDeclaredMethod("buildHotspotJson", List.class);
-        method.setAccessible(true);
+        assertEquals(1, hotspots.size());
+    }
 
-        String json = (String) method.invoke(controller, hotspots);
+    // Test 15: a zero radius does not group different locations.
+    @Test
+    void testBuildHotspotsZeroRadiusKeepsDifferentLocationsSeparate() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235),
+                maanCrime(2, CrimeCategory.ROBBERY, -27.4710, 153.0236)
+        );
+
+        List<Hotspot> hotspots = invokeBuildHotspots(crimes, 0.0);
+
+        assertEquals(2, hotspots.size());
+    }
+
+    // Test 16: grouped hotspot latitude is averaged.
+    @Test
+    void testBuildHotspotsAveragesGroupedLatitude() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4700, 153.0235),
+                maanCrime(2, CrimeCategory.ROBBERY, -27.4720, 153.0235)
+        );
+
+        List<Hotspot> hotspots = invokeBuildHotspots(crimes, 2.0);
+
+        assertEquals(-27.4710, hotspots.get(0).getLatitude(), 0.0001);
+    }
+
+    // Test 17: grouped hotspot longitude is averaged.
+    @Test
+    void testBuildHotspotsAveragesGroupedLongitude() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0200),
+                maanCrime(2, CrimeCategory.ROBBERY, -27.4709, 153.0260)
+        );
+
+        List<Hotspot> hotspots = invokeBuildHotspots(crimes, 2.0);
+
+        assertEquals(153.0230, hotspots.get(0).getLongitude(), 0.0001);
+    }
+
+    // Test 18: empty hotspot JSON is an empty array.
+    @Test
+    void testBuildHotspotJsonEmptyListReturnsEmptyArray() throws Exception {
+        String json = invokeBuildHotspotJson(List.of());
+
+        assertEquals("[]", json);
+    }
+
+    // Test 19: hotspot JSON includes the latitude field.
+    @Test
+    void testBuildHotspotJsonIncludesLatitude() throws Exception {
+        String json = invokeBuildHotspotJson(List.of(new Hotspot(-27.4709, 153.0235, 3)));
 
         assertTrue(json.contains("\"lat\":-27.4709"));
-        assertTrue(json.contains("\"lon\":153.0235"));
+    }
+
+    // Test 20: hotspot JSON includes the count field.
+    @Test
+    void testBuildHotspotJsonIncludesCount() throws Exception {
+        String json = invokeBuildHotspotJson(List.of(new Hotspot(-27.4709, 153.0235, 3)));
+
         assertTrue(json.contains("\"count\":3"));
     }
      /*
