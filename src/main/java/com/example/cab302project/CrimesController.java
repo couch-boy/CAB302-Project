@@ -596,18 +596,6 @@ public class CrimesController {
     }
 
     /**
-     * Returns a human-readable relative time string from a LocalDateTime.
-     * @param timestamp the timestamp to describe
-     * @return a string such as "Today", "1 day ago", or "3 days ago"
-     */
-    private String getRelativeTime(LocalDateTime timestamp) {
-        long daysAgo = ChronoUnit.DAYS.between(timestamp.toLocalDate(), LocalDate.now());
-        if (daysAgo == 0) return "Today";
-        if (daysAgo == 1) return "1 day ago";
-        return daysAgo + " days ago";
-    }
-
-    /**
      * Geocodes all crimes in the background when the list loads.
      * Results are stored in addressCache so cells display addresses immediately.
      * Each crime is geocoded one at a time to avoid Nominatim rate limiting.
@@ -632,6 +620,19 @@ public class CrimesController {
                 }
             }
         }).start();
+    }
+
+    /**
+     * Returns a human-readable relative time string from a LocalDateTime.
+     * @param timestamp the timestamp to describe
+     * @return a string such as "Today", "1 day ago", or "3 days ago"
+     */
+    public static String getRelativeTime(LocalDateTime timestamp) {
+        long daysAgo = ChronoUnit.DAYS.between(timestamp.toLocalDate(), LocalDate.now());
+
+        if (daysAgo == 0) return "Today";
+        if (daysAgo == 1) return "1 day ago";
+        return daysAgo + " days ago";
     }
 
     /**

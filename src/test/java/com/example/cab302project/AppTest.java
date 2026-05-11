@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.time.LocalDate;
 
 public class AppTest {
     /*
@@ -126,7 +127,6 @@ public class AppTest {
     /*
     JORDAN APP TESTING START
      */
-
     // Test 6: DAO returns crime list (basic data integrity)
     // Ensures the database layer is returning a non-null list.
     @Test
@@ -187,6 +187,234 @@ public class AppTest {
         assertNotNull(CrimeCategory.valueOf("ASSAULT"));
         assertNotNull(CrimeCategory.valueOf("ROBBERY"));
         assertNotNull(CrimeCategory.valueOf("NOISE"));
+    }
+
+    // Test 11: CrimeRecord constructor stores the core values correctly
+    @Test
+    void testCrimeRecordConstructorStoresCoreValues() {
+        LocalDateTime timestamp = LocalDateTime.of(2025, 1, 15, 10, 30);
+
+        CrimeRecord crime = new CrimeRecord(
+                42,
+                CrimeCategory.ASSAULT,
+                timestamp,
+                -27.4709,
+                153.0235,
+                "Test description",
+                "jordan",
+                false
+        );
+
+        assertEquals(42, crime.getId());
+        assertEquals(CrimeCategory.ASSAULT, crime.getCategory());
+        assertEquals(timestamp, crime.getTimestamp());
+        assertEquals(-27.4709, crime.getLatitude(), 0.0001);
+        assertEquals(153.0235, crime.getLongitude(), 0.0001);
+        assertEquals("Test description", crime.getDescription());
+        assertEquals("jordan", crime.getReporter());
+        assertFalse(crime.isActioned());
+    }
+
+    // Test 12: CrimeRecord setCategory() updates the stored category
+    @Test
+    void testCrimeRecordSetCategoryUpdatesValue() {
+        CrimeRecord crime = new CrimeRecord(
+                1, CrimeCategory.NOISE, LocalDateTime.now(),
+                0, 0, "desc", "user", false
+        );
+
+        crime.setCategory(CrimeCategory.ROBBERY);
+
+        assertEquals(CrimeCategory.ROBBERY, crime.getCategory());
+    }
+
+    // Test 13: CrimeRecord setTimestamp() updates the stored time
+    @Test
+    void testCrimeRecordSetTimestampUpdatesValue() {
+        CrimeRecord crime = new CrimeRecord(
+                1, CrimeCategory.NOISE, LocalDateTime.now(),
+                0, 0, "desc", "user", false
+        );
+
+        LocalDateTime newTime = LocalDateTime.of(2025, 2, 20, 14, 45);
+        crime.setTimestamp(newTime);
+
+        assertEquals(newTime, crime.getTimestamp());
+    }
+
+    // Test 14: CrimeRecord setDescription() updates the stored description
+    @Test
+    void testCrimeRecordSetDescriptionUpdatesValue() {
+        CrimeRecord crime = new CrimeRecord(
+                1, CrimeCategory.NOISE, LocalDateTime.now(),
+                0, 0, "old", "user", false
+        );
+
+        crime.setDescription("new description");
+
+        assertEquals("new description", crime.getDescription());
+    }
+
+    // Test 15: CrimeRecord setReporter() updates the stored reporter
+    @Test
+    void testCrimeRecordSetReporterUpdatesValue() {
+        CrimeRecord crime = new CrimeRecord(
+                1, CrimeCategory.NOISE, LocalDateTime.now(),
+                0, 0, "desc", "oldUser", false
+        );
+
+        crime.setReporter("newUser");
+
+        assertEquals("newUser", crime.getReporter());
+    }
+
+    // Test 16: CrimeRecord getTimestampForDb() returns SQLite-friendly formatting
+    @Test
+    void testCrimeRecordTimestampForDbFormatting() {
+        LocalDateTime timestamp = LocalDateTime.of(2025, 3, 7, 8, 5);
+
+        CrimeRecord crime = new CrimeRecord(
+                1, CrimeCategory.ROBBERY, timestamp,
+                0, 0, "desc", "user", false
+        );
+
+        assertEquals("2025-03-07 08:05:00", crime.getTimestampForDb());
+    }
+
+    // Test 17: CrimeCategory getName() returns the readable category label
+    @Test
+    void testCrimeCategoryGetNameReturnsReadableLabels() {
+        assertEquals("Assault", CrimeCategory.ASSAULT.getName());
+        assertEquals("Robbery", CrimeCategory.ROBBERY.getName());
+        assertEquals("Homicide", CrimeCategory.HOMICIDE.getName());
+    }
+
+    // Test 18: CrimeCategory toString() returns the readable display label
+    @Test
+    void testCrimeCategoryToStringReturnsReadableLabels() {
+        assertEquals("Assault", CrimeCategory.ASSAULT.toString());
+        assertEquals("Domestic Abuse", CrimeCategory.DOMESTICABUSE.toString());
+        assertEquals("Arson", CrimeCategory.ARSON.toString());
+    }
+
+    // Test 19: CrimeCategory severity labels are human-readable
+    @Test
+    void testCrimeCategorySeverityToStringReturnsReadableLabels() {
+        assertEquals("Low", CrimeCategory.Severity.LOW.toString());
+        assertEquals("Medium", CrimeCategory.Severity.MEDIUM.toString());
+        assertEquals("Critical", CrimeCategory.Severity.CRITICAL.toString());
+    }
+
+    // Test 20: Hotspot stores latitude, longitude and count correctly
+    @Test
+    void testHotspotConstructorStoresLatitudeLongitudeAndCount() {
+        Hotspot hotspot = new Hotspot(-27.4709, 153.0235, 4);
+
+        assertEquals(-27.4709, hotspot.getLatitude(), 0.0001);
+        assertEquals(153.0235, hotspot.getLongitude(), 0.0001);
+        assertEquals(4, hotspot.getCount());
+    }
+
+    // Test 21: My Reports filtering keeps only the logged-in user's reports
+    @Test
+    void testMyReportsFilteringReturnsOnlyCurrentUsersReports() {
+        List<CrimeRecord> crimes = List.of(
+                new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), 0, 0, "A", "jordan", false),
+                new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), 0, 0, "B", "jack", false),
+                new CrimeRecord(3, CrimeCategory.NOISE, LocalDateTime.now(), 0, 0, "C", "jordan", true)
+        );
+
+        String currentUser = "jordan";
+
+        List<CrimeRecord> filtered = crimes.stream()
+                .filter(c -> currentUser.equals(c.getReporter()))
+                .toList();
+
+        assertEquals(2, filtered.size());
+        for (CrimeRecord crime : filtered) {
+            assertEquals("jordan", crime.getReporter());
+        }
+    }
+
+    // Test 22: My Reports filtering returns an empty list when there are no matches
+    @Test
+    void testMyReportsFilteringReturnsEmptyForNonMatchingUser() {
+        List<CrimeRecord> crimes = List.of(
+                new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), 0, 0, "A", "jack", false),
+                new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), 0, 0, "B", "finn", false)
+        );
+
+        String currentUser = "jordan";
+
+        List<CrimeRecord> filtered = crimes.stream()
+                .filter(c -> currentUser.equals(c.getReporter()))
+                .toList();
+
+        assertTrue(filtered.isEmpty());
+    }
+
+    // Test 23: Severity filter returns only CRITICAL crimes
+    @Test
+    void testSeverityFilteringCriticalOnly() {
+        List<CrimeRecord> crimes = List.of(
+                new CrimeRecord(1, CrimeCategory.HOMICIDE, LocalDateTime.now(), 0, 0, "A", "user", false),
+                new CrimeRecord(2, CrimeCategory.ASSAULT, LocalDateTime.now(), 0, 0, "B", "user", false),
+                new CrimeRecord(3, CrimeCategory.NOISE, LocalDateTime.now(), 0, 0, "C", "user", false)
+        );
+
+        List<CrimeRecord> filtered = crimes.stream()
+                .filter(c -> c.getCategory().getSeverity() == CrimeCategory.Severity.CRITICAL)
+                .toList();
+
+        assertEquals(1, filtered.size());
+        assertEquals(CrimeCategory.HOMICIDE, filtered.get(0).getCategory());
+    }
+
+    // Test 24: Status filter returns only actioned crimes
+    @Test
+    void testStatusFilteringActionedOnly() {
+        List<CrimeRecord> crimes = List.of(
+                new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), 0, 0, "A", "user", true),
+                new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), 0, 0, "B", "user", false),
+                new CrimeRecord(3, CrimeCategory.NOISE, LocalDateTime.now(), 0, 0, "C", "user", true)
+        );
+
+        List<CrimeRecord> filtered = crimes.stream()
+                .filter(CrimeRecord::isActioned)
+                .toList();
+
+        assertEquals(2, filtered.size());
+
+        for (CrimeRecord crime : filtered) {
+            assertTrue(crime.isActioned());
+        }
+    }
+
+    // Test 25: Date filter returns only crimes from the last 7 days
+    @Test
+    void testDateFilteringLastSevenDays() {
+        List<CrimeRecord> crimes = List.of(
+                new CrimeRecord(1, CrimeCategory.ASSAULT,
+                        LocalDateTime.now().minusDays(2),
+                        0, 0, "Recent", "user", false),
+
+                new CrimeRecord(2, CrimeCategory.ROBBERY,
+                        LocalDateTime.now().minusDays(10),
+                        0, 0, "Old", "user", false)
+        );
+
+        LocalDate today = LocalDate.now();
+
+        List<CrimeRecord> filtered = crimes.stream()
+                .filter(c -> {
+                    LocalDate crimeDate = c.getTimestamp().toLocalDate();
+                    return !crimeDate.isBefore(today.minusDays(6))
+                            && !crimeDate.isAfter(today);
+                })
+                .toList();
+
+        assertEquals(1, filtered.size());
+        assertEquals("Recent", filtered.get(0).getDescription());
     }
 
     /*
