@@ -8,7 +8,6 @@ import javafx.stage.Stage;
 import javafx.scene.web.WebView;
 import javafx.scene.web.WebEngine;
 import javafx.application.Platform;
-import javafx.concurrent.Worker;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +40,7 @@ public class DashboardController {
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
+
     /**
      * Clusters nearby crimes into hotspots based on a radius, averaging their coordinates.
      * @param crimes list of all crime records to cluster
@@ -102,7 +102,6 @@ public class DashboardController {
         return earthRadius * c;
     }
 
-
     /**
      * Converts a list of Hotspot objects into a JSON string for passing to the hotspots map.
      * @param hotspots list of hotspots to serialise
@@ -132,6 +131,8 @@ public class DashboardController {
     /**
      * Loads the map view and, once loaded, retrieves crime data,
      * generates hotspots, and injects them into the map for display.
+     * Uses LeafletLoader to inject Leaflet from a bundled classpath resource
+     * and routes tile requests through TileProxyServer for cross-platform compatibility.
      */
     private void loadMap() {
         if (mapView == null) {
@@ -141,33 +142,21 @@ public class DashboardController {
 
         WebEngine engine = mapView.getEngine();
 
-        var resource = getClass().getResource("/com/example/cab302project/hotspots-map.html");
-        if (resource == null) {
-            System.out.println("hotspots-map.html not found");
-            return;
-        }
+        LeafletLoader.loadMap(mapView, "hotspots-map.html", () -> {
+            List<CrimeRecord> crimes = dao.getAllCrimes();
+            List<Hotspot> hotspots = buildHotspots(crimes, 2.0);
 
-        String url = resource.toExternalForm();
+            String json = buildHotspotJson(hotspots);
+            final String safeJson = json.replace("\\", "\\\\").replace("'", "\\'");
 
-        engine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
-            if (newState == Worker.State.SUCCEEDED) {
-                List<CrimeRecord> crimes = dao.getAllCrimes();
-                List<Hotspot> hotspots = buildHotspots(crimes, 2.0);
-
-                String json = buildHotspotJson(hotspots);
-                final String safeJson = json.replace("\\", "\\\\").replace("'", "\\'");
-
-                Platform.runLater(() -> {
-                    try {
-                        engine.executeScript("loadHotspots('" + safeJson + "')");
-                    } catch (Exception e) {
-                        System.out.println("JS execution failed: " + e.getMessage());
-                    }
-                });
-            }
+            Platform.runLater(() -> {
+                try {
+                    engine.executeScript("loadHotspots('" + safeJson + "')");
+                } catch (Exception e) {
+                    System.out.println("JS execution failed: " + e.getMessage());
+                }
+            });
         });
-
-        engine.load(url);
     }
 
     /**

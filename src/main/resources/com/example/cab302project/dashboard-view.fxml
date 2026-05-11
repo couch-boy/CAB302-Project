@@ -31,7 +31,11 @@
         </HBox>
 
         <!-- Hotspots map fills remaining height -->
-        <WebView fx:id="mapView" VBox.vgrow="ALWAYS"/>
+        <WebView fx:id="mapView"
+                 prefWidth="1920"
+                 prefHeight="1920"
+                 VBox.vgrow="ALWAYS"
+                 HBox.hgrow="ALWAYS" />
 
         <!-- Hotspot intensity legend -->
         <HBox alignment="CENTER_LEFT" spacing="16"

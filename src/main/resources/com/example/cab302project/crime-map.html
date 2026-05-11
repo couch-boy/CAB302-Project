@@ -1,91 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Crime Map</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@latest/ol.css">
-    <script src="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js"></script>
-
     <style>
-        html, body, #map {
-          width: 100%;
-          height: 100%;
-          margin: 0;
+        /* html, body and #map all use 100% sizing with no absolute positioning.
+           Absolute positioning on the map div causes WebKit inside JavaFX WebView
+           to return zero-sized bounding rects for Leaflet's internal panes, which
+           leaves grey patches in the rendered map. Normal flow with 100% works. */
+        html, body {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            width: 100%;
+            height: 100%;
+            background: #e8e0d8;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            border: 0;
         }
     </style>
 </head>
 <body>
-
 <div id="map"></div>
 
 <script>
-    const vectorSource = new ol.source.Vector();
+    // State
+    var TILE_PROXY_PORT = -1;
+    var map = null;
+    var markerLayer = null;
+    var pendingCrimeData = null;
 
-    const vectorLayer = new ol.layer.Vector({
-      source: vectorSource
-    });
-
-    const map = new ol.Map({
-      target: 'map',
-      layers: [
-        new ol.layer.Tile({
-          source: new ol.source.OSM()
-        }),
-        vectorLayer
-      ],
-      view: new ol.View({
-        center: ol.proj.fromLonLat([153.0235, -27.4709]),
-        zoom: 13
-      })
-    });
-
-    function getColor(severity) {
-      severity = String(severity).trim().toUpperCase();
-
-      if (severity === "LOW") return "#FFD700";
-      if (severity === "MEDIUM") return "#FF8C00";
-      if (severity === "CRITICAL") return "#DC143C";
-
-      return "gray";
+    // Called from Java whenever the WebView is resized. Tells Leaflet to recompute
+    // tile positions for the new viewport size. The width and height parameters are
+    // kept for API compatibility but Leaflet reads the actual size from the map div,
+    // which is sized via CSS 100% to fill the WebView.
+    function resizeMap(width, height) {
+        if (map) {
+            map.invalidateSize(true);
+        }
     }
 
+    // Called by LeafletLoader after injecting Leaflet JS and before pushing crime data.
+    // Java provides the tile proxy port and the WebView's current dimensions.
+    function initMap(tilePort, width, height) {
+        if (map) return;
+        TILE_PROXY_PORT = tilePort;
+
+        // Force Leaflet to use 2D translate() instead of translate3d().
+        // JavaFX WebView's WebKit has a GPU compositing bug where some translate3d
+        // layers are silently not painted, leaving grey patches in the map tiles.
+        L.Browser.any3d = false;
+
+        map = L.map('map', {
+            center: [-27.4709, 153.0235],
+            zoom: 13,
+            zoomControl: true,
+            fadeAnimation: false,
+            zoomAnimation: false,
+            markerZoomAnimation: false
+        });
+
+        // Route tiles through the local Java proxy so they load on macOS and Windows alike
+        var tileUrl = TILE_PROXY_PORT > 0
+            ? 'http://127.0.0.1:' + TILE_PROXY_PORT + '/tile/{z}/{x}/{y}.png'
+            : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+        L.tileLayer(tileUrl, {
+            maxZoom: 19,
+            subdomains: 'abc',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        markerLayer = L.layerGroup().addTo(map);
+
+        // If Java called loadCrimeMarkers before initMap finished, apply the buffered data now
+        if (pendingCrimeData !== null) {
+            loadCrimeMarkers(pendingCrimeData);
+            pendingCrimeData = null;
+        }
+    }
+
+    // Returns the fill colour for a crime marker based on its severity string
+    function getColor(severity) {
+        var s = String(severity).trim().toUpperCase();
+        if (s === "LOW")      return "#FFD700";
+        if (s === "MEDIUM")   return "#FF8C00";
+        if (s === "CRITICAL") return "#DC143C";
+        return "gray";
+    }
+
+    // Called by Java with a JSON array of crime objects containing lat, lon and severity.
+    // Clears existing markers and redraws all crime locations on the map.
     function loadCrimeMarkers(data) {
-      const crimes = JSON.parse(data);
+        if (!map) {
+            // Map not ready yet — buffer and apply after initMap completes
+            pendingCrimeData = data;
+            return;
+        }
 
-      vectorSource.clear();
+        var crimes = JSON.parse(data);
+        markerLayer.clearLayers();
 
-      crimes.forEach(c => {
-        const feature = new ol.Feature({
-          geometry: new ol.geom.Point(
-            ol.proj.fromLonLat([c.lon, c.lat])
-          )
+        var bounds = [];
+        crimes.forEach(function(c) {
+            var latlng = [c.lat, c.lon];
+            bounds.push(latlng);
+
+            var circle = L.circleMarker(latlng, {
+                radius: 8,
+                fillColor: getColor(c.severity),
+                color: "#000",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.9
+            });
+
+            if (c.description) {
+                circle.bindPopup('<strong>' + (c.category || 'Crime') + '</strong><br>' + c.description);
+            }
+
+            markerLayer.addLayer(circle);
         });
 
-        feature.setStyle(new ol.style.Style({
-          image: new ol.style.Circle({
-            radius: 8,
-            fill: new ol.style.Fill({
-              color: getColor(c.severity)
-            }),
-            stroke: new ol.style.Stroke({
-              color: "#000",
-              width: 1
-            })
-          })
-        }));
-
-        vectorSource.addFeature(feature);
-      });
-
-      if (vectorSource.getFeatures().length > 0) {
-        map.getView().fit(vectorSource.getExtent(), {
-          padding: [40, 40, 40, 40],
-          maxZoom: 16,
-          duration: 300
-        });
-      }
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16, animate: false });
+        }
     }
 </script>
-
 </body>
 </html>

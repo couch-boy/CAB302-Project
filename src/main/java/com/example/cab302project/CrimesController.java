@@ -249,36 +249,28 @@ public class CrimesController {
 
     /**
      * Loads crime-map.html into the WebView and injects crime marker data via JavaScript
-     * once the page has finished loading.
+     * once the page has finished loading. Uses LeafletLoader to inject Leaflet from a
+     * bundled classpath resource and routes tile requests through TileProxyServer
+     * for cross-platform compatibility.
      */
     private void loadCrimeMap() {
         if (crimeMapView == null) return;
 
         WebEngine engine = crimeMapView.getEngine();
 
-        var resource = getClass().getResource("/com/example/cab302project/crime-map.html");
-        if (resource == null) {
-            System.out.println("crime-map.html not found");
-            return;
-        }
-
-        engine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
-            if (newState == Worker.State.SUCCEEDED) {
-                List<CrimeRecord> crimes = dao.getAllCrimes();
-                final String json = buildCrimeJson(crimes)
-                        .replace("\\", "\\\\")
-                        .replace("'", "\\'");
-                Platform.runLater(() -> {
-                    try {
-                        engine.executeScript("loadCrimeMarkers('" + json + "')");
-                    } catch (Exception e) {
-                        System.out.println("JS execution failed: " + e.getMessage());
-                    }
-                });
-            }
+        LeafletLoader.loadMap(crimeMapView, "crime-map.html", () -> {
+            List<CrimeRecord> crimes = dao.getAllCrimes();
+            final String json = buildCrimeJson(crimes)
+                    .replace("\\", "\\\\")
+                    .replace("'", "\\'");
+            Platform.runLater(() -> {
+                try {
+                    engine.executeScript("loadCrimeMarkers('" + json + "')");
+                } catch (Exception e) {
+                    System.out.println("JS execution failed: " + e.getMessage());
+                }
+            });
         });
-
-        engine.load(resource.toExternalForm());
     }
 
     /**
