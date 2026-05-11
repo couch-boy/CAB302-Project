@@ -623,6 +623,19 @@ public class CrimesController {
     }
 
     /**
+     * Returns a human-readable relative time string from a LocalDateTime.
+     * @param timestamp the timestamp to describe
+     * @return a string such as "Today", "1 day ago", or "3 days ago"
+     */
+    public static String getRelativeTime(LocalDateTime timestamp) {
+        long daysAgo = ChronoUnit.DAYS.between(timestamp.toLocalDate(), LocalDate.now());
+
+        if (daysAgo == 0) return "Today";
+        if (daysAgo == 1) return "1 day ago";
+        return daysAgo + " days ago";
+    }
+
+    /**
      * Builds the styled ListView with custom cells showing category, status, location and time.
      * Selection on the ListView mirrors to the hidden TableView so all existing logic stays intact.
      */
@@ -675,7 +688,7 @@ public class CrimesController {
 
                 VBox textBlock = new VBox(2, category, status, location);
 
-                Label time = new Label(UIUtils.getRelativeTime(crime.getTimestamp()));
+                Label time = new Label(getRelativeTime(crime.getTimestamp()));
                 time.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
 
                 Region spacer = new Region();

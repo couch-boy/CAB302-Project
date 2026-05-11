@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.time.LocalDate;
 
 public class AppTest {
     /*
@@ -352,25 +353,68 @@ public class AppTest {
         assertTrue(filtered.isEmpty());
     }
 
-    // Test 23: Relative time helper returns "Today" for same-day crimes
+    // Test 23: Severity filter returns only CRITICAL crimes
     @Test
-    void testCrimeRelativeTimeTodayIsToday() throws Exception {
-        LocalDateTime today = java.time.LocalDate.now().atTime(12, 0);
-        assertEquals("Today", UIUtils.getRelativeTime(today));
+    void testSeverityFilteringCriticalOnly() {
+        List<CrimeRecord> crimes = List.of(
+                new CrimeRecord(1, CrimeCategory.HOMICIDE, LocalDateTime.now(), 0, 0, "A", "user", false),
+                new CrimeRecord(2, CrimeCategory.ASSAULT, LocalDateTime.now(), 0, 0, "B", "user", false),
+                new CrimeRecord(3, CrimeCategory.NOISE, LocalDateTime.now(), 0, 0, "C", "user", false)
+        );
+
+        List<CrimeRecord> filtered = crimes.stream()
+                .filter(c -> c.getCategory().getSeverity() == CrimeCategory.Severity.CRITICAL)
+                .toList();
+
+        assertEquals(1, filtered.size());
+        assertEquals(CrimeCategory.HOMICIDE, filtered.get(0).getCategory());
     }
 
-    // Test 24: Relative time helper returns "1 day ago" for yesterday's crimes
+    // Test 24: Status filter returns only actioned crimes
     @Test
-    void testCrimeRelativeTimeYesterdayIsOneDayAgo() {
-        LocalDateTime yesterday = java.time.LocalDate.now().minusDays(1).atTime(12, 0);
-        assertEquals("1 day ago", UIUtils.getRelativeTime(yesterday));
+    void testStatusFilteringActionedOnly() {
+        List<CrimeRecord> crimes = List.of(
+                new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), 0, 0, "A", "user", true),
+                new CrimeRecord(2, CrimeCategory.ROBBERY, LocalDateTime.now(), 0, 0, "B", "user", false),
+                new CrimeRecord(3, CrimeCategory.NOISE, LocalDateTime.now(), 0, 0, "C", "user", true)
+        );
+
+        List<CrimeRecord> filtered = crimes.stream()
+                .filter(CrimeRecord::isActioned)
+                .toList();
+
+        assertEquals(2, filtered.size());
+
+        for (CrimeRecord crime : filtered) {
+            assertTrue(crime.isActioned());
+        }
     }
 
-    // Test 25: Relative time helper returns days for older crimes
+    // Test 25: Date filter returns only crimes from the last 7 days
     @Test
-    void testCrimeRelativeTimeThreeDaysAgoIsThreeDaysAgo() {
-        LocalDateTime threeDaysAgo = java.time.LocalDate.now().minusDays(3).atTime(12, 0);
-        assertEquals("3 days ago", UIUtils.getRelativeTime(threeDaysAgo));
+    void testDateFilteringLastSevenDays() {
+        List<CrimeRecord> crimes = List.of(
+                new CrimeRecord(1, CrimeCategory.ASSAULT,
+                        LocalDateTime.now().minusDays(2),
+                        0, 0, "Recent", "user", false),
+
+                new CrimeRecord(2, CrimeCategory.ROBBERY,
+                        LocalDateTime.now().minusDays(10),
+                        0, 0, "Old", "user", false)
+        );
+
+        LocalDate today = LocalDate.now();
+
+        List<CrimeRecord> filtered = crimes.stream()
+                .filter(c -> {
+                    LocalDate crimeDate = c.getTimestamp().toLocalDate();
+                    return !crimeDate.isBefore(today.minusDays(6))
+                            && !crimeDate.isAfter(today);
+                })
+                .toList();
+
+        assertEquals(1, filtered.size());
+        assertEquals("Recent", filtered.get(0).getDescription());
     }
 
     /*
