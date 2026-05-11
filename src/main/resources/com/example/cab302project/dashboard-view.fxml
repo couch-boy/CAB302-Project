@@ -30,6 +30,42 @@
             <Region minWidth="40"/>
         </HBox>
 
+        <!-- Search bar and category filter -->
+        <VBox styleClass="search-panel" spacing="6">
+            <padding><Insets top="10" right="12" bottom="8" left="12"/></padding>
+
+            <!-- Suburb search row -->
+            <HBox spacing="6" alignment="CENTER_LEFT">
+                <TextField fx:id="searchField"
+                           promptText="Search suburb or area..."
+                           styleClass="search-field"
+                           onAction="#onSearch"
+                           HBox.hgrow="ALWAYS"/>
+                <Button text="Search"
+                        onAction="#onSearch"
+                        styleClass="btn-primary"
+                        style="-fx-padding: 8 14 8 14;"/>
+                <Button text="Clear"
+                        onAction="#onClearSearch"
+                        styleClass="btn-secondary"
+                        style="-fx-padding: 8 14 8 14;"/>
+            </HBox>
+
+            <!-- Category filter row -->
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="Filter:" styleClass="filter-label"/>
+                <ComboBox fx:id="categoryFilter"
+                          onAction="#onCategoryChanged"
+                          styleClass="filter-combo"
+                          maxWidth="Infinity"
+                          HBox.hgrow="ALWAYS"/>
+                <Label fx:id="searchStatusLabel"
+                       styleClass="search-status"
+                       maxWidth="Infinity"
+                       HBox.hgrow="ALWAYS"/>
+            </HBox>
+        </VBox>
+
         <!-- Hotspots map fills remaining height -->
         <WebView fx:id="mapView"
                  prefWidth="1920"

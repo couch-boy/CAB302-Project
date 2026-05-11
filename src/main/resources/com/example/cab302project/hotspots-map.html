@@ -44,13 +44,12 @@
     var TILE_PROXY_PORT = -1;
     var map = null;
     var hotspotLayer = null;
+    var boundaryLayer = null;
     var hasFitted = false;
     var pendingHotspotData = null;
 
     // Called from Java whenever the WebView is resized. Tells Leaflet to recompute
-    // tile positions for the new viewport size. The width and height parameters are
-    // kept for API compatibility but Leaflet reads the actual size from the map div,
-    // which is sized via CSS 100% to fill the WebView.
+    // tile positions for the new viewport size.
     function resizeMap(width, height) {
         if (map) {
             map.invalidateSize(true);
@@ -89,12 +88,69 @@
         }).addTo(map);
 
         hotspotLayer = L.layerGroup().addTo(map);
+        boundaryLayer = L.layerGroup().addTo(map);
 
         // If Java called loadHotspots before initMap finished, apply the buffered data now
         if (pendingHotspotData !== null) {
             loadHotspots(pendingHotspotData);
             pendingHotspotData = null;
         }
+    }
+
+    // Draws the suburb boundary polygon on the map and flies to it.
+    // Called by Java after a successful suburb search with the GeoJSON polygon string,
+    // suburb display name, and centre coordinates from Nominatim.
+    function showSuburbBoundary(geoJsonStr, name, lat, lon) {
+        if (!map) return;
+
+        // Remove any existing boundary
+        boundaryLayer.clearLayers();
+
+        try {
+            var geoJson = JSON.parse(geoJsonStr);
+
+            // Draw the suburb outline as a dashed blue polygon
+            var poly = L.geoJSON(geoJson, {
+                style: {
+                    color: '#2A364E',
+                    weight: 2.5,
+                    opacity: 0.9,
+                    fillColor: '#4A90D9',
+                    fillOpacity: 0.08,
+                    dashArray: '6, 4'
+                }
+            });
+
+            boundaryLayer.addLayer(poly);
+
+            // Fit map to the suburb boundary
+            var bounds = poly.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [20, 20], animate: false });
+            } else {
+                map.setView([lat, lon], 14);
+            }
+
+        } catch (e) {
+            // GeoJSON parse failed — fall back to just flying to the centre point
+            flyToSuburb(lat, lon, 14);
+        }
+    }
+
+    // Flies the map to the given coordinates at the specified zoom level.
+    // Used as a fallback when no GeoJSON polygon is available from Nominatim.
+    function flyToSuburb(lat, lon, zoom) {
+        if (!map) return;
+        map.setView([lat, lon], zoom || 13);
+    }
+
+    // Removes the suburb boundary polygon from the map and resets the view to all of Brisbane.
+    // Called by Java when the user clears the search.
+    function clearSuburbBoundary() {
+        if (!map) return;
+        boundaryLayer.clearLayers();
+        map.setView([-27.4709, 153.0235], 11);
+        hasFitted = false;
     }
 
     // Returns the circle radius scaled to the number of crimes in the hotspot
@@ -118,7 +174,6 @@
 
         var hotspots = JSON.parse(data);
         hotspotLayer.clearLayers();
-        hasFitted = false;
 
         var bounds = [];
         hotspots.forEach(function(h) {
@@ -143,7 +198,9 @@
             hotspotLayer.addLayer(circle);
         });
 
-        if (!hasFitted && bounds.length > 0) {
+        // Only auto-fit bounds on the first load with no suburb selected.
+        // When a suburb is active, Java has already flown to it via showSuburbBoundary.
+        if (!hasFitted && bounds.length > 0 && boundaryLayer.getLayers().length === 0) {
             map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14, animate: false });
             hasFitted = true;
         }
