@@ -13,7 +13,7 @@ import java.util.logging.Logger;
  * A lightweight local HTTP tile proxy server for JavaFX WebView.
  *
  * JavaFX's WebView on macOS (WebKit) blocks external network requests to
- * tile servers (e.g. openstreetmap.org), causing the map tiles to fail silently.
+ * tile servers (e.g. openstreetmap.org), causing the map tiles to fail.
  * On Windows the tiles load but slowly due to WebKit's limited concurrency.
  *
  * This server binds to localhost on a random available port and proxies
