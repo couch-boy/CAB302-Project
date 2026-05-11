@@ -362,3 +362,51 @@
     -fx-font-size: 10px;
     -fx-font-weight: bold;
 }
+
+/* Search panel above the map on the dashboard */
+.search-panel {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* Search text field */
+.search-field {
+    -fx-background-color: #F1F3F5;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 12 8 12;
+    -fx-font-size: 13px;
+    -fx-prompt-text-fill: #9CA3AF;
+}
+
+.search-field:focused {
+    -fx-border-color: #2A364E;
+    -fx-background-color: #FFFFFF;
+}
+
+/* Category dropdown */
+.filter-combo {
+    -fx-background-color: #F1F3F5;
+    -fx-border-color: #D1D5DB;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 2 8 2 8;
+    -fx-font-size: 12px;
+}
+
+/* "Filter:" label */
+.filter-label {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 12px;
+}
+
+/* Status text showing crime count or error messages */
+.search-status {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
