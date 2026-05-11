@@ -53,32 +53,27 @@ public class HotspotsController {
     }
 
     /**
-     * Loads the map and injects hotspot data after it finishes loading.
+     * Loads hotspots-map.html into the WebView and injects hotspot data after it
+     * finishes loading. Uses LeafletLoader to inject Leaflet from a bundled classpath
+     * resource and routes tile requests through TileProxyServer for cross-platform
+     * compatibility.
      */
     private void loadHotspotMap() {
         WebEngine engine = mapView.getEngine();
 
-        var resource = getClass().getResource("/com/example/cab302project/hotspots-map.html");
-        if (resource == null) {
-            System.out.println("hotspots-map.html not found");
-            return;
-        }
+        LeafletLoader.loadMap(mapView, "hotspots-map.html", () -> {
+            List<CrimeRecord> crimes = dao.getAllCrimes();
+            List<Hotspot> hotspots = buildHotspots(crimes, 2.0);
 
-        String url = resource.toExternalForm();
+            String json = buildHotspotJson(hotspots);
+            final String safeJson = json.replace("\\", "\\\\").replace("'", "\\'");
 
-        engine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
-            if (newState == javafx.concurrent.Worker.State.SUCCEEDED) {
-                List<CrimeRecord> crimes = dao.getAllCrimes();
-                List<Hotspot> hotspots = buildHotspots(crimes, 2.0);
-
-                String json = buildHotspotJson(hotspots);
-                json = json.replace("\\", "\\\\").replace("'", "\\'");
-
-                engine.executeScript("loadHotspots('" + json + "')");
+            try {
+                engine.executeScript("loadHotspots('" + safeJson + "')");
+            } catch (Exception e) {
+                System.out.println("JS execution failed: " + e.getMessage());
             }
         });
-
-        engine.load(url);
     }
 
     /**
