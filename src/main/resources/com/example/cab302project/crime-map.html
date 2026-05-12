@@ -15,7 +15,7 @@
             border: 0;
             width: 100%;
             height: 100%;
-            background: #e8e0d8;
+            background: #f0eeeb;
         }
         #map {
             width: 100%;
@@ -34,6 +34,7 @@
     var TILE_PROXY_PORT = -1;
     var map = null;
     var markerLayer = null;
+    var boundaryLayer = null;
     var pendingCrimeData = null;
 
     // Called from Java whenever the WebView is resized. Tells Leaflet to recompute
@@ -66,45 +67,150 @@
             markerZoomAnimation: false
         });
 
-        // Route tiles through the local Java proxy so they load on macOS and Windows alike
+        // Use CartoDB Positron light grey — matches the QPS crime map style.
+        // Routed through the local Java proxy so tiles load on macOS and Windows alike.
         var tileUrl = TILE_PROXY_PORT > 0
-            ? 'http://127.0.0.1:' + TILE_PROXY_PORT + '/tile/{z}/{x}/{y}.png'
-            : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            ? 'http://127.0.0.1:' + TILE_PROXY_PORT + '/cartodblight/{z}/{x}/{y}.png'
+            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 
         L.tileLayer(tileUrl, {
             maxZoom: 19,
             subdomains: 'abc',
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         }).addTo(map);
 
         markerLayer = L.layerGroup().addTo(map);
+        boundaryLayer = L.layerGroup().addTo(map);
 
         // If Java called loadCrimeMarkers before initMap finished, apply the buffered data now
         if (pendingCrimeData !== null) {
-            loadCrimeMarkers(pendingCrimeData);
+            loadCrimeMarkers(pendingCrimeData, '');
             pendingCrimeData = null;
         }
     }
 
-    // Returns the fill colour for a crime marker based on its severity string
-    function getColor(severity) {
-        var s = String(severity).trim().toUpperCase();
-        if (s === "LOW")      return "#FFD700";
-        if (s === "MEDIUM")   return "#FF8C00";
-        if (s === "CRITICAL") return "#DC143C";
-        return "gray";
+    // Draws the suburb boundary polygon on the map and flies to it.
+    // Called by Java after a successful suburb search with the GeoJSON string,
+    // display name and centre coordinates returned by Nominatim.
+    function showSuburbBoundary(geoJsonStr, name, lat, lon) {
+        if (!map) return;
+
+        boundaryLayer.clearLayers();
+
+        try {
+            var geoJson = JSON.parse(geoJsonStr);
+
+            // Draw the suburb outline as a dashed navy polygon matching the dashboard style
+            var poly = L.geoJSON(geoJson, {
+                style: {
+                    color: '#2A364E',
+                    weight: 2.5,
+                    opacity: 0.9,
+                    fillColor: '#4A90D9',
+                    fillOpacity: 0.08,
+                    dashArray: '6, 4'
+                }
+            });
+
+            boundaryLayer.addLayer(poly);
+
+            var bounds = poly.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [20, 20], animate: false });
+            } else {
+                map.setView([lat, lon], 14);
+            }
+
+        } catch (e) {
+            // GeoJSON parse failed — fall back to flying to the centre point
+            flyToSuburb(lat, lon, 14);
+        }
     }
 
-    // Called by Java with a JSON array of crime objects containing lat, lon and severity.
-    // Clears existing markers and redraws all crime locations on the map.
-    function loadCrimeMarkers(data) {
+    // Flies the map to the given coordinates at the specified zoom level.
+    // Used as a fallback when no GeoJSON polygon is available from Nominatim.
+    function flyToSuburb(lat, lon, zoom) {
+        if (!map) return;
+        map.setView([lat, lon], zoom || 13);
+    }
+
+    // Removes the suburb boundary polygon and resets the map view to Brisbane.
+    // Called by Java when the user clears the search field.
+    function clearSuburbBoundary() {
+        if (!map) return;
+        boundaryLayer.clearLayers();
+        map.setView([-27.4709, 153.0235], 13);
+    }
+
+    // Extracts all coordinate rings from a GeoJSON geometry into a flat list of rings.
+    // Handles both Polygon and MultiPolygon geometry types returned by Nominatim.
+    function extractRings(geometry) {
+        var rings = [];
+        if (geometry.type === 'Polygon') {
+            geometry.coordinates.forEach(function(ring) { rings.push(ring); });
+        } else if (geometry.type === 'MultiPolygon') {
+            geometry.coordinates.forEach(function(poly) {
+                poly.forEach(function(ring) { rings.push(ring); });
+            });
+        }
+        return rings;
+    }
+
+    // Ray-casting point-in-polygon test. Returns true if [lat, lon] falls inside
+    // any ring of the given GeoJSON geometry. Used to filter crime markers to only
+    // those within the exact suburb boundary polygon, not just its bounding box.
+    function pointInGeoJson(lat, lon, geometry) {
+        var rings = extractRings(geometry);
+        for (var r = 0; r < rings.length; r++) {
+            var ring = rings[r];
+            var inside = false;
+            for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                var xi = ring[i][0], yi = ring[i][1];
+                var xj = ring[j][0], yj = ring[j][1];
+                if (((yi > lat) !== (yj > lat)) &&
+                    (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+                    inside = !inside;
+                }
+            }
+            if (inside) return true;
+        }
+        return false;
+    }
+
+    // Returns the fill colour for a crime marker based on its severity string.
+    // Matches the colour convention used in the list view and legend.
+    function getColor(severity) {
+        var s = String(severity).trim().toUpperCase();
+        if (s === "CRITICAL") return "#DC143C";
+        if (s === "MEDIUM")   return "#FF8C00";
+        return "#FFD700";
+    }
+
+    // Called by Java with a JSON array of crime objects containing lat, lon, severity,
+    // category and description, plus an optional GeoJSON polygon string for precise
+    // point-in-polygon filtering within the searched suburb boundary.
+    // Clears existing markers and redraws all matching crime locations on the map.
+    function loadCrimeMarkers(data, geoJsonStr) {
         if (!map) {
             // Map not ready yet — buffer and apply after initMap completes
             pendingCrimeData = data;
             return;
         }
 
-        var crimes = JSON.parse(data);
+        // Parse the suburb polygon filter if one was provided by Java
+        var filterGeometry = null;
+        if (geoJsonStr && geoJsonStr.length > 0) {
+            try { filterGeometry = JSON.parse(geoJsonStr); } catch(e) { filterGeometry = null; }
+        }
+
+        var allCrimes = JSON.parse(data);
+
+        // Apply precise point-in-polygon filter when a suburb boundary is active.
+        // Java pre-filters with a bounding box, this does the exact polygon check.
+        var crimes = filterGeometry
+            ? allCrimes.filter(function(c) { return pointInGeoJson(c.lat, c.lon, filterGeometry); })
+            : allCrimes;
+
         markerLayer.clearLayers();
 
         var bounds = [];
@@ -115,20 +221,23 @@
             var circle = L.circleMarker(latlng, {
                 radius: 8,
                 fillColor: getColor(c.severity),
-                color: "#000",
-                weight: 1,
+                color: "#fff",
+                weight: 1.5,
                 opacity: 1,
                 fillOpacity: 0.9
             });
 
-            if (c.description) {
-                circle.bindPopup('<strong>' + (c.category || 'Crime') + '</strong><br>' + c.description);
-            }
+            // Popup shows category and description when a marker is tapped
+            var popupContent = '<strong>' + (c.category || 'Crime') + '</strong>';
+            if (c.description) popupContent += '<br>' + c.description;
+            circle.bindPopup(popupContent);
 
             markerLayer.addLayer(circle);
         });
 
-        if (bounds.length > 0) {
+        // Only auto-fit to crime bounds when no suburb boundary is drawn.
+        // When a suburb is active, Java has already flown to it via showSuburbBoundary.
+        if (bounds.length > 0 && boundaryLayer.getLayers().length === 0) {
             map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16, animate: false });
         }
     }

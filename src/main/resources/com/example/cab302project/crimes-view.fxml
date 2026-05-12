@@ -139,10 +139,16 @@
         <!-- Map pane - hidden by default, shown when Map tab is active -->
         <VBox fx:id="mapPane" VBox.vgrow="ALWAYS" spacing="0" visible="false" managed="false">
 
-            <!-- Severity legend mirrored from list view -->
+            <!-- Map fills all available space — search bar floats over it via StackPane overlay -->
+            <WebView fx:id="crimeMapView"
+                     prefWidth="1920"
+                     prefHeight="1920"
+                     VBox.vgrow="ALWAYS"/>
+
+            <!-- Severity legend below the map -->
             <HBox alignment="CENTER_LEFT" spacing="16"
                   style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
-                         -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;">
+                         -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;">
                 <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
                 <Label text="Severe" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
                 <Label text="●" style="-fx-text-fill: #FF8C00; -fx-font-size: 11px;"/>
@@ -150,8 +156,6 @@
                 <Label text="●" style="-fx-text-fill: #FFD700; -fx-font-size: 11px;"/>
                 <Label text="Low" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
             </HBox>
-
-            <WebView fx:id="crimeMapView" VBox.vgrow="ALWAYS"/>
 
             <!-- Submit Report pinned to bottom of map pane -->
             <VBox style="-fx-background-color: #FFFFFF;
@@ -168,6 +172,121 @@
         </VBox>
 
     </VBox>
+
+    <!-- Floating search bar overlay for the crime map — pinned to top-right, 360px wide.
+         Hidden by default, made visible when the Map tab is active.
+         StackPane.margin top=110 clears the app bar (52px) + tab bar (44px). -->
+    <VBox fx:id="crimeSearchOverlay"
+          styleClass="search-overlay"
+          StackPane.alignment="TOP_RIGHT"
+          maxHeight="-Infinity"
+          maxWidth="360"
+          pickOnBounds="false"
+          visible="false"
+          managed="false">
+        <StackPane.margin>
+            <Insets top="110" right="12"/>
+        </StackPane.margin>
+
+        <!-- Search row: field + Search + Clear + Filter toggle -->
+        <HBox spacing="6" alignment="CENTER_LEFT">
+            <TextField fx:id="crimeSearchField"
+                       promptText="Search suburb or area..."
+                       styleClass="search-field-float"
+                       onAction="#onCrimeSearch"
+                       HBox.hgrow="ALWAYS"/>
+            <Button text="Search"
+                    onAction="#onCrimeSearch"
+                    styleClass="search-btn-float"/>
+            <Button text="✕"
+                    onAction="#onCrimeClearSearch"
+                    styleClass="icon-btn-float"/>
+            <!-- Filter toggle button — shows/hides the filter drawer -->
+            <Button fx:id="crimeFilterToggleBtn"
+                    onAction="#onCrimeToggleFilter"
+                    styleClass="icon-btn-float">
+                <graphic><FontIcon iconLiteral="fas-sliders-h" iconSize="14" iconColor="#2A364E"/></graphic>
+            </Button>
+        </HBox>
+
+        <!-- Status label shown below search bar when suburb or filter is active -->
+        <Label fx:id="crimeSearchStatusLabel"
+               styleClass="search-status-float"
+               maxWidth="Infinity"/>
+
+    </VBox>
+
+    <!-- Full-width filter drawer for the crime map.
+         Sits as its own StackPane child so it is not constrained by the 360px search overlay.
+         StackPane.margin top=165 clears the app bar, tab bar and search bar row.
+         Clicking the transparent backdrop outside the card closes the drawer. -->
+    <StackPane fx:id="crimeFilterBackdrop"
+               managed="false"
+               visible="false"
+               onMouseClicked="#onCrimeBackdropClicked"
+               StackPane.alignment="TOP_CENTER">
+        <StackPane.margin>
+            <Insets top="165" left="12" right="12"/>
+        </StackPane.margin>
+
+        <!-- Transparent backdrop catches outside clicks -->
+        <Pane style="-fx-background-color: rgba(0,0,0,0.01);"
+              mouseTransparent="false"/>
+
+        <!-- Filter card — full width, inset 12px each side so map edges remain visible -->
+        <VBox fx:id="crimeFilterDrawer"
+              styleClass="filter-drawer"
+              spacing="10"
+              StackPane.alignment="TOP_CENTER"
+              maxHeight="-Infinity"
+              onMouseClicked="#onCrimeFilterDrawerClicked">
+            <padding><Insets top="12" right="16" bottom="16" left="16"/></padding>
+
+            <HBox alignment="CENTER_RIGHT">
+                <Label text="Filter crimes" styleClass="filter-drawer-title" HBox.hgrow="ALWAYS"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="✕"
+                        onAction="#onCrimeToggleFilter"
+                        styleClass="icon-btn-float"
+                        style="-fx-font-size: 11px; -fx-padding: 4 8 4 8;"/>
+            </HBox>
+
+            <!-- Crime type -->
+            <VBox spacing="4">
+                <Label text="Crime type" styleClass="filter-drawer-label"/>
+                <ComboBox fx:id="crimeCategoryFilter"
+                          onAction="#onCrimeFilterChanged"
+                          styleClass="filter-drawer-combo"
+                          maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Severity -->
+            <VBox spacing="4">
+                <Label text="Severity" styleClass="filter-drawer-label"/>
+                <ComboBox fx:id="crimeSeverityFilter"
+                          onAction="#onCrimeFilterChanged"
+                          styleClass="filter-drawer-combo"
+                          maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Time range -->
+            <VBox spacing="4">
+                <Label text="Time range" styleClass="filter-drawer-label"/>
+                <ComboBox fx:id="crimeDaysFilter"
+                          onAction="#onCrimeFilterChanged"
+                          styleClass="filter-drawer-combo"
+                          maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Reset all filters -->
+            <Button text="Reset all filters"
+                    onAction="#onCrimeResetFilters"
+                    maxWidth="Infinity"
+                    styleClass="btn-secondary"
+                    style="-fx-padding: 10 0 10 0;"/>
+
+        </VBox>
+    </StackPane>
 
     <!-- Dim backdrop - clicking it closes the detail panel -->
     <Pane fx:id="detailBackdrop"
