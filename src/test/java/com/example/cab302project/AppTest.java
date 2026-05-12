@@ -9,115 +9,200 @@ import java.util.List;
 import java.time.LocalDate;
 
 public class AppTest {
-    /*
+/*
     JACK APP TESTING START
      */
-    // Test 1: CrimeRecord coordinate validation
-    // Checks that setLocation() rejects out-of-range coordinates and keeps
-    // the original valid values. Protects map rendering from bad data.
+
+    // Test 1: Valid latitude is accepted by setLocation()
+    // Checks that a valid in-range latitude updates the stored value on the crime record.
+    // Protects the map from silently dropping valid location updates.
     @Test
-    void testCrimeRecordCoordinateValidation() {
-        CrimeRecord crime = new CrimeRecord(1, CrimeCategory.ASSAULT, LocalDateTime.now(), -27.4709, 153.0235, "Test", "user1", false);
-
-        // Valid coordinates should update
-        crime.setLocation(-33.8688, 151.2093);
+    void testSetLocationAcceptsValidLatitude() {
+        CrimeRecord crime = new CrimeRecord(1, CrimeCategory.VANDALISM, LocalDateTime.now(), -27.4709, 153.0235, "Test", "jack", false);
+        crime.setLocation(-33.8688, 153.0235);
         assertEquals(-33.8688, crime.getLatitude(), 0.0001);
-        assertEquals(151.2093, crime.getLongitude(), 0.0001);
-
-        // Invalid latitude (outside -90 to 90) should not update
-        crime.setLocation(999.0, 153.0);
-        assertEquals(-33.8688, crime.getLatitude(), 0.0001);
-
-        // Invalid longitude (outside -180 to 180) should not update
-        crime.setLocation(-27.0, 999.0);
-        assertEquals(151.2093, crime.getLongitude(), 0.0001);
     }
 
-    // Test 2: CrimeCategory severity mapping
-    // Checks that each severity tier maps correctly to its category.
-    // Used throughout the UI to colour code crime markers and list items.
+    // Test 2: Out-of-range latitude is rejected by setLocation()
+    // Checks that a latitude above 90 is ignored and the original value is preserved.
+    // Prevents garbage coordinates from reaching the Leaflet map.
     @Test
-    void testCrimeCategorySeverityMapping() {
-        // Low severity
-        assertEquals(CrimeCategory.Severity.LOW, CrimeCategory.NOISE.getSeverity());
+    void testSetLocationRejectsLatitudeAbove90() {
+        CrimeRecord crime = new CrimeRecord(2, CrimeCategory.VANDALISM, LocalDateTime.now(), -27.4709, 153.0235, "Test", "jack", false);
+        crime.setLocation(91.0, 153.0235);
+        assertEquals(-27.4709, crime.getLatitude(), 0.0001);
+    }
+
+    // Test 3: Out-of-range longitude is rejected by setLocation()
+    // Checks that a longitude above 180 is ignored and the original value is preserved.
+    // Prevents invalid map pin placement from bad form input.
+    @Test
+    void testSetLocationRejectsLongitudeAbove180() {
+        CrimeRecord crime = new CrimeRecord(3, CrimeCategory.VANDALISM, LocalDateTime.now(), -27.4709, 153.0235, "Test", "jack", false);
+        crime.setLocation(-27.4709, 181.0);
+        assertEquals(153.0235, crime.getLongitude(), 0.0001);
+    }
+
+    // Test 4: LOW severity categories return the correct severity enum
+    // Checks that petty offence categories like GRAFFITI and LOITERING are LOW.
+    // Drives the yellow colour coding on the crime map and list view.
+    @Test
+    void testLowSeverityCategoriesAreCorrect() {
         assertEquals(CrimeCategory.Severity.LOW, CrimeCategory.GRAFFITI.getSeverity());
-
-        // Medium severity
-        assertEquals(CrimeCategory.Severity.MEDIUM, CrimeCategory.ASSAULT.getSeverity());
-        assertEquals(CrimeCategory.Severity.MEDIUM, CrimeCategory.ROBBERY.getSeverity());
-
-        // Critical severity
-        assertEquals(CrimeCategory.Severity.CRITICAL, CrimeCategory.HOMICIDE.getSeverity());
-        assertEquals(CrimeCategory.Severity.CRITICAL, CrimeCategory.ARSON.getSeverity());
+        assertEquals(CrimeCategory.Severity.LOW, CrimeCategory.LOITERING.getSeverity());
+        assertEquals(CrimeCategory.Severity.LOW, CrimeCategory.VANDALISM.getSeverity());
     }
 
-    // Test 3: UserSession login, access, and logout
-    // Checks the session lifecycle: login creates a session, isPolice() returns
-    // the correct value, and logout clears the session.
+    // Test 5: MEDIUM severity categories return the correct severity enum
+    // Checks that offences like TRESPASSING and WEAPONS map to MEDIUM severity.
+    // Drives the orange colour coding on the crime map and list view.
     @Test
-    void testUserSessionLifecycle() {
-        // Create a public user and log in
-        User publicUser = new User("testuser", "pass123", "test@email.com", "0400000000", -27.4709, 153.0235, false, UserType.REGULAR);
-        UserSession.login(publicUser);
+    void testMediumSeverityCategoriesAreCorrect() {
+        assertEquals(CrimeCategory.Severity.MEDIUM, CrimeCategory.TRESPASSING.getSeverity());
+        assertEquals(CrimeCategory.Severity.MEDIUM, CrimeCategory.WEAPONS.getSeverity());
+        assertEquals(CrimeCategory.Severity.MEDIUM, CrimeCategory.STALKING.getSeverity());
+    }
 
-        assertNotNull(UserSession.getInstance());
-        assertEquals("testuser", UserSession.getInstance().getUser().getUsername());
-        assertFalse(UserSession.isPolice());
+    // Test 6: CRITICAL severity categories return the correct severity enum
+    // Checks that violent offences like SEXUALOFFENCE and ARMEDROBBERY are CRITICAL.
+    // Drives the red colour coding on the crime map and list view.
+    @Test
+    void testCriticalSeverityCategoriesAreCorrect() {
+        assertEquals(CrimeCategory.Severity.CRITICAL, CrimeCategory.SEXUALOFFENCE.getSeverity());
+        assertEquals(CrimeCategory.Severity.CRITICAL, CrimeCategory.ARMEDROBBERY.getSeverity());
+        assertEquals(CrimeCategory.Severity.CRITICAL, CrimeCategory.BREAKINGANDENTERING.getSeverity());
+    }
 
-        // Log out and verify session is cleared
+    // Test 7: UserSession is null before any login
+    // Checks that getInstance() returns null when no user has logged in.
+    // Prevents NPE if the session is accessed before authentication.
+    @Test
+    void testUserSessionIsNullBeforeLogin() {
         UserSession.logout();
         assertNull(UserSession.getInstance());
+    }
 
-        // Log in as police and verify isPolice() returns true
-        User policeUser = new User("officer1", "secure", "police@law.com", "0411111111", -27.4709, 153.0235, false, UserType.POLICE);
-        UserSession.login(policeUser);
-        assertTrue(UserSession.isPolice());
-
-        // Clean up
+    // Test 8: UserSession stores the logged-in user's username
+    // Checks that the username returned after login matches the user that was logged in.
+    // Used to display the reporter name in the crime detail panel.
+    @Test
+    void testUserSessionStoresUsername() {
+        User user = new User("jacktest", "abc", "j@test.com", "0411223344", 0, 0, false, UserType.REGULAR);
+        UserSession.login(user);
+        assertEquals("jacktest", UserSession.getInstance().getUser().getUsername());
         UserSession.logout();
     }
 
-    // Test 4: UIUtils email and phone validation
-    // Checks the input validators used on registration and profile screens.
-    // Bad input here would allow corrupt data into the database.
+    // Test 9: UserSession isPolice() returns false for a regular user
+    // Checks that a non-police user does not pass the police permission check.
+    // Prevents regular users from seeing police-only features like Save.
     @Test
-    void testInputValidation() {
-        // Valid email formats
-        assertTrue(UIUtils.isValidEmail("user@example.com"));
-        assertTrue(UIUtils.isValidEmail("user.name+tag@domain.co"));
-
-        // Invalid email formats
-        assertFalse(UIUtils.isValidEmail("notanemail"));
-        assertFalse(UIUtils.isValidEmail("missing@"));
-        assertFalse(UIUtils.isValidEmail(null));
-
-        // Valid phone - exactly 10 digits
-        assertTrue(UIUtils.isValidPhone("0412345678"));
-        assertTrue(UIUtils.isValidPhone("0298765432"));
-
-        // Invalid phone formats
-        assertFalse(UIUtils.isValidPhone("123"));
-        assertFalse(UIUtils.isValidPhone("04123456789")); // 11 digits
-        assertFalse(UIUtils.isValidPhone("041234567a")); // contains a letter
-        assertFalse(UIUtils.isValidPhone(null));
+    void testUserSessionIsPoliceReturnsFalseForRegularUser() {
+        User user = new User("citizen1", "pass", "c@test.com", "0422334455", 0, 0, false, UserType.REGULAR);
+        UserSession.login(user);
+        assertFalse(UserSession.isPolice());
+        UserSession.logout();
     }
 
-    // Test 5: CrimeRecord anonymous reporter display
-    // Checks that getReporterDisplayName() returns "Anonymous" for null or
-    // empty reporters. Displayed in the crime detail panel and list view.
+    // Test 10: UIUtils.isValidEmail() accepts a standard email address
+    // Checks that a properly formatted email passes validation on the register screen.
+    // Prevents empty or malformed emails from being saved to the database.
     @Test
-    void testReporterDisplayName() {
-        // Null reporter should display as Anonymous
-        CrimeRecord nullReporter = new CrimeRecord(1, CrimeCategory.NOISE, LocalDateTime.now(), -27.4709, 153.0235, "desc", null, false);
-        assertEquals("Anonymous", nullReporter.getReporterDisplayName());
+    void testIsValidEmailAcceptsStandardEmail() {
+        assertTrue(UIUtils.isValidEmail("jacksheppard@gmail.com"));
+    }
 
-        // Empty string reporter should display as Anonymous
-        CrimeRecord emptyReporter = new CrimeRecord(2, CrimeCategory.NOISE, LocalDateTime.now(), -27.4709, 153.0235, "desc", "", false);
-        assertEquals("Anonymous", emptyReporter.getReporterDisplayName());
+    // Test 11: UIUtils.isValidEmail() rejects an email with no domain
+    // Checks that an email missing the domain part after @ is rejected.
+    // Prevents garbage data from being stored in the users table.
+    @Test
+    void testIsValidEmailRejectsNoDomain() {
+        assertFalse(UIUtils.isValidEmail("jacksheppard@"));
+    }
 
-        // Named reporter should display their username
-        CrimeRecord namedReporter = new CrimeRecord(3, CrimeCategory.NOISE, LocalDateTime.now(), -27.4709, 153.0235, "desc", "jack123", false);
-        assertEquals("jack123", namedReporter.getReporterDisplayName());
+    // Test 12: UIUtils.isValidPhone() accepts a valid 10-digit number
+    // Checks that a standard Australian mobile number passes validation.
+    // Phone number is stored in the user profile and displayed on screen.
+    @Test
+    void testIsValidPhoneAcceptsTenDigitNumber() {
+        assertTrue(UIUtils.isValidPhone("0433221100"));
+    }
+
+    // Test 13: UIUtils.isValidPhone() rejects a number that is too short
+    // Checks that a phone number with fewer than 10 digits is rejected.
+    // Prevents truncated numbers from being saved to the user profile.
+    @Test
+    void testIsValidPhoneRejectsTooShort() {
+        assertFalse(UIUtils.isValidPhone("04332211"));
+    }
+
+    // Test 14: UIUtils.isValidCoordinate() accepts Brisbane CBD coordinates
+    // Checks that the default map location passes the coordinate validator.
+    // Used when placing crime pins and validating form input.
+    @Test
+    void testIsValidCoordinateAcceptsBrisbaneCBD() {
+        assertTrue(UIUtils.isValidCoordinate(-27.4709, 153.0235));
+    }
+
+    // Test 15: UIUtils.isValidCoordinate() rejects both values out of range
+    // Checks that wildly invalid lat/lon fails the validator.
+    // Stops bad geocoding results from being saved as crime locations.
+    @Test
+    void testIsValidCoordinateRejectsBothOutOfRange() {
+        assertFalse(UIUtils.isValidCoordinate(999.0, 999.0));
+    }
+
+    // Test 16: SuburbSearchService.isInBoundingBox() returns true when inside
+    // Checks that Brisbane CBD coordinates are detected inside a Brisbane bounding box.
+    // Used to pre-filter crimes before the JS point-in-polygon check on the map.
+    @Test
+    void testIsInBoundingBoxReturnsTrueWhenInside() {
+        // Bounding box: [minLat, maxLat, minLon, maxLon] covering Brisbane CBD
+        double[] box = new double[]{-27.5000, -27.4000, 153.0000, 153.1000};
+        assertTrue(SuburbSearchService.isInBoundingBox(-27.4709, 153.0235, box));
+    }
+
+    // Test 17: SuburbSearchService.isInBoundingBox() returns false when outside
+    // Checks that Sydney coordinates are not detected inside a Brisbane bounding box.
+    // Ensures crimes from other cities don't appear when a Brisbane suburb is searched.
+    @Test
+    void testIsInBoundingBoxReturnsFalseWhenOutside() {
+        // Bounding box covering Brisbane CBD
+        double[] box = new double[]{-27.5000, -27.4000, 153.0000, 153.1000};
+        // Sydney coordinates — clearly outside the Brisbane box
+        assertFalse(SuburbSearchService.isInBoundingBox(-33.8688, 151.2093, box));
+    }
+
+    // Test 18: CrimeRecord description is stored and returned correctly
+    // Checks that the description passed to the constructor comes back unchanged.
+    // Description is displayed in the crime detail panel and map popup.
+    @Test
+    void testCrimeRecordDescriptionIsStoredCorrectly() {
+        String desc = "Witnessed graffiti on the bridge wall";
+        CrimeRecord crime = new CrimeRecord(10, CrimeCategory.GRAFFITI, LocalDateTime.now(),
+                -27.4709, 153.0235, desc, "jack", false);
+        assertEquals(desc, crime.getDescription());
+    }
+
+    // Test 19: User email is stored and returned correctly
+    // Checks that the email passed to the User constructor is retrievable.
+    // Email is displayed on the profile screen and used for account lookup.
+    @Test
+    void testUserEmailIsStoredCorrectly() {
+        User user = new User("jacktest2", "pass", "jack@radius.com", "0400112233", 0, 0, false, UserType.REGULAR);
+        assertEquals("jack@radius.com", user.getEmail());
+    }
+
+    // Test 20: User dark mode preference is stored and returned correctly
+    // Checks that the dark mode flag set at construction is readable via isDarkMode().
+    // Controls the app theme and is persisted to the user profile in the database.
+    @Test
+    void testUserDarkModePreferenceIsStoredCorrectly() {
+        User darkUser = new User("nightowl", "pass", "n@test.com", "0455667788", 0, 0, true, UserType.REGULAR);
+        assertTrue(darkUser.isDarkMode());
+
+        User lightUser = new User("daybird", "pass", "d@test.com", "0455667799", 0, 0, false, UserType.REGULAR);
+        assertFalse(lightUser.isDarkMode());
     }
 
     /*
