@@ -15,7 +15,7 @@
             border: 0;
             width: 100%;
             height: 100%;
-            background: #e8e0d8;
+            background: #f0eeeb;
         }
         #map {
             width: 100%;
@@ -76,15 +76,16 @@
             markerZoomAnimation: false
         });
 
-        // Route tiles through the local Java proxy so they load on macOS and Windows alike
+        // Use CartoDB Positron - a clean light grey minimal style
+        // Routed through the local Java proxy so tiles load on macOS and Windows alike.
         var tileUrl = TILE_PROXY_PORT > 0
-            ? 'http://127.0.0.1:' + TILE_PROXY_PORT + '/tile/{z}/{x}/{y}.png'
-            : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            ? 'http://127.0.0.1:' + TILE_PROXY_PORT + '/cartodblight/{z}/{x}/{y}.png'
+            : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
 
         L.tileLayer(tileUrl, {
             maxZoom: 19,
-            subdomains: 'abc',
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            subdomains: 'abcd',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         }).addTo(map);
 
         hotspotLayer = L.layerGroup().addTo(map);
@@ -116,7 +117,7 @@
                     weight: 2.5,
                     opacity: 0.9,
                     fillColor: '#4A90D9',
-                    fillOpacity: 0.08,
+                    fillOpacity: 0.2,
                     dashArray: '6, 4'
                 }
             });
@@ -153,26 +154,82 @@
         hasFitted = false;
     }
 
-    // Returns the circle radius scaled to the number of crimes in the hotspot
-    function getRadius(count) { return Math.max(10, count * 3); }
-
-    // Returns the fill colour for a hotspot circle based on crime count severity
-    function getColor(count) {
-        if (count >= 5) return "rgba(255, 0, 0, 0.85)";
-        if (count >= 3) return "rgba(255, 140, 0, 0.85)";
-        return "rgba(255, 215, 0, 0.85)";
+    // Extracts all coordinate rings from a GeoJSON geometry into a flat list of rings.
+    // Handles both Polygon and MultiPolygon geometry types returned by Nominatim.
+    function extractRings(geometry) {
+        var rings = [];
+        if (geometry.type === 'Polygon') {
+            geometry.coordinates.forEach(function(ring) { rings.push(ring); });
+        } else if (geometry.type === 'MultiPolygon') {
+            geometry.coordinates.forEach(function(poly) {
+                poly.forEach(function(ring) { rings.push(ring); });
+            });
+        }
+        return rings;
     }
 
-    // Called by Java with a JSON array of hotspot objects containing lat, lon and count.
-    // Clears existing markers and redraws all hotspots on the map.
-    function loadHotspots(data) {
+    // Ray-casting point-in-polygon test. Returns true if [lon, lat] is inside any
+    // ring of the given GeoJSON geometry. Used to filter hotspots to only those
+    // whose coordinates fall within the exact suburb boundary polygon.
+    function pointInGeoJson(lat, lon, geometry) {
+        var rings = extractRings(geometry);
+        for (var r = 0; r < rings.length; r++) {
+            var ring = rings[r];
+            var inside = false;
+            for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                var xi = ring[i][0], yi = ring[i][1];
+                var xj = ring[j][0], yj = ring[j][1];
+                if (((yi > lat) !== (yj > lat)) &&
+                    (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+                    inside = !inside;
+                }
+            }
+            if (inside) return true;
+        }
+        return false;
+    }
+
+    // Returns the circle radius scaled to the number of crimes in the hotspot.
+    // Single crimes show as a small dot. Clusters grow proportionally
+    // so the size visually communicates crime density, matching the QPS map.
+    function getRadius(count) {
+        if (count === 1) return 10;
+        return Math.min(10 + (count - 1) * 4, 48);
+    }
+
+    // Returns the fill colour for a hotspot circle based on crime count.
+    // 1 crime = yellow (low), 2-4 = orange (moderate), 5+ = red (high).
+    // Matches the QPS crime map colour convention where single incidents
+    // are visually distinct from true hotspot clusters.
+    function getColor(count) {
+        if (count >= 5) return "rgba(220, 20, 60, 0.88)";
+        if (count >= 2) return "rgba(255, 140, 0, 0.88)";
+        return "rgba(255, 215, 0, 0.92)";
+    }
+
+    // Called by Java with a JSON array of hotspot objects containing lat, lon and count,
+    // and an optional GeoJSON polygon string for precise point-in-polygon filtering.
+    // When a polygon is provided, only hotspots whose coordinates fall inside it are shown,
+    // giving accurate suburb-boundary filtering rather than just a bounding box.
+    function loadHotspots(data, geoJsonStr) {
         if (!map) {
-            // Map not ready yet — buffer and apply after initMap completes
             pendingHotspotData = data;
             return;
         }
 
-        var hotspots = JSON.parse(data);
+        // Parse the polygon filter if one was provided
+        var filterGeometry = null;
+        if (geoJsonStr && geoJsonStr.length > 0) {
+            try { filterGeometry = JSON.parse(geoJsonStr); } catch(e) { filterGeometry = null; }
+        }
+
+        var allHotspots = JSON.parse(data);
+
+        // Apply precise point-in-polygon filter — remove any hotspot outside the suburb polygon
+        var hotspots = filterGeometry
+            ? allHotspots.filter(function(h) { return pointInGeoJson(h.lat, h.lon, filterGeometry); })
+            : allHotspots;
+
         hotspotLayer.clearLayers();
 
         var bounds = [];
@@ -198,8 +255,6 @@
             hotspotLayer.addLayer(circle);
         });
 
-        // Only auto-fit bounds on the first load with no suburb selected.
-        // When a suburb is active, Java has already flown to it via showSuburbBoundary.
         if (!hasFitted && bounds.length > 0 && boundaryLayer.getLayers().length === 0) {
             map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14, animate: false });
             hasFitted = true;
