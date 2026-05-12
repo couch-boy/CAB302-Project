@@ -34,6 +34,8 @@ import javafx.scene.web.WebView;
 import javafx.util.Duration;
 
 import java.util.List;
+import javafx.collections.FXCollections;
+import javafx.scene.input.MouseEvent;
 
 /**
  * Controller for the public crime reports screen (crimes-view.fxml).
@@ -101,6 +103,24 @@ public class CrimesController {
     private VBox mapPane;
     @FXML
     private WebView crimeMapView;
+    // Crime map search overlay fields — mirror the dashboard floating search bar
+    @FXML private VBox crimeSearchOverlay;
+    @FXML private TextField crimeSearchField;
+    @FXML private Label crimeSearchStatusLabel;
+    @FXML private StackPane crimeFilterBackdrop;
+    @FXML private VBox crimeFilterDrawer;
+    @FXML private ComboBox<String> crimeCategoryFilter;
+    @FXML private ComboBox<String> crimeDaysFilter;
+    @FXML private ComboBox<String> crimeSeverityFilter;
+
+    // Crime map search state — mirrors DashboardController pattern
+    private double[] crimeActiveBoundingBox = null;
+    private String crimeActiveGeoJson = null;
+    private boolean crimeFilterDrawerOpen = false;
+    private WebEngine crimeEngine = null;
+    // Set to true only after LeafletLoader has finished injecting Leaflet and called initMap.
+    // Guards against filter/search methods calling loadCrimeMarkers before the JS is ready.
+    private boolean crimeMapReady = false;
 
     // Hamburger menu
     @FXML
@@ -227,6 +247,9 @@ public class CrimesController {
 
     /**
      * Toggles visibility between the list and map panes and updates tab button styling.
+     * When switching to the map tab, the floating search overlay is made visible.
+     * When switching back to the list tab, the overlay is hidden so it does not
+     * appear over the list content.
      * @param listActive true shows the list pane, false shows the map pane
      */
     private void setActiveTab(boolean listActive) {
@@ -237,6 +260,11 @@ public class CrimesController {
             listPane.setManaged(true);
             mapPane.setVisible(false);
             mapPane.setManaged(false);
+            // Hide the floating search overlay when returning to the list pane
+            if (crimeSearchOverlay != null) {
+                crimeSearchOverlay.setVisible(false);
+                crimeSearchOverlay.setManaged(false);
+            }
         } else {
             mapTabBtn.getStyleClass().add("tab-btn-active");
             listTabBtn.getStyleClass().remove("tab-btn-active");
@@ -244,6 +272,11 @@ public class CrimesController {
             mapPane.setManaged(true);
             listPane.setVisible(false);
             listPane.setManaged(false);
+            // Show the floating search overlay when the map pane is active
+            if (crimeSearchOverlay != null) {
+                crimeSearchOverlay.setVisible(true);
+                crimeSearchOverlay.setManaged(true);
+            }
         }
     }
 
@@ -252,25 +285,256 @@ public class CrimesController {
      * once the page has finished loading. Uses LeafletLoader to inject Leaflet from a
      * bundled classpath resource and routes tile requests through TileProxyServer
      * for cross-platform compatibility.
+     * Stores the WebEngine reference and sets up the map filter dropdowns so the
+     * floating search bar and filter drawer work after the map is first opened.
      */
     private void loadCrimeMap() {
         if (crimeMapView == null) return;
 
-        WebEngine engine = crimeMapView.getEngine();
+        crimeEngine = crimeMapView.getEngine();
+        setupCrimeMapFilters();
 
         LeafletLoader.loadMap(crimeMapView, "crime-map.html", () -> {
-            List<CrimeRecord> crimes = dao.getAllCrimes();
-            final String json = buildCrimeJson(crimes)
-                    .replace("\\", "\\\\")
-                    .replace("'", "\\'");
+            crimeMapReady = true;
+            // Brief delay on first load so Leaflet finishes initialising
+            // before markers are pushed, ensuring fitBounds works correctly
+            javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(
+                    javafx.util.Duration.millis(300));
+            delay.setOnFinished(e -> applyCrimeMapFilters());
+            delay.play();
+        });
+    }
+
+    /**
+     * Populates the crime map filter drawer dropdowns with their option lists.
+     * Called once when the map is first loaded.
+     */
+    private void setupCrimeMapFilters() {
+        if (crimeCategoryFilter != null) {
+            List<String> cats = new ArrayList<>();
+            cats.add("All Types");
+            for (CrimeCategory cat : CrimeCategory.values()) cats.add(cat.getName());
+            crimeCategoryFilter.setItems(FXCollections.observableArrayList(cats));
+            crimeCategoryFilter.setValue("All Types");
+        }
+        if (crimeSeverityFilter != null) {
+            crimeSeverityFilter.setItems(FXCollections.observableArrayList(
+                    "All Severities", "Severe", "Moderate", "Low"));
+            crimeSeverityFilter.setValue("All Severities");
+        }
+        if (crimeDaysFilter != null) {
+            crimeDaysFilter.setItems(FXCollections.observableArrayList(
+                    "All time", "Last 24 hours", "Last 7 days",
+                    "Last 30 days", "Last 90 days", "Last year"));
+            crimeDaysFilter.setValue("All time");
+        }
+    }
+
+    /**
+     * Applies all active crime map filters — suburb bounding box, crime type,
+     * severity and time range — and pushes the filtered JSON to the map.
+     * Also passes the active GeoJSON polygon so JavaScript can perform a precise
+     * point-in-polygon check inside the suburb boundary.
+     */
+    private void applyCrimeMapFilters() {
+        if (crimeEngine == null || !crimeMapReady) return;
+
+        List<CrimeRecord> allCrimes = dao.getAllCrimes();
+
+        String selCat  = crimeCategoryFilter != null ? crimeCategoryFilter.getValue() : "All Types";
+        String selSev  = crimeSeverityFilter  != null ? crimeSeverityFilter.getValue()  : "All Severities";
+        String selDays = crimeDaysFilter      != null ? crimeDaysFilter.getValue()      : "All time";
+
+        LocalDateTime cutoff = resolveCrimeDaysCutoff(selDays);
+
+        List<CrimeRecord> filtered = new ArrayList<>();
+        for (CrimeRecord c : allCrimes) {
+
+            // Suburb bounding box pre-filter — fast rectangle check before polygon test
+            if (crimeActiveBoundingBox != null &&
+                    !SuburbSearchService.isInBoundingBox(
+                            c.getLatitude(), c.getLongitude(), crimeActiveBoundingBox)) continue;
+
+            // Crime type filter
+            if (selCat != null && !selCat.equals("All Types") &&
+                    !c.getCategory().getName().equals(selCat)) continue;
+
+            // Severity filter
+            // Severity filter — map display labels to the internal enum values
+            if (selSev != null && !selSev.equals("All Severities")) {
+                String severityLabel = switch (selSev) {
+                    case "Severe"   -> "Critical";
+                    case "Moderate" -> "Medium";
+                    case "Low"      -> "Low";
+                    default         -> selSev;
+                };
+                if (!c.getCategory().getSeverity().toString().equals(severityLabel)) continue;
+            }
+
+            // Time range filter
+            if (cutoff != null && c.getTimestamp() != null &&
+                    c.getTimestamp().isBefore(cutoff)) continue;
+
+            filtered.add(c);
+        }
+
+        final String json = buildCrimeJson(filtered)
+                .replace("\\", "\\\\")
+                .replace("'", "\\'");
+
+        // Pass the active GeoJSON polygon so JavaScript performs a precise
+        // point-in-polygon test inside the suburb boundary, not just the bounding box
+        final String geoJsonFilter = (crimeActiveGeoJson != null)
+                ? crimeActiveGeoJson.replace("\\", "\\\\").replace("'", "\\'")
+                : "";
+
+        // Update the status label below the search bar
+        String status = crimeActiveBoundingBox == null && filtered.size() == allCrimes.size()
+                ? ""
+                : filtered.isEmpty()
+                  ? "No crimes match these filters"
+                  : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
+        if (crimeSearchStatusLabel != null) {
+            Platform.runLater(() -> crimeSearchStatusLabel.setText(status));
+        }
+
+        try {
+            crimeEngine.executeScript("loadCrimeMarkers('" + json + "','" + geoJsonFilter + "')");
+        } catch (Exception e) {
+            System.out.println("JS execution failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Converts a time range label from the days filter dropdown into a LocalDateTime
+     * cutoff. Returns null when All time is selected meaning no restriction is applied.
+     * @param label the display string from the days filter dropdown
+     * @return the earliest allowed crime timestamp, or null for no restriction
+     */
+    private LocalDateTime resolveCrimeDaysCutoff(String label) {
+        if (label == null || label.equals("All time")) return null;
+        LocalDateTime now = LocalDateTime.now();
+        return switch (label) {
+            case "Last 24 hours" -> now.minusDays(1);
+            case "Last 7 days"   -> now.minusDays(7);
+            case "Last 30 days"  -> now.minusDays(30);
+            case "Last 90 days"  -> now.minusDays(90);
+            case "Last year"     -> now.minusYears(1);
+            default              -> null;
+        };
+    }
+
+    /**
+     * Handles suburb search on the crime map when the user presses enter or Search.
+     * Runs Nominatim on a background thread to keep the UI responsive, then draws
+     * the suburb boundary polygon on the map and refilters markers to that area.
+     */
+    @FXML
+    public void onCrimeSearch() {
+        if (crimeSearchField == null) return;
+        String query = crimeSearchField.getText().trim();
+        if (query.isEmpty()) {
+            onCrimeClearSearch();
+            return;
+        }
+        if (crimeSearchStatusLabel != null) crimeSearchStatusLabel.setText("Searching...");
+
+        Thread t = new Thread(() -> {
+            SuburbSearchService.SuburbResult result = new SuburbSearchService().search(query);
             Platform.runLater(() -> {
-                try {
-                    engine.executeScript("loadCrimeMarkers('" + json + "')");
-                } catch (Exception e) {
-                    System.out.println("JS execution failed: " + e.getMessage());
+                if (result == null) {
+                    if (crimeSearchStatusLabel != null)
+                        crimeSearchStatusLabel.setText("Suburb not found. Try a different name.");
+                    return;
                 }
+                crimeActiveBoundingBox = result.boundingBox;
+                crimeActiveGeoJson = result.geoJson;
+
+                try {
+                    String name = result.displayName
+                            .replace("\\", "\\\\").replace("'", "\\'");
+                    if (result.geoJson != null) {
+                        String safeGj = result.geoJson
+                                .replace("\\", "\\\\").replace("'", "\\'");
+                        crimeEngine.executeScript(
+                                "showSuburbBoundary('" + safeGj + "','" + name + "',"
+                                        + result.lat + "," + result.lon + ")");
+                    } else {
+                        crimeEngine.executeScript(
+                                "flyToSuburb(" + result.lat + "," + result.lon + ",13)");
+                    }
+                } catch (Exception e) {
+                    System.out.println("Crime map update failed: " + e.getMessage());
+                }
+                applyCrimeMapFilters();
             });
         });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /**
+     * Clears the suburb search on the crime map, removes the boundary polygon,
+     * and resets the map to show all crimes.
+     */
+    @FXML
+    public void onCrimeClearSearch() {
+        crimeActiveBoundingBox = null;
+        crimeActiveGeoJson = null;
+        if (crimeSearchField != null) crimeSearchField.clear();
+        if (crimeSearchStatusLabel != null) crimeSearchStatusLabel.setText("");
+        try { crimeEngine.executeScript("clearSuburbBoundary()"); } catch (Exception ignored) {}
+        applyCrimeMapFilters();
+    }
+
+    /**
+     * Toggles the crime map filter drawer open and closed.
+     * Also shows or hides the transparent backdrop that catches outside clicks.
+     */
+    @FXML
+    public void onCrimeToggleFilter() {
+        crimeFilterDrawerOpen = !crimeFilterDrawerOpen;
+        if (crimeFilterBackdrop != null) {
+            crimeFilterBackdrop.setVisible(crimeFilterDrawerOpen);
+            crimeFilterBackdrop.setManaged(crimeFilterDrawerOpen);
+        }
+    }
+
+    /**
+     * Closes the crime map filter drawer when the user clicks outside it.
+     */
+    @FXML
+    public void onCrimeBackdropClicked() {
+        if (crimeFilterDrawerOpen) onCrimeToggleFilter();
+    }
+
+    /**
+     * Consumes mouse clicks on the filter drawer itself so they do not
+     * propagate to the backdrop and accidentally close the panel.
+     */
+    @FXML
+    public void onCrimeFilterDrawerClicked(MouseEvent event) {
+        event.consume();
+    }
+
+    /**
+     * Called when any crime map filter dropdown changes value.
+     * Immediately reapplies all filters and refreshes the map markers.
+     */
+    @FXML
+    public void onCrimeFilterChanged() {
+        if (crimeEngine != null) applyCrimeMapFilters();
+    }
+
+    /**
+     * Resets all crime map filter dropdowns to their defaults and refreshes the map.
+     */
+    @FXML
+    public void onCrimeResetFilters() {
+        if (crimeCategoryFilter != null) crimeCategoryFilter.setValue("All Types");
+        if (crimeSeverityFilter  != null) crimeSeverityFilter.setValue("All Severities");
+        if (crimeDaysFilter      != null) crimeDaysFilter.setValue("All time");
+        if (crimeEngine != null) applyCrimeMapFilters();
     }
 
     /**
@@ -286,7 +550,7 @@ public class CrimesController {
             sb.append("{")
                     .append("\"lat\":").append(c.getLatitude()).append(",")
                     .append("\"lon\":").append(c.getLongitude()).append(",")
-                    .append("\"severity\":\"").append(c.getCategory().getSeverity().toString()).append("\"")
+                    .append("\"severity\":\"").append(c.getCategory().getSeverity().toString().toUpperCase()).append("\"")
                     .append("}");
             if (i < crimes.size() - 1) sb.append(",");
         }
