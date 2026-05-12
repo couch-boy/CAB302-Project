@@ -363,50 +363,110 @@
     -fx-font-weight: bold;
 }
 
-/* Search panel above the map on the dashboard */
-.search-panel {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: #E5E7EB;
-    -fx-border-width: 0 0 1 0;
+
+/* Floating search overlay — sits above the map with transparent background */
+.search-overlay {
+    -fx-background-color: transparent;
 }
 
-/* Search text field */
-.search-field {
-    -fx-background-color: #F1F3F5;
-    -fx-border-color: #D1D5DB;
+/* Search text field — semi-transparent white pill */
+.search-field-float {
+    -fx-background-color: rgba(255, 255, 255, 0.92);
+    -fx-border-color: rgba(0, 0, 0, 0.12);
     -fx-border-width: 1;
-    -fx-border-radius: 8;
-    -fx-background-radius: 8;
-    -fx-padding: 8 12 8 12;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 9 12 9 12;
     -fx-font-size: 13px;
     -fx-prompt-text-fill: #9CA3AF;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 6, 0.2, 0, 2);
 }
 
-.search-field:focused {
+.search-field-float:focused {
     -fx-border-color: #2A364E;
-    -fx-background-color: #FFFFFF;
+    -fx-background-color: rgba(255, 255, 255, 0.98);
 }
 
-/* Category dropdown */
-.filter-combo {
+/* Search button — solid dark pill */
+.search-btn-float {
+    -fx-background-color: #2A364E;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 9 16 9 16;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 6, 0.2, 0, 2);
+}
+
+.search-btn-float:hover {
+    -fx-background-color: #364A6B;
+}
+
+.search-btn-float:pressed {
+    -fx-background-color: #1E2A3A;
+}
+
+/* Small square icon buttons — clear (✕) and filter (sliders) */
+.icon-btn-float {
+    -fx-background-color: rgba(255, 255, 255, 0.92);
+    -fx-border-color: rgba(0, 0, 0, 0.12);
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 9 12 9 12;
+    -fx-font-size: 13px;
+    -fx-text-fill: #2A364E;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 6, 0.2, 0, 2);
+}
+
+.icon-btn-float:hover {
+    -fx-background-color: rgba(255, 255, 255, 1.0);
+    -fx-border-color: #2A364E;
+}
+
+.icon-btn-float:pressed {
+    -fx-background-color: #E5E7EB;
+}
+
+/* Status label shown below search bar when suburb or filter is active */
+.search-status-float {
+    -fx-text-fill: rgba(255, 255, 255, 0.95);
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 4, 0.5, 0, 1);
+    -fx-padding: 2 4 2 4;
+}
+
+/* Filter drawer — white card that drops below the search bar */
+.filter-drawer {
+    -fx-background-color: rgba(255, 255, 255, 0.96);
+    -fx-background-radius: 12;
+    -fx-border-color: rgba(0, 0, 0, 0.1);
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 12, 0.3, 0, 4);
+}
+
+.filter-drawer-title {
+    -fx-text-fill: #1A1A2E;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.filter-drawer-label {
+    -fx-text-fill: #6B7280;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.filter-drawer-combo {
     -fx-background-color: #F1F3F5;
-    -fx-border-color: #D1D5DB;
+    -fx-border-color: #E5E7EB;
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
-    -fx-padding: 2 8 2 8;
-    -fx-font-size: 12px;
-}
-
-/* "Filter:" label */
-.filter-label {
-    -fx-text-fill: #6B7280;
-    -fx-font-size: 12px;
-}
-
-/* Status text showing crime count or error messages */
-.search-status {
-    -fx-text-fill: #6B7280;
-    -fx-font-size: 11px;
-    -fx-font-style: italic;
+    -fx-padding: 4 8 4 8;
+    -fx-font-size: 13px;
 }

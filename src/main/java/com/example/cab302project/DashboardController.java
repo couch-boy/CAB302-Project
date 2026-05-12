@@ -8,10 +8,14 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +24,7 @@ import java.util.List;
  *
  * Displays the hotspot map as the home screen for public users.
  * Manages the hamburger menu, hotspot clustering, suburb search,
- * category filtering, and map loading.
+ * and the filter drawer (crime type, time range, actioned status).
  */
 public class DashboardController {
 
@@ -30,24 +34,36 @@ public class DashboardController {
     @FXML private StackPane dashboardRoot;
     @FXML private NavBarController navBarController;
 
-    // Search bar and category filter injected from FXML
+    // Floating search bar elements
     @FXML private TextField searchField;
-    @FXML private ComboBox<String> categoryFilter;
     @FXML private Label searchStatusLabel;
+    @FXML private VBox filterDrawer;
+
+    // Filter drawer dropdowns
+    @FXML private ComboBox<String> categoryFilter;
+    @FXML private ComboBox<String> daysFilter;
+    @FXML private ComboBox<String> actionedFilter;
+    @FXML private StackPane filterBackdrop;
+
 
     private IAppDAO dao;
     private HamburgerMenu hamburgerMenu;
     private WebEngine engine;
 
-    // Tracks the active suburb bounding box — null means show all crimes
+    // Whether the filter drawer is currently visible
+    private boolean filterDrawerOpen = false;
+
+    // Active suburb bounding box — null means show all crimes
     private double[] activeBoundingBox = null;
+
+    // Active suburb GeoJSON polygon string — used for precise point-in-polygon filtering in JS
+    private String activeGeoJson = null;
 
     // Constructor
     /**
      * Initialises the controller and retrieves the shared DAO instance.
      */
     public DashboardController() {
-        //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
 
@@ -65,7 +81,6 @@ public class DashboardController {
             if (used[i]) continue;
 
             CrimeRecord base = crimes.get(i);
-
             double sumLat = base.getLatitude();
             double sumLon = base.getLongitude();
             int count = 1;
@@ -100,14 +115,11 @@ public class DashboardController {
      */
     private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
         double earthRadius = 6371.0;
-
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
-
         double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return earthRadius * c;
     }
@@ -119,69 +131,82 @@ public class DashboardController {
      */
     private String buildHotspotJson(List<Hotspot> hotspots) {
         StringBuilder sb = new StringBuilder("[");
-
         for (int i = 0; i < hotspots.size(); i++) {
             Hotspot h = hotspots.get(i);
-
             sb.append("{")
                     .append("\"lat\":").append(h.getLatitude()).append(",")
                     .append("\"lon\":").append(h.getLongitude()).append(",")
                     .append("\"count\":").append(h.getCount())
                     .append("}");
-
-            if (i < hotspots.size() - 1) {
-                sb.append(",");
-            }
+            if (i < hotspots.size() - 1) sb.append(",");
         }
-
         sb.append("]");
         return sb.toString();
     }
 
     /**
-     * Filters the crime list by the currently selected category and the active
-     * bounding box (suburb), then rebuilds and pushes hotspots to the map.
-     * Called on initial load and whenever the search or category filter changes.
+     * Applies all active filters (suburb bounding box, crime category, time range,
+     * actioned status) to the full crime list, clusters the results into hotspots,
+     * and pushes the updated JSON to the map.
      */
     private void applyFiltersAndRefreshMap() {
         List<CrimeRecord> allCrimes = dao.getAllCrimes();
 
-        // Apply category filter if one is selected
-        String selectedCategory = categoryFilter != null ? categoryFilter.getValue() : "All Categories";
+        String selectedCategory = categoryFilter != null ? categoryFilter.getValue() : "All Types";
+        String selectedDays     = daysFilter     != null ? daysFilter.getValue()     : "All time";
+        String selectedActioned = actionedFilter != null ? actionedFilter.getValue() : "All";
+
+        // Resolve the days filter to a cutoff date — null means no cutoff
+        LocalDateTime cutoff = resolveDaysCutoff(selectedDays);
+
         List<CrimeRecord> filtered = new ArrayList<>();
 
         for (CrimeRecord crime : allCrimes) {
-            // Category filter: skip if a specific category is selected and this crime doesn't match
-            if (selectedCategory != null && !selectedCategory.equals("All Categories")) {
+
+            // Suburb bounding box filter
+            if (activeBoundingBox != null) {
+                if (!SuburbSearchService.isInBoundingBox(
+                        crime.getLatitude(), crime.getLongitude(), activeBoundingBox)) continue;
+            }
+
+            // Crime category filter
+            if (selectedCategory != null && !selectedCategory.equals("All Types")) {
                 if (!crime.getCategory().getName().equals(selectedCategory)) continue;
             }
 
-            // Bounding box filter: skip if a suburb is active and this crime is outside it
-            if (activeBoundingBox != null) {
-                if (!SuburbSearchService.isInBoundingBox(
-                        crime.getLatitude(), crime.getLongitude(), activeBoundingBox)) {
-                    continue;
-                }
+            // Time range filter — compare crime timestamp against the cutoff
+            if (cutoff != null && crime.getTimestamp() != null) {
+                if (crime.getTimestamp().isBefore(cutoff)) continue;
+            }
+
+            // Actioned status filter
+            if (selectedActioned != null) {
+                if (selectedActioned.equals("Actioned") && !crime.isActioned()) continue;
+                if (selectedActioned.equals("Pending")  &&  crime.isActioned()) continue;
             }
 
             filtered.add(crime);
         }
 
-        List<Hotspot> hotspots = buildHotspots(filtered, 2.0);
+        List<Hotspot> hotspots = buildHotspots(filtered, 0.5);
         String json = buildHotspotJson(hotspots);
         final String safeJson = json.replace("\\", "\\\\").replace("'", "\\'");
 
-        // Update status label to show how many crimes are showing
+        // Update status label — only show it when filters or suburb are active
         if (searchStatusLabel != null) {
-            String status = filtered.isEmpty()
-                    ? "No crimes found in this area"
-                    : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
+            String status = activeBoundingBox == null && filtered.size() == allCrimes.size()
+                    ? ""
+                    : filtered.isEmpty()
+                      ? "No crimes match these filters"
+                      : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
             Platform.runLater(() -> searchStatusLabel.setText(status));
         }
 
         Platform.runLater(() -> {
             try {
-                engine.executeScript("loadHotspots('" + safeJson + "')");
+                String safeGeoJsonFilter = (activeGeoJson != null)
+                        ? activeGeoJson.replace("\\", "\\\\").replace("'", "\\'") : "";
+                engine.executeScript("loadHotspots('" + safeJson + "','" + safeGeoJsonFilter + "')");
             } catch (Exception e) {
                 System.out.println("JS execution failed: " + e.getMessage());
             }
@@ -189,8 +214,27 @@ public class DashboardController {
     }
 
     /**
-     * Handles the suburb search when the user presses enter in the search field.
-     * Runs the Nominatim request on a background thread to avoid blocking the UI,
+     * Converts the days-filter label into a LocalDateTime cutoff.
+     * Returns null when "All time" is selected (no cutoff applied).
+     * @param label the display string from the days filter dropdown
+     * @return the earliest allowed crime timestamp, or null for no restriction
+     */
+    private LocalDateTime resolveDaysCutoff(String label) {
+        if (label == null || label.equals("All time")) return null;
+        LocalDateTime now = LocalDateTime.now();
+        return switch (label) {
+            case "Last 24 hours" -> now.minusDays(1);
+            case "Last 7 days"   -> now.minusDays(7);
+            case "Last 30 days"  -> now.minusDays(30);
+            case "Last 90 days"  -> now.minusDays(90);
+            case "Last year"     -> now.minusYears(1);
+            default              -> null;
+        };
+    }
+
+    /**
+     * Handles the suburb search when the user presses enter or the Search button.
+     * Runs the Nominatim request on a background thread to keep the UI responsive,
      * then draws the suburb boundary on the map and filters crimes to that area.
      */
     @FXML
@@ -198,19 +242,12 @@ public class DashboardController {
         String query = searchField.getText().trim();
 
         if (query.isEmpty()) {
-            // Clear search — remove boundary and show all crimes
-            activeBoundingBox = null;
-            if (searchStatusLabel != null) searchStatusLabel.setText("");
-            try {
-                engine.executeScript("clearSuburbBoundary()");
-            } catch (Exception ignored) {}
-            applyFiltersAndRefreshMap();
+            onClearSearch();
             return;
         }
 
         if (searchStatusLabel != null) searchStatusLabel.setText("Searching...");
 
-        // Run Nominatim on a background thread so the UI stays responsive
         Thread searchThread = new Thread(() -> {
             SuburbSearchService service = new SuburbSearchService();
             SuburbSearchService.SuburbResult result = service.search(query);
@@ -223,16 +260,14 @@ public class DashboardController {
                     return;
                 }
 
-                // Store bounding box for crime filtering
                 activeBoundingBox = result.boundingBox;
+                activeGeoJson = result.geoJson;
 
-                // Fly the map to the suburb and draw its boundary polygon
                 try {
                     String name = result.displayName
                             .replace("\\", "\\\\").replace("'", "\\'");
 
                     if (result.geoJson != null) {
-                        // Pass the GeoJSON polygon to Leaflet to draw the boundary
                         String safeGeoJson = result.geoJson
                                 .replace("\\", "\\\\").replace("'", "\\'");
                         engine.executeScript(
@@ -240,7 +275,6 @@ public class DashboardController {
                                         + result.lat + "," + result.lon + ")"
                         );
                     } else {
-                        // No polygon — just fly to the bounding box centre
                         engine.executeScript(
                                 "flyToSuburb(" + result.lat + "," + result.lon + ",13)"
                         );
@@ -249,7 +283,6 @@ public class DashboardController {
                     System.out.println("Map update failed: " + e.getMessage());
                 }
 
-                // Refilter crimes using new bounding box
                 applyFiltersAndRefreshMap();
             });
         });
@@ -259,23 +292,12 @@ public class DashboardController {
     }
 
     /**
-     * Handles category filter change. Immediately refilters the map without
-     * doing another suburb search — the existing bounding box is preserved.
-     */
-    @FXML
-    public void onCategoryChanged() {
-        if (engine != null) {
-            applyFiltersAndRefreshMap();
-        }
-    }
-
-    /**
-     * Clears the active suburb search, removes the boundary polygon from the map,
-     * and resets the map to show all crimes across Brisbane.
+     * Clears the suburb search, removes the boundary from the map, and resets to all crimes.
      */
     @FXML
     public void onClearSearch() {
         activeBoundingBox = null;
+        activeGeoJson = null;
         if (searchField != null) searchField.clear();
         if (searchStatusLabel != null) searchStatusLabel.setText("");
         try {
@@ -285,10 +307,73 @@ public class DashboardController {
     }
 
     /**
-     * Loads the map view and, once loaded, retrieves crime data,
-     * generates hotspots, and injects them into the map for display.
-     * Uses LeafletLoader to inject Leaflet from a bundled classpath resource
-     * and routes tile requests through TileProxyServer for cross-platform compatibility.
+     * Toggles the filter drawer open and closed.
+     * Also shows or hides the transparent backdrop that catches outside clicks.
+     */
+    @FXML
+    public void onToggleFilter() {
+        filterDrawerOpen = !filterDrawerOpen;
+        if (filterBackdrop != null) {
+            filterBackdrop.setVisible(filterDrawerOpen);
+            filterBackdrop.setManaged(filterDrawerOpen);
+        }
+    }
+
+    /**
+     * Called when the user clicks anywhere on the transparent backdrop behind the filter drawer.
+     * Closes the filter drawer.
+     */
+    @FXML
+    public void onBackdropClicked() {
+        if (filterDrawerOpen) onToggleFilter();
+    }
+
+    /**
+     * Consumes mouse clicks on the filter drawer itself so they do not
+     * propagate to the backdrop and accidentally close the panel.
+     */
+    @FXML
+    public void onFilterDrawerClicked(MouseEvent event) {
+        event.consume();
+    }
+
+    /**
+     * Called when the crime category dropdown changes.
+     */
+    @FXML
+    public void onCategoryChanged() {
+        if (engine != null) applyFiltersAndRefreshMap();
+    }
+
+    /**
+     * Called when the days filter dropdown changes.
+     */
+    @FXML
+    public void onDaysChanged() {
+        if (engine != null) applyFiltersAndRefreshMap();
+    }
+
+    /**
+     * Called when the actioned status dropdown changes.
+     */
+    @FXML
+    public void onActionedChanged() {
+        if (engine != null) applyFiltersAndRefreshMap();
+    }
+
+    /**
+     * Resets all filter dropdowns to their defaults and refreshes the map.
+     */
+    @FXML
+    public void onResetFilters() {
+        if (categoryFilter != null) categoryFilter.setValue("All Types");
+        if (daysFilter     != null) daysFilter.setValue("All time");
+        if (actionedFilter != null) actionedFilter.setValue("All");
+        if (engine != null) applyFiltersAndRefreshMap();
+    }
+
+    /**
+     * Loads the map via LeafletLoader and pushes the initial hotspot data.
      */
     private void loadMap() {
         if (mapView == null) {
@@ -304,27 +389,44 @@ public class DashboardController {
     }
 
     /**
-     * Populates the category filter ComboBox with all available crime category names,
-     * plus an "All Categories" default option at the top.
+     * Populates all filter ComboBoxes with their option lists.
      */
-    private void setupCategoryFilter() {
-        if (categoryFilter == null) return;
-
-        List<String> options = new ArrayList<>();
-        options.add("All Categories");
-        for (CrimeCategory cat : CrimeCategory.values()) {
-            options.add(cat.getName());
+    private void setupFilters() {
+        // Crime category
+        if (categoryFilter != null) {
+            List<String> categories = new ArrayList<>();
+            categories.add("All Types");
+            for (CrimeCategory cat : CrimeCategory.values()) {
+                categories.add(cat.getName());
+            }
+            categoryFilter.setItems(FXCollections.observableArrayList(categories));
+            categoryFilter.setValue("All Types");
         }
-        categoryFilter.setItems(FXCollections.observableArrayList(options));
-        categoryFilter.setValue("All Categories");
+
+        // Time range
+        if (daysFilter != null) {
+            daysFilter.setItems(FXCollections.observableArrayList(
+                    "All time", "Last 24 hours", "Last 7 days",
+                    "Last 30 days", "Last 90 days", "Last year"
+            ));
+            daysFilter.setValue("All time");
+        }
+
+        // Actioned status
+        if (actionedFilter != null) {
+            actionedFilter.setItems(FXCollections.observableArrayList(
+                    "All", "Actioned", "Pending"
+            ));
+            actionedFilter.setValue("All");
+        }
     }
 
     /**
-     * This method runs automatically after the FXML has loaded
+     * Runs automatically after the FXML has loaded.
      */
     @FXML
     public void initialize() {
-        setupCategoryFilter();
+        setupFilters();
 
         Platform.runLater(this::loadMap);
 
@@ -351,10 +453,7 @@ public class DashboardController {
     @FXML
     public void onLogout() {
         UserSession.logout();
-
-        //get the current stage (window) by referencing a ui element
         Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
-        //load login view
         UIUtils.switchScene(stage, "login-view.fxml");
     }
 
@@ -363,9 +462,7 @@ public class DashboardController {
      */
     @FXML
     public void viewCrimes() {
-        //get the current stage (window) by referencing a ui element
         Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
-        //load crimes view
         UIUtils.switchScene(stage, "crimes-view.fxml");
     }
 

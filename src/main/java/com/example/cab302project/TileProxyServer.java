@@ -17,9 +17,14 @@ import java.util.logging.Logger;
  * On Windows the tiles load but slowly due to WebKit's limited concurrency.
  *
  * This server binds to localhost on a random available port and proxies
- * OSM tile requests using Java's HttpURLConnection, which has no such
+ * tile requests using Java's HttpURLConnection, which has no such
  * restrictions. WebView talks to localhost (always allowed), and this
  * server fetches the real tiles transparently.
+ *
+ * Three tile styles are available via separate URL paths:
+ *   /tile/          - OpenStreetMap standard tiles
+ *   /cartodblight/  - CartoDB Positron light grey minimal style
+ *   /cartodbdark/   - CartoDB Dark Matter dark navy style (used by default)
  *
  * Usage:
  *   TileProxyServer server = new TileProxyServer();
@@ -33,6 +38,9 @@ public class TileProxyServer {
 
     /** OSM subdomains to round-robin across for load balancing, as per OSM tile usage policy. */
     private static final String[] OSM_HOSTS = {"a", "b", "c"};
+
+    /** CartoDB subdomains for both light and dark tile styles. */
+    private static final String[] CARTO_HOSTS = {"a", "b", "c"};
 
     /** User-Agent required by OSM tile usage policy. */
     private static final String USER_AGENT = "RADIUS-App/1.0 (CAB302 University Project)";
@@ -52,6 +60,8 @@ public class TileProxyServer {
         port = server.getAddress().getPort();
 
         server.createContext("/tile", new TileHandler());
+        server.createContext("/cartodblight", new CartoTileHandler("light_all"));
+        server.createContext("/cartodbdark", new CartoTileHandler("dark_all"));
         server.createContext("/health", exchange -> {
             byte[] body = "OK".getBytes();
             exchange.sendResponseHeaders(200, body.length);
@@ -85,14 +95,13 @@ public class TileProxyServer {
     }
 
     /**
-     * Handles tile requests in the form: /tile/{z}/{x}/{y}.png
-     * Fetches the tile from OSM and returns it with CORS headers so WebView accepts it.
+     * Handles OSM tile requests in the form: /tile/{z}/{x}/{y}.png
+     * Fetches the tile from OpenStreetMap and returns it with CORS headers so WebView accepts it.
      */
     private class TileHandler implements HttpHandler {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            // Add CORS headers required for WebView's same-origin checks
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             exchange.getResponseHeaders().add("Cache-Control", "public, max-age=86400");
 
@@ -146,6 +155,83 @@ public class TileProxyServer {
 
             } catch (Exception e) {
                 LOG.warning("Tile fetch failed for " + osmUrl + ": " + e.getMessage());
+                exchange.sendResponseHeaders(502, -1);
+            }
+        }
+    }
+
+    /**
+     * Handles CartoDB tile requests for both light and dark styles.
+     * Accepts the CartoDB style name (e.g. "light_all" or "dark_all") on construction
+     * so a single class covers both /cartodblight/ and /cartodbdark/ routes.
+     * No API key required for CartoDB raster tiles.
+     */
+    private class CartoTileHandler implements HttpHandler {
+
+        private final String style;
+
+        /**
+         * Constructs a CartoDB tile handler for the given style.
+         * @param style the CartoDB style name, e.g. "light_all" or "dark_all"
+         */
+        CartoTileHandler(String style) {
+            this.style = style;
+        }
+
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Cache-Control", "public, max-age=86400");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            // Strip the path prefix (e.g. /cartodblight/ or /cartodbdark/) leaving {z}/{x}/{y}.png
+            String path = exchange.getRequestURI().getPath();
+            String tilePath = path.replaceFirst("^/[^/]+/", "");
+
+            // Round-robin across CartoDB subdomains a, b, c, d
+            String host;
+            synchronized (TileProxyServer.this) {
+                host = CARTO_HOSTS[hostIndex % CARTO_HOSTS.length];
+                hostIndex++;
+            }
+
+            String cartoUrl = "https://" + host + ".basemaps.cartocdn.com/" + style + "/" + tilePath;
+
+            try {
+                URL url = new URL(cartoUrl);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("User-Agent", USER_AGENT);
+                conn.setRequestProperty("Referer", "http://localhost:" + port + "/");
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(10000);
+                conn.connect();
+
+                int responseCode = conn.getResponseCode();
+
+                if (responseCode == 200) {
+                    String contentType = conn.getContentType();
+                    if (contentType == null) contentType = "image/png";
+
+                    byte[] tileData = conn.getInputStream().readAllBytes();
+
+                    exchange.getResponseHeaders().add("Content-Type", contentType);
+                    exchange.sendResponseHeaders(200, tileData.length);
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(tileData);
+                    }
+                } else {
+                    exchange.sendResponseHeaders(responseCode, -1);
+                }
+
+                conn.disconnect();
+
+            } catch (Exception e) {
+                LOG.warning("CartoDB tile fetch failed for " + cartoUrl + ": " + e.getMessage());
                 exchange.sendResponseHeaders(502, -1);
             }
         }

@@ -145,7 +145,7 @@ public class PoliceDashboardController {
 
         LeafletLoader.loadMap(mapView, "hotspots-map.html", () -> {
             List<CrimeRecord> crimes = dao.getAllCrimes();
-            List<Hotspot> hotspots = buildHotspots(crimes, 2.0);
+            List<Hotspot> hotspots = buildHotspots(crimes, 0.5);
 
             String json = buildHotspotJson(hotspots);
             final String safeJson = json.replace("\\", "\\\\").replace("'", "\\'");
