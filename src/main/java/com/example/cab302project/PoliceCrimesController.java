@@ -261,7 +261,12 @@ public class PoliceCrimesController {
      */
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
-        allCrimeRecords = dao.getAllCrimes();
+
+        allCrimeRecords = dao.getAllCrimes().stream()
+                .filter(c -> !c.isActioned())
+                .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp())) // NEWEST FIRST
+                .toList();
+
         applyFilters();
         if (selectedIndex >= 0) {
             crimeTable.getSelectionModel().select(selectedIndex);
