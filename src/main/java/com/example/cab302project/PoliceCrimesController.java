@@ -61,6 +61,7 @@ public class PoliceCrimesController {
     // Form fields for editing crime details
     @FXML private ComboBox<CrimeCategory> categoryComboBox;
     @FXML private Label idLabel, severityLabel, actionedStatusLabel;
+    @FXML private Label severityDot;
     @FXML private DatePicker datePicker;
     @FXML private ComboBox<String> hourBox, minuteBox, ampmBox;
     @FXML private TextField reporterField, locationField;
@@ -121,9 +122,10 @@ public class PoliceCrimesController {
         categoryComboBox.getItems().setAll(CrimeCategory.values());
         setupFilters();
 
-        // Initialize Listener -> Auto-update Severity Label when Category changes
+        // Initialize Listener -> Auto-update severity dot colour and label when category changes.
+        // This gives the officer immediate visual feedback on the severity tier as they pick a crime type.
         categoryComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) severityLabel.setText(newVal.getSeverity().toString());
+            updateSeverityDisplay(newVal);
         });
 
         // Initialize Listener -> Update displayed CrimeRecord data when there are changes
@@ -387,6 +389,29 @@ public class PoliceCrimesController {
     }
 
     /**
+     * Updates the severity dot colour and label text in the detail panel
+     * based on the given crime category. Called whenever the category selection
+     * changes so the officer sees immediate visual feedback on the severity tier.
+     * @param category the selected CrimeCategory, or null to reset to a blank state
+     */
+    private void updateSeverityDisplay(CrimeCategory category) {
+        if (category == null) {
+            if (severityDot   != null) severityDot.setStyle("-fx-text-fill: #D1D5DB; -fx-font-size: 13px;");
+            if (severityLabel != null) { severityLabel.setText("-"); severityLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #6B7280;"); }
+            return;
+        }
+
+        String dotColor = switch (category.getSeverity()) {
+            case CRITICAL -> "#DC143C";
+            case MEDIUM   -> "#FF8C00";
+            default       -> "#FFD700";
+        };
+
+        if (severityDot   != null) severityDot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 13px;");
+        if (severityLabel != null) { severityLabel.setText(category.getSeverity().toString()); severityLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: " + dotColor + ";"); }
+    }
+
+    /**
      * Sets up the styled list view and links it to the table data.
      */
     private void setupListView() {
@@ -552,6 +577,7 @@ public class PoliceCrimesController {
         LocalDateTime dt = crime.getTimestamp();
 
         categoryComboBox.setValue(crime.getCategory());
+        updateSeverityDisplay(crime.getCategory());
         datePicker.setValue(dt.toLocalDate());
 
         // Set AM/PM box based on 24hr time input value
@@ -635,7 +661,7 @@ public class PoliceCrimesController {
      */
     private void clearForm() {
         idLabel.setText("-");
-        severityLabel.setText("-");
+        updateSeverityDisplay(null);
         categoryComboBox.setValue(null);
         datePicker.setValue(null);
         hourBox.setValue(null);
