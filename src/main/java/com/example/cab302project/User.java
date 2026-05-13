@@ -21,7 +21,7 @@ public class User {
      * Constructs a new User with full profile details.
      *
      * @param username The unique identifier for the user (cannot be changed after creation).
-     * @param password The account's authentication password.
+     * @param password The hash of the account's authentication password.
      * @param email The user's contact email address.
      * @param phone The user's 10-digit contact phone number.
      * @param homeLatitude The latitude of the user's default home location (-90 to 90).
@@ -60,7 +60,7 @@ public class User {
 
     /**
      * Gets the account password.
-     * @return The account's current password.
+     * @return The account's current password hash.
      */
     public String getPassword() { return password; }
 

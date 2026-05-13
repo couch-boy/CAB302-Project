@@ -1,6 +1,7 @@
 package com.example.cab302project;
 
 import org.junit.jupiter.api.Test;
+import org.mindrot.jbcrypt.BCrypt;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -708,7 +709,7 @@ public class AppTest {
     MITCHELL APP TESTING START
      */
 
-    // Test 16: Test UserSession isDarkMode() helper method safety
+    // Test 1: Test UserSession isDarkMode() helper method safety
     // Verifies that UI will not crash when checking theme when no user is logged in (null session)
     @Test
     void testUserSessionDarkModeSafety() {
@@ -726,7 +727,7 @@ public class AppTest {
         UserSession.logout();
     }
 
-    // Test 17: Test 12hr -> 24hr time conversion logic
+    // Test 2: Test 12hr -> 24hr time conversion logic
     // Verifies that boundary hours (midnight and midday) are correctly converted
     // Uses identical logic to createRecordFromForm() from CrimesController
     @Test
@@ -752,7 +753,7 @@ public class AppTest {
         assertEquals(13, h); // 1 PM becomes 13
     }
 
-    // Test 18: Test stored data integrity of anonymous CrimeRecord
+    // Test 3: Test stored data integrity of anonymous CrimeRecord
     // Verifies the preservation of a null value in database for anonymous CrimeRecords
     // while still providing a clean value of "Anonymous" for UI elements
     @Test
@@ -766,7 +767,7 @@ public class AppTest {
         assertEquals("Anonymous", crime.getReporterDisplayName());
     }
 
-    // Test 19: Test regex parsing latitude and longitude
+    // Test 4: Test regex parsing latitude and longitude
     // Verifies "lat,lon" (no space) and "lat,   lon" (multiple spaces) are correctly parsed
     @Test
     void testCoordinateRegexParsing() {
@@ -785,7 +786,7 @@ public class AppTest {
         assertEquals("153.02", parts2[1]);
     }
 
-    // Test 20: Test user permissions are correctly identified via UserType enum, UserSession, and isPolice() helper
+    // Test 5: Test user permissions are correctly identified via UserType enum, UserSession, and isPolice() helper
     // Verifies that a regular user is not given police permissions, and that a police user is correctly given police permissions
     @Test
     void testRolePermissions() {
@@ -798,6 +799,141 @@ public class AppTest {
         assertTrue(UserSession.isPolice(), "Police users must return true for isPolice()");
 
         UserSession.logout();
+    }
+
+    // Test 6: User constructor correctly stores all initial fields
+    // Ensures the Data Transfer Object (DTO) is reliable before being passed to the DAO.
+    @Test
+    void testUserConstructorStoresFieldsCorrectly() {
+        // Hash password
+        String hashedPassword = BCrypt.hashpw("plaintextpassword", BCrypt.gensalt());
+
+        User user = new User("test", hashedPassword, "e@mail.com", "0400000000",
+                -27.4709, 153.0235, true, UserType.POLICE);
+
+        assertEquals("test", user.getUsername());
+        assertEquals(hashedPassword, user.getPassword());
+        assertEquals("e@mail.com", user.getEmail());
+        assertEquals("0400000000", user.getPhone());
+        assertTrue(user.isDarkMode());
+        assertEquals(UserType.POLICE, user.getUserType());
+    }
+
+    // Test 7: User.isPolice() returns true for Police UserType
+    // Crucial for Role-Based Access Control (RBAC) in the UI controllers.
+    @Test
+    void testUserIsPoliceReturnsTrueForPoliceRole() {
+        User policeUser = new User("test", "pass", "e@mail.com", "0400000000", 0, 0, false, UserType.POLICE);
+        assertTrue(policeUser.isPolice());
+    }
+
+    // Test 8: setHomeLocation updates both coordinates if valid
+    // Ensures that the internal state of the User object remains synchronized.
+    @Test
+    void testSetHomeLocationUpdatesCoordinates() {
+        User user = new User("test", "pass", "e@mail.com", "0400000000", 0, 0, false, UserType.REGULAR);
+        user.setHomeLocation(-27.5, 153.1);
+        assertEquals(-27.5, user.getHomeLatitude(), 0.0001);
+        assertEquals(153.1, user.getHomeLongitude(), 0.0001);
+    }
+
+    // Test 9: setHomeLocation ignores invalid latitude
+    // Validates that setter logic protects the object from corrupted geographic data.
+    @Test
+    void testSetHomeLocationRejectsInvalidLat() {
+        User user = new User("test", "pass", "e@mail.com", "0400000000", -10.0, 10.0, false, UserType.REGULAR);
+        user.setHomeLocation(150.0, 10.0); // Invalid latitude
+        assertEquals(-10.0, user.getHomeLatitude(), 0.0001);
+    }
+
+    // Test 10: UserSession.isDarkMode() reflects the current logged-in user
+    // Verifies the global session helper correctly retrieves preferences.
+    @Test
+    void testUserSessionIsDarkModeHelper() {
+        User user = new User("test", "pass", "e@mail.com", "0400000000", 0, 0, true, UserType.REGULAR);
+        UserSession.login(user);
+        assertTrue(UserSession.isDarkMode());
+        UserSession.logout();
+    }
+
+    // Test 11: SqliteConnection.getInstance() always returns the same instance
+    // Tests the Singleton pattern to prevent multiple file locks on data.db.
+    @Test
+    void testSqliteConnectionIsSingleton() {
+        var conn1 = SqliteConnection.getInstance();
+        var conn2 = SqliteConnection.getInstance();
+        assertSame(conn1, conn2, "Database connections should be the same instance.");
+    }
+
+    // Test 12: UserType.getDisplayName() returns the correct UI label
+    // Ensures the human-readable string is correct for UI components.
+    @Test
+    void testUserTypeDisplayName() {
+        assertEquals("Police Officer", UserType.POLICE.getDisplayName());
+        assertEquals("Regular User", UserType.REGULAR.getDisplayName());
+    }
+
+    // Test 13: UIUtils.isValidEmail() rejects email without '@'
+    // Tests boundary case for email validation logic.
+    @Test
+    void testIsValidEmailRejectsMissingAtSymbol() {
+        assertFalse(UIUtils.isValidEmail("email.com"));
+    }
+
+    // Test 14: UIUtils.isValidPhone() rejects numbers with letters
+    // Ensures the phone validator only accepts numeric input.
+    @Test
+    void testIsValidPhoneRejectsAlphanumeric() {
+        assertFalse(UIUtils.isValidPhone("041234567a"));
+    }
+
+    // Test 15: UserSession.logout() clears the session
+    // Ensures that private user data is not accessible after logout.
+    @Test
+    void testLogoutClearsSession() {
+        User user = new User("test", "pass", "e@mail.com", "0400000000", 0, 0, false, UserType.REGULAR);
+        UserSession.login(user);
+        UserSession.logout();
+        assertNull(UserSession.getInstance());
+    }
+
+    // Test 16: UserSession.isPolice() returns false when no one is logged in
+    // Prevents permission escalation by defaulting to false.
+    @Test
+    void testIsPoliceReturnsFalseWhenLoggedOut() {
+        UserSession.logout();
+        assertFalse(UserSession.isPolice());
+    }
+
+    // Test 17: User.setEmail() updates the value correctly
+    @Test
+    void testUserSetEmailUpdatesValue() {
+        User user = new User("test", "pass", "old@test.com", "0400000000", 0, 0, false, UserType.REGULAR);
+        user.setEmail("new@test.com");
+        assertEquals("new@test.com", user.getEmail());
+    }
+
+    // Test 18: User.setDarkMode() updates the preference
+    @Test
+    void testUserSetDarkModeUpdatesValue() {
+        User user = new User("test", "pass", "e@mail.com", "0400000000", 0, 0, false, UserType.REGULAR);
+        user.setDarkMode(true);
+        assertTrue(user.isDarkMode());
+    }
+
+    // Test 19: UIUtils.isValidCoordinate() rejects latitude at exact boundary (91)
+    @Test
+    void testIsValidCoordinateBoundaryCheck() {
+        assertFalse(UIUtils.isValidCoordinate(90.1, 0));
+    }
+
+    // Test 20: User username is immutable (has no setter)
+    // This is a "design test" to ensure the username field is final/read-only.
+    // Attempting to call user.setUsername() would fail to compile
+    @Test
+    void testUsernameIsFinal() {
+        User user = new User("test_original", "pass", "e@mail.com", "0400000000", 0, 0, false, UserType.REGULAR);
+        assertEquals("test_original", user.getUsername());
     }
 
     /*
