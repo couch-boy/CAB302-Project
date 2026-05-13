@@ -674,8 +674,14 @@ public class CrimesController {
     // Helper function to refresh crime table with updated crime data
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
-        allCrimeRecords = dao.getAllCrimes().stream().filter(c -> !c.isActioned()).toList();
+
+        allCrimeRecords = dao.getAllCrimes().stream()
+                .filter(c -> !c.isActioned())
+                .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp())) // NEWEST FIRST
+                .toList();
+
         applyFilters();
+
         if (selectedIndex >= 0) {
             crimeTable.getSelectionModel().select(selectedIndex);
         }
