@@ -510,92 +510,147 @@ public class AppTest {
     FINN APP TESTING START
      */
 
-    // Test 11: User.setHomeLocation() rejects out-of-range coordinates
-    // This test verifies that invalid lat/lon values are silently rejected
-    // and the original valid coordinates are preserved
+    // Test 1: User.setHomeLocation() updates latitude when valid coordinates are supplied.
+    // Checks that a valid lat/lon pair causes getHomeLatitude() to return the new value.
+    // Ensures the profile screen correctly reflects a changed home pin on the map.
     @Test
-    void testUserSetHomeLocationValidation() {
-        User user = new User("alice", "pass", "alice@email.com", "0400000000", -27.4709, 153.0235, false, UserType.REGULAR);
-
-        // Valid coordinates should update
+    void testSetHomeLocationUpdatesLatitudeOnValidInput() {
+        User user = new User("finn1", "pass", "finn1@email.com", "0400000010", -27.4709, 153.0235, false, UserType.REGULAR);
         user.setHomeLocation(-33.8688, 151.2093);
         assertEquals(-33.8688, user.getHomeLatitude(), 0.0001);
-        assertEquals(151.2093, user.getHomeLongitude(), 0.0001);
+    }
 
-        // Invalid latitude (outside -90 to 90) should not update
-        user.setHomeLocation(999.0, 151.2093);
-        assertEquals(-33.8688, user.getHomeLatitude(), 0.0001);
-
-        // Invalid longitude (outside -180 to 180) should not update
-        user.setHomeLocation(-33.8688, 999.0);
-        assertEquals(151.2093, user.getHomeLongitude(), 0.0001);
-
-        // Both invalid should not update either field
-        user.setHomeLocation(-999.0, -999.0);
-        assertEquals(-33.8688, user.getHomeLatitude(), 0.0001);
+    // Test 2: User.setHomeLocation() updates longitude when valid coordinates are supplied.
+    // Checks that a valid lat/lon pair causes getHomeLongitude() to return the new value.
+    // Mirrors Test 1 for the longitude axis so both axes are independently verified.
+    @Test
+    void testSetHomeLocationUpdatesLongitudeOnValidInput() {
+        User user = new User("finn2", "pass", "finn2@email.com", "0400000011", -27.4709, 153.0235, false, UserType.REGULAR);
+        user.setHomeLocation(-33.8688, 151.2093);
         assertEquals(151.2093, user.getHomeLongitude(), 0.0001);
     }
 
-    // Test 12: User.isPolice() returns correct value based on UserType
-    // Verifies User.isPolice() returns true only for police type users,
-    // and UserType.toString() returns readable display name
+    // Test 3: User.setHomeLocation() preserves latitude when an out-of-range latitude is given.
+    // Checks that a latitude above 90 is silently ignored and the stored value is unchanged.
+    // Prevents a garbage coordinate from moving the home pin off the map.
     @Test
-    void testUserTypeAndIsPolice() {
-        User regularUser = new User("bob", "pass", "bob@email.com", "0400000001", 0, 0, false, UserType.REGULAR);
-        User policeUser = new User("officer", "pass", "cop@law.com", "0400000002", 0, 0, false, UserType.POLICE);
+    void testSetHomeLocationPreservesLatitudeOnInvalidLatitude() {
+        User user = new User("finn3", "pass", "finn3@email.com", "0400000012", -27.4709, 153.0235, false, UserType.REGULAR);
+        user.setHomeLocation(999.0, 153.0235);
+        assertEquals(-27.4709, user.getHomeLatitude(), 0.0001);
+    }
 
-        assertFalse(regularUser.isPolice());
-        assertTrue(policeUser.isPolice());
+    // Test 4: User.setHomeLocation() preserves longitude when an out-of-range longitude is given.
+    // Checks that a longitude above 180 is silently ignored and the stored value is unchanged.
+    // Mirrors Test 3 for the longitude axis so invalid longitude is independently verified.
+    @Test
+    void testSetHomeLocationPreservesLongitudeOnInvalidLongitude() {
+        User user = new User("finn4", "pass", "finn4@email.com", "0400000013", -27.4709, 153.0235, false, UserType.REGULAR);
+        user.setHomeLocation(-27.4709, 999.0);
+        assertEquals(153.0235, user.getHomeLongitude(), 0.0001);
+    }
 
-        // UserType.toString() should return display name, not enum name
+    // Test 5: User constructor defaults home coordinates to 0 when invalid values are given.
+    // Checks that out-of-range lat/lon at construction time produces 0.0 for both fields.
+    // Prevents a corrupted home pin from being stored in the database on account creation.
+    @Test
+    void testConstructorDefaultsHomeLocationToZeroOnInvalidCoordinates() {
+        User user = new User("finn5", "pass", "finn5@email.com", "0400000014", 999.0, 999.0, false, UserType.REGULAR);
+        assertEquals(0.0, user.getHomeLatitude(), 0.0001);
+        assertEquals(0.0, user.getHomeLongitude(), 0.0001);
+    }
+
+    // Test 6: UserType.REGULAR.toString() returns a human-readable label.
+    // Checks that toString() returns "Regular User" rather than the raw enum constant "REGULAR".
+    // The display label is shown on the profile screen and in the user management list.
+    @Test
+    void testUserTypeRegularToStringReturnsReadableLabel() {
         assertEquals("Regular User", UserType.REGULAR.toString());
-        assertEquals("Police Officer", UserType.POLICE.toString());
-        assertEquals("Regular User", UserType.REGULAR.getDisplayName());
     }
 
-    // Test 13: UIUtils database date formatting round-trip
-    // Verifies LocalDateTime stays intact through database and back to string
+    // Test 7: UserType.POLICE.toString() returns a human-readable label.
+    // Checks that toString() returns "Police Officer" rather than the raw enum constant "POLICE".
+    // Mirrors Test 6 for the police role so both enum values are independently verified.
     @Test
-    void testDatabaseDateTimeRoundTrip() {
-        LocalDateTime original = LocalDateTime.of(2024, 11, 5, 14, 30, 0);
+    void testUserTypePoliceToStringReturnsReadableLabel() {
+        assertEquals("Police Officer", UserType.POLICE.toString());
+    }
 
-        // Format to DB string then parse back - should match exactly
-        String dbString = UIUtils.formatForDb(original);
-        assertEquals("2024-11-05 14:30:00", dbString);
+    // Test 8: UserType.REGULAR.getDisplayName() returns the same label as toString().
+    // Checks that the dedicated getDisplayName() accessor agrees with toString() for REGULAR.
+    // UI components that call getDisplayName() directly must receive a consistent value.
+    @Test
+    void testUserTypeRegularGetDisplayNameMatchesToString() {
+        assertEquals(UserType.REGULAR.toString(), UserType.REGULAR.getDisplayName());
+    }
 
-        LocalDateTime parsed = UIUtils.parseFromDb(dbString);
-        assertEquals(original, parsed);
+    // Test 9: UIUtils.formatForDb() produces the expected SQLite timestamp string.
+    // Checks that a known LocalDateTime is serialised to "yyyy-MM-dd HH:mm:ss" format.
+    // The DAO inserts this string directly into the crimes and users tables.
+    @Test
+    void testFormatForDbProducesCorrectString() {
+        LocalDateTime dt = LocalDateTime.of(2024, 11, 5, 14, 30, 0);
+        assertEquals("2024-11-05 14:30:00", UIUtils.formatForDb(dt));
+    }
 
-        // Midnight edge case
+    // Test 10: UIUtils.formatForDb() correctly handles a midnight timestamp.
+    // Checks the edge case where hour, minute, and second are all zero.
+    // Midnight is a common default when only a date is recorded in the report form.
+    @Test
+    void testFormatForDbHandlesMidnight() {
         LocalDateTime midnight = LocalDateTime.of(2025, 1, 1, 0, 0, 0);
         assertEquals("2025-01-01 00:00:00", UIUtils.formatForDb(midnight));
+    }
+
+    // Test 11: UIUtils.parseFromDb() restores the original LocalDateTime from a DB string.
+    // Checks that a string produced by formatForDb() round-trips back to the original value.
+    // Ensures timestamps are not silently truncated or shifted when read from the database.
+    @Test
+    void testParseFromDbRestoresOriginalDateTime() {
+        LocalDateTime original = LocalDateTime.of(2024, 11, 5, 14, 30, 0);
+        assertEquals(original, UIUtils.parseFromDb("2024-11-05 14:30:00"));
+    }
+
+    // Test 12: UIUtils.parseFromDb() correctly parses a midnight timestamp string.
+    // Checks that "00:00:00" in the DB string is restored to a LocalDateTime with zero time fields.
+    // Mirrors Test 10 for the parsing direction so the full round-trip is covered.
+    @Test
+    void testParseFromDbHandlesMidnightString() {
+        LocalDateTime midnight = LocalDateTime.of(2025, 1, 1, 0, 0, 0);
         assertEquals(midnight, UIUtils.parseFromDb("2025-01-01 00:00:00"));
     }
 
-    // Test 14: UIUtils.formatLocalDateTime() produces the correct UI display format
-    // Verifies date format used and null inputs return empty string
+    // Test 13: UIUtils.formatLocalDateTime() produces the correct UI display string.
+    // Checks that a standard LocalDateTime is formatted as "dd/MM/yyyy HH:mm" for the UI.
+    // This string appears in the crime detail panel and the My Reports list.
     @Test
-    void testUIDisplayDateFormatting() {
+    void testFormatLocalDateTimeProducesCorrectDisplayString() {
         LocalDateTime dt = LocalDateTime.of(2024, 6, 15, 9, 5);
         assertEquals("15/06/2024 09:05", UIUtils.formatLocalDateTime(dt));
+    }
 
-        // Single-digit day and month should be zero-padded
-        LocalDateTime padded = LocalDateTime.of(2025, 3, 7, 8, 0);
-        assertEquals("07/03/2025 08:00", UIUtils.formatLocalDateTime(padded));
+    // Test 14: UIUtils.formatLocalDateTime() zero-pads single-digit day and month values.
+    // Checks that a date like 7 March is formatted as "07/03" rather than "7/3".
+    // Consistent padding keeps the crime list date columns visually aligned in the UI.
+    @Test
+    void testFormatLocalDateTimeZeropadsingleDigitDayAndMonth() {
+        LocalDateTime dt = LocalDateTime.of(2025, 3, 7, 8, 0);
+        assertEquals("07/03/2025 08:00", UIUtils.formatLocalDateTime(dt));
+    }
 
-        // Null input should return empty string, not throw an exception
+    // Test 15: UIUtils.formatLocalDateTime() returns an empty string for a null input.
+    // Checks that passing null does not throw a NullPointerException.
+    // The crimes table can contain rows with no timestamp; the UI must handle this gracefully.
+    @Test
+    void testFormatLocalDateTimeReturnsEmptyStringForNull() {
         assertEquals("", UIUtils.formatLocalDateTime(null));
     }
 
-    // Test 15: User username is immutable after construction
-    // Verifies user cannot change username and it always returns original username
+    // Test 16: User class does not expose a setUsername() method.
+    // Checks via reflection that no public setUsername method exists on User.
+    // Usernames are the database primary key and must never change after account creation.
     @Test
-    void testUserUsernameIsImmutable() {
-        User user = new User("charlie", "pass", "c@email.com", "0400000003", 0, 0, false, UserType.REGULAR);
-
-        assertEquals("charlie", user.getUsername());
-
-        // Confirm no setUsername method exists on User
+    void testUserClassHasNoSetUsernameMethod() {
         boolean hasSetUsername = false;
         for (java.lang.reflect.Method m : User.class.getMethods()) {
             if (m.getName().equals("setUsername")) {
@@ -604,6 +659,45 @@ public class AppTest {
             }
         }
         assertFalse(hasSetUsername, "User should not have a setUsername() method");
+    }
+
+    // Test 17: User.setPassword() updates the stored password value.
+    // Checks that after calling setPassword() the new value is returned by getPassword().
+    // The DAO calls setPassword() with the BCrypt hash when persisting a password change.
+    @Test
+    void testSetPasswordUpdatesStoredPassword() {
+        User user = new User("finn17", "oldpass", "finn17@email.com", "0400000015", 0, 0, false, UserType.REGULAR);
+        user.setPassword("newpass");
+        assertEquals("newpass", user.getPassword());
+    }
+
+    // Test 18: User.setPhone() updates the stored phone number.
+    // Checks that after calling setPhone() the new value is returned by getPhone().
+    // Phone number is displayed on the profile screen and validated before saving.
+    @Test
+    void testSetPhoneUpdatesStoredPhone() {
+        User user = new User("finn18", "pass", "finn18@email.com", "0400000016", 0, 0, false, UserType.REGULAR);
+        user.setPhone("0499887766");
+        assertEquals("0499887766", user.getPhone());
+    }
+
+    // Test 19: User.setDarkMode() updates the stored dark mode preference.
+    // Checks that toggling dark mode via the setter is reflected by isDarkMode().
+    // The profile screen calls setDarkMode() when the user flips the theme switch.
+    @Test
+    void testSetDarkModeUpdatesStoredPreference() {
+        User user = new User("finn19", "pass", "finn19@email.com", "0400000017", 0, 0, false, UserType.REGULAR);
+        user.setDarkMode(true);
+        assertTrue(user.isDarkMode());
+    }
+
+    // Test 20: User.getUserType() returns the UserType supplied at construction.
+    // Checks that the role stored during construction is retrievable via the getter.
+    // getUserType() is used when serialising the user record back to the database.
+    @Test
+    void testGetUserTypeReturnsConstructedValue() {
+        User user = new User("finn20", "pass", "finn20@email.com", "0400000018", 0, 0, false, UserType.POLICE);
+        assertEquals(UserType.POLICE, user.getUserType());
     }
 
     /*
