@@ -3,6 +3,8 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 
 <!-- Landing screen - dark branded entry point -->
 <StackPane xmlns:fx="http://javafx.com/fxml"
@@ -17,17 +19,21 @@
   <!-- Main content -->
   <VBox alignment="CENTER" spacing="0" StackPane.alignment="CENTER">
 
-    <!-- Logo block -->
-    <VBox alignment="CENTER" spacing="10">
-      <Label text="◉"
-             style="-fx-text-fill: rgba(255,255,255,0.25); -fx-font-size: 52px;
-                          -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.15), 40, 0.4, 0, 0);"/>
-      <!-- fx:id="welcomeText" kept for controller binding -->
-      <Label fx:id="welcomeText" text="RADIUS" styleClass="landing-logo"/>
-      <Label text="Community Crime Reporting" styleClass="landing-tagline"/>
+    <!-- Logo block — uses the RADIUS logo image in place of the placeholder icon.
+             The welcomeText label is kept hidden so the controller binding stays intact. -->
+    <VBox alignment="CENTER" spacing="8">
+      <ImageView fitWidth="210" fitHeight="210" preserveRatio="true" smooth="true">
+        <image><Image url="@RADIUS LOGO.png"/></image>
+      </ImageView>
+      <!-- Hidden label kept for controller binding — not visible to the user -->
+      <Label fx:id="welcomeText" text="RADIUS" styleClass="landing-logo"
+             visible="false" managed="false"/>
+      <Label text="Community Crime Reporting"
+             styleClass="landing-tagline"
+             style="-fx-font-size: 17px;"/>
     </VBox>
 
-    <Region prefHeight="80"/>
+    <Region prefHeight="44"/>
 
     <!-- CTA buttons -->
     <VBox spacing="14" maxWidth="300">
@@ -47,7 +53,7 @@
 
     <Label text="Stay informed. Stay safe."
            styleClass="landing-tagline"
-           style="-fx-padding: 28 0 0 0; -fx-font-size: 10px;"/>
+           style="-fx-padding: 20 0 0 0; -fx-font-size: 15px;"/>
   </VBox>
 
 </StackPane>
