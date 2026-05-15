@@ -80,6 +80,7 @@
                     <Region HBox.hgrow="ALWAYS"/>
                     <MenuButton fx:id="filterMenuButton"
                                 text="Filter"
+                                styleClass="filter-menu-btn"
                                 popupSide="BOTTOM">
                         <items>
                             <MenuItem text="Filter By" disable="true"/>
