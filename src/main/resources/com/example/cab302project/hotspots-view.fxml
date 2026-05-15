@@ -2,25 +2,58 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.web.WebView?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<VBox alignment="TOP_LEFT" spacing="0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.cab302project.HotspotsController">
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.example.cab302project.HotspotsController"
+           fx:id="hotspotsRoot"
+           stylesheets="@styles.css"
+           style="-fx-background-color: #F8F9FA;">
 
-    <Button text="Back to Dashboard"
-            onAction="#onBackButtonClick"
-            style="-fx-padding: 10 16 10 16;">
-        <VBox.margin>
-            <Insets top="12" left="12" bottom="4" right="12"/>
-        </VBox.margin>
-    </Button>
+    <VBox spacing="0">
 
-    <WebView fx:id="mapView"
-             prefWidth="1920"
-             prefHeight="1920"
-             VBox.vgrow="ALWAYS"/>
+        <!-- App bar -->
+        <HBox styleClass="app-bar" alignment="CENTER_LEFT" spacing="0">
+            <Button onAction="#onBackButtonClick" styleClass="hamburger-btn">
+                <graphic><FontIcon iconLiteral="fas-arrow-left" iconSize="18" iconColor="#2A364E"/></graphic>
+            </Button>
+            <Region HBox.hgrow="ALWAYS"/>
+            <VBox alignment="CENTER" spacing="2">
+                <Label text="RADIUS" styleClass="app-bar-title"/>
+                <Label text="Hotspot Map"
+                       style="-fx-text-fill: #6B7280; -fx-font-size: 10px;"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Region minWidth="40"/>
+        </HBox>
 
-    <fx:include fx:id="navBar" source="nav-bar.fxml"/>
+        <!-- Map fills all remaining space -->
+        <WebView fx:id="mapView"
+                 prefWidth="1920"
+                 prefHeight="1920"
+                 VBox.vgrow="ALWAYS"/>
 
-</VBox>
+        <!-- Hotspot intensity legend -->
+        <HBox alignment="CENTER_LEFT" spacing="16"
+              style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
+                     -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;">
+            <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
+            <Label text="High Activity" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+            <Label text="●" style="-fx-text-fill: #FF8C00; -fx-font-size: 11px;"/>
+            <Label text="Moderate Activity" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+            <Label text="●" style="-fx-text-fill: #FFD700; -fx-font-size: 11px;"/>
+            <Label text="Low Activity" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
+        </HBox>
+
+        <!-- Bottom navigation bar -->
+        <fx:include fx:id="navBar" source="nav-bar.fxml"/>
+
+    </VBox>
+
+</StackPane>
