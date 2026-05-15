@@ -72,8 +72,9 @@
                 <!-- Settings -->
                 <VBox spacing="6">
                     <Label text="Settings" styleClass="auth-label"/>
-                    <CheckBox fx:id="darkModeCheckBox" text="Enable Dark Mode"
-                              style="-fx-font-size: 13px; -fx-text-fill: #374151;"/>
+                    <CheckBox fx:id="darkModeCheckBox"
+                              text="Enable Dark Mode"
+                              styleClass="card-checkbox"/>
                 </VBox>
 
                 <!-- Save button inline in card -->
@@ -89,7 +90,5 @@
         <fx:include fx:id="navBar" source="nav-bar.fxml"/>
 
     </VBox>
-
-    <!-- HamburgerMenu overlay -->
 
 </StackPane>
