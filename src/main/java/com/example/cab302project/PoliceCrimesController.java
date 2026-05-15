@@ -271,6 +271,40 @@ public class PoliceCrimesController {
         if (selectedIndex >= 0) {
             crimeTable.getSelectionModel().select(selectedIndex);
         }
+
+        // Preload addresses for list view display
+        preloadAddresses(allCrimeRecords);
+    }
+
+    /**
+     * Preloads human-readable addresses for all provided crime records in a background thread.
+     *
+     * Addresses are stored in {@link #addressCache} and the list view is
+     * refreshed on the JavaFX thread each time a new address is resolved, so
+     * cells update progressively without blocking the UI.
+     *
+     * @param crimes the list of crime records whose coordinates should be geocoded
+     */
+    private void preloadAddresses(List<CrimeRecord> crimes) {
+        new Thread(() -> {
+            for (CrimeRecord crime : crimes) {
+                if (!addressCache.containsKey(crime.getId())) {
+                    try {
+                        String address = geocoder.reverseGeocode(
+                                crime.getLatitude(), crime.getLongitude());
+                        // Shorten to first two comma-separated parts for display
+                        String[] parts = address.split(",");
+                        String shortAddress = parts.length >= 2
+                                ? parts[0].trim() + ", " + parts[1].trim()
+                                : address;
+                        addressCache.put(crime.getId(), shortAddress);
+                        Platform.runLater(() -> {
+                            if (crimeListView != null) crimeListView.refresh();
+                        });
+                    } catch (Exception ignored) {}
+                }
+            }
+        }).start();
     }
 
     /**
