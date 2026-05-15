@@ -64,7 +64,7 @@
                 <VBox spacing="6">
                     <Label text="Home Location" styleClass="auth-label"/>
                     <TextField fx:id="locationField"
-                               promptText="latitude, longitude"
+                               promptText="Search for your home address"
                                styleClass="auth-field"
                                onAction="#onSave"/>
                 </VBox>
