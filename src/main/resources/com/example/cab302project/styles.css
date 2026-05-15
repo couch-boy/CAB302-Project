@@ -710,7 +710,12 @@
 
 .drawer-checkbox:selected .mark {
     -fx-background-color: #2A364E;
-    -fx-shape: "M 0 4 L 3 7 L 8 0";
+    -fx-shape: "M 1,5 L 3.5,8 L 9,1 L 7.5,0 L 3.5,5.5 L 2,4 Z";
+    -fx-scale-shape: true;
+    -fx-min-width: 10;
+    -fx-min-height: 10;
+    -fx-max-width: 10;
+    -fx-max-height: 10;
 }
 
 .drawer-checkbox .text {
@@ -736,6 +741,12 @@
 
 .card-checkbox:selected .mark {
     -fx-background-color: #FFFFFF;
+    -fx-shape: "M 1,5 L 3.5,8 L 9,1 L 7.5,0 L 3.5,5.5 L 2,4 Z";
+    -fx-scale-shape: true;
+    -fx-min-width: 10;
+    -fx-min-height: 10;
+    -fx-max-width: 10;
+    -fx-max-height: 10;
 }
 
 .card-checkbox .text {
