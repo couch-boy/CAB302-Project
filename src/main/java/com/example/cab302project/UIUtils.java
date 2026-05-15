@@ -4,15 +4,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.DialogPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-
 
 /**
  * A collection of static utility methods for UI management, data validation,
@@ -109,17 +109,28 @@ public class UIUtils {
     }
 
     /**
-     * Displays a standardized JavaFX Alert dialog to the user.
+     * Displays a standardized JavaFX Alert dialog styled to match the RADIUS design system.
+     * Injects the application stylesheet and applies the alert-dialog-pane CSS class so
+     * the dialog uses the correct fonts, colours, and button styles.
      *
      * @param alertType The {@link AlertType} (e.g., INFORMATION, ERROR, WARNING).
-     * @param title The text to display in the window title bar.
-     * @param message The main content text to display in the alert body.
+     * @param title     The text to display in the window title bar.
+     * @param message   The main content text to display in the alert body.
      */
     public static void showAlert(AlertType alertType, String title, String message) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+
+        // Inject the RADIUS stylesheet and mark the dialog pane with our CSS class
+        DialogPane dialogPane = alert.getDialogPane();
+        URL stylesheet = HelloApplication.class.getResource("styles.css");
+        if (stylesheet != null) {
+            dialogPane.getStylesheets().add(stylesheet.toExternalForm());
+        }
+        dialogPane.getStyleClass().add("alert-dialog-pane");
+
         alert.showAndWait();
     }
 
@@ -127,7 +138,7 @@ public class UIUtils {
      * Transitions the application to a different scene by loading an FXML file.
      * This method uses the global width and height constants defined in {@link HelloApplication}.
      *
-     * @param stage The current {@link Stage} to update.
+     * @param stage    The current {@link Stage} to update.
      * @param fxmlFile The filename of the FXML resource (e.g., "dashboard-view.fxml").
      */
     public static void switchScene(Stage stage, String fxmlFile) {
@@ -135,7 +146,6 @@ public class UIUtils {
             FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource(fxmlFile));
             Scene scene = new Scene(fxmlLoader.load(), HelloApplication.WIDTH, HelloApplication.HEIGHT);
             stage.setScene(scene);
-            //stage.sizeToScene();
             stage.show();
         } catch (IOException e) {
             System.err.println("Failed to load FXML file: " + fxmlFile);

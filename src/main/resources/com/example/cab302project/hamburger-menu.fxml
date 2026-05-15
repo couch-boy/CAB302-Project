@@ -62,7 +62,7 @@
                   style="-fx-padding: 14 20 14 20;">
                 <Label text="Dark Mode" styleClass="drawer-toggle-label"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <CheckBox fx:id="darkModeToggle" style="-fx-cursor: hand;"/>
+                <CheckBox fx:id="darkModeToggle" styleClass="drawer-checkbox"/>
             </HBox>
 
             <Button fx:id="btnLogout" styleClass="drawer-item, drawer-item-danger" maxWidth="Infinity"
