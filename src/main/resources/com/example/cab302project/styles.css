@@ -753,3 +753,467 @@
     -fx-fill: #374151;
     -fx-font-size: 13px;
 }
+
+
+/* ── Reporter field (read-only, subtle background) ───────────────────── */
+.reporter-field {
+    -fx-background-color: #F1F3F5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DARK MODE OVERRIDES
+   Applied by adding "dark-mode" class to the scene root via ThemeManager.
+   Every rule is scoped under .dark-mode so light mode is completely untouched.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Root / page background ──────────────────────────────────────────── */
+.dark-mode {
+    -fx-background-color: #111827;
+}
+
+/* ── App bar ─────────────────────────────────────────────────────────── */
+.dark-mode .app-bar {
+    -fx-background-color: #1F2937;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0.2, 0, 2);
+}
+
+.dark-mode .app-bar-title {
+    -fx-text-fill: #F9FAFB;
+}
+
+.dark-mode .hamburger-btn {
+    -fx-text-fill: #F9FAFB;
+}
+
+/* FontIcon inside hamburger button */
+.dark-mode .hamburger-btn .ikonli-font-icon {
+    -fx-icon-color: #F9FAFB;
+    -fx-fill: #F9FAFB;
+}
+
+.dark-mode .hamburger-btn:hover {
+    -fx-background-color: rgba(255,255,255,0.08);
+}
+/* ── Bottom nav bar ──────────────────────────────────────────────────── */
+.dark-mode .nav-bar {
+    -fx-background-color: #1F2937;
+    -fx-border-color: #374151;
+}
+
+.dark-mode .nav-btn:hover {
+    -fx-background-color: rgba(255,255,255,0.06);
+}
+
+.dark-mode .nav-btn-icon      { -fx-text-fill: #6B7280; }
+.dark-mode .nav-btn-label     { -fx-text-fill: #6B7280; }
+.dark-mode .nav-btn-icon-active  { -fx-text-fill: #93C5FD; }
+.dark-mode .nav-btn-label-active { -fx-text-fill: #93C5FD; }
+
+/* ── Auth / profile card ─────────────────────────────────────────────── */
+.dark-mode .auth-root {
+    -fx-background-color: #111827;
+}
+
+.dark-mode .auth-card {
+    -fx-background-color: #1F2937;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 24, 0.25, 0, 4);
+}
+
+.dark-mode .auth-title    { -fx-text-fill: #F9FAFB; }
+.dark-mode .auth-subtitle { -fx-text-fill: #9CA3AF; }
+.dark-mode .auth-label    { -fx-text-fill: #D1D5DB; }
+
+.dark-mode .auth-field {
+    -fx-background-color: #374151;
+    -fx-text-fill: #F9FAFB;
+    -fx-prompt-text-fill: #6B7280;
+    -fx-border-color: #4B5563;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-control-inner-background: #374151;
+}
+
+.dark-mode .auth-field:focused {
+    -fx-border-color: #3B82F6;
+    -fx-background-color: #374151;
+    -fx-control-inner-background: #374151;
+}
+
+/* Non-editable TextField (Reporter field) — JavaFX uses a different background key */
+.dark-mode .auth-field:disabled,
+.dark-mode .reporter-field {
+    -fx-background-color: #2D3748;
+    -fx-control-inner-background: #2D3748;
+    -fx-text-fill: #9CA3AF;
+    -fx-border-color: #4B5563;
+    -fx-opacity: 1;
+}
+
+/* TextArea outer scroll pane wrapper that JavaFX adds automatically */
+.dark-mode .auth-field .scroll-pane,
+.dark-mode .auth-field .scroll-pane .viewport,
+.dark-mode .auth-field .scroll-pane .content {
+    -fx-background-color: #374151;
+    -fx-background: #374151;
+}
+
+/* ── Primary button — darker navy, not washed-out blue ──────────────── */
+.dark-mode .btn-primary {
+    -fx-background-color: #1E3A5F;
+}
+
+.dark-mode .btn-primary:hover {
+    -fx-background-color: #1A3154;
+}
+
+.dark-mode .btn-primary:pressed {
+    -fx-background-color: #162840;
+}
+
+/* ── Secondary / reset button ────────────────────────────────────────── */
+.dark-mode .btn-secondary {
+    -fx-background-color: transparent;
+    -fx-border-color: #4B5563;
+    -fx-text-fill: #D1D5DB;
+}
+
+.dark-mode .btn-secondary:hover {
+    -fx-background-color: #374151;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────────────── */
+.dark-mode .tab-bar {
+    -fx-background-color: #1F2937;
+    -fx-border-color: transparent transparent #374151 transparent;
+}
+
+.dark-mode .tab-btn {
+    -fx-text-fill: #9CA3AF;
+    -fx-background-color: transparent;
+}
+
+.dark-mode .tab-btn-active {
+    -fx-text-fill: #93C5FD;
+    -fx-border-color: transparent transparent #93C5FD transparent;
+}
+
+/* ── Inline legend / strip panels (hardcoded style= in FXML) ─────────── */
+/* These VBox/HBox strips use inline style= so we override via child labels */
+.dark-mode VBox > HBox[style*="background-color: #FFFFFF"],
+.dark-mode VBox > VBox[style*="background-color: #FFFFFF"] {
+    -fx-background-color: #1F2937 !important;
+    -fx-border-color: #374151 !important;
+}
+
+/* General: any element with an inline white background inside dark-mode */
+.dark-mode .legend-strip {
+    -fx-background-color: #1F2937;
+    -fx-border-color: #374151;
+}
+
+/* ── Crime list cells ────────────────────────────────────────────────── */
+.dark-mode .crime-list-cell {
+    -fx-background-color: #1F2937;
+    -fx-border-color: #374151;
+}
+
+.dark-mode .crime-list-cell:hover   { -fx-background-color: #2D3748; }
+.dark-mode .crime-list-cell:pressed { -fx-background-color: #253347; }
+.dark-mode .crime-list-cell:selected { -fx-background-color: #1D3461; }
+.dark-mode .crime-list-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* ── ListView itself ─────────────────────────────────────────────────── */
+.dark-mode .list-view {
+    -fx-background-color: #111827;
+    -fx-background: #111827;
+}
+
+/* ── Floating search field ───────────────────────────────────────────── */
+.dark-mode .search-field-float {
+    -fx-background-color: #1F2937;
+    -fx-text-fill: #F9FAFB;
+    -fx-prompt-text-fill: #6B7280;
+    -fx-border-color: #4B5563;
+}
+
+.dark-mode .search-field-float:focused {
+    -fx-border-color: #3B82F6;
+    -fx-background-color: #1F2937;
+}
+
+/* ── Search button — dark, not pale blue ────────────────────────────── */
+.dark-mode .search-btn-float {
+    -fx-background-color: #1E3A5F;
+    -fx-text-fill: #FFFFFF;
+}
+
+.dark-mode .search-btn-float:hover   { -fx-background-color: #1A3154; }
+.dark-mode .search-btn-float:pressed { -fx-background-color: #162840; }
+
+/* ── Icon / utility buttons (✕, filter, +, −) ───────────────────────── */
+.dark-mode .icon-btn-float {
+    -fx-background-color: #1F2937;
+    -fx-border-color: #4B5563;
+    -fx-text-fill: #D1D5DB;
+}
+
+/* FontIcon inside floating icon buttons */
+.dark-mode .icon-btn-float .ikonli-font-icon {
+    -fx-icon-color: #D1D5DB;
+    -fx-fill: #D1D5DB;
+}
+
+.dark-mode .icon-btn-float:hover {
+    -fx-background-color: #374151;
+    -fx-border-color: #6B7280;
+}
+
+.dark-mode .icon-btn-float:pressed {
+    -fx-background-color: #253347;
+}
+
+/* ── Search status label ─────────────────────────────────────────────── */
+.dark-mode .search-status-float { -fx-text-fill: #D1D5DB; }
+
+/* ── Filter drawer ───────────────────────────────────────────────────── */
+.dark-mode .filter-drawer {
+    -fx-background-color: #1F2937;
+    -fx-border-color: #374151;
+    -fx-border-width: 1;
+}
+
+.dark-mode .filter-drawer-title { -fx-text-fill: #F9FAFB; }
+.dark-mode .filter-drawer-label { -fx-text-fill: #9CA3AF; }
+
+.dark-mode .filter-drawer-combo {
+    -fx-background-color: #374151;
+    -fx-text-fill: #F9FAFB;
+    -fx-border-color: #4B5563;
+}
+
+/* ComboBox button/arrow inside filter combos */
+.dark-mode .filter-drawer-combo .combo-box-base {
+    -fx-background-color: #374151;
+    -fx-text-fill: #F9FAFB;
+    -fx-border-color: #4B5563;
+}
+
+.dark-mode .filter-drawer-combo .arrow-button {
+    -fx-background-color: #374151;
+}
+
+.dark-mode .filter-drawer-combo .arrow {
+    -fx-background-color: #D1D5DB;
+}
+
+/* ── Filter menu button (Reports screen "Filter") ────────────────────── */
+.dark-mode .filter-menu-btn {
+    -fx-background-color: transparent;
+    -fx-border-color: #6B7280;
+    -fx-text-fill: #F9FAFB;
+}
+
+/* MenuButton text lives in a child .label node — must target it directly */
+.dark-mode .filter-menu-btn .label {
+    -fx-text-fill: #F9FAFB;
+}
+
+.dark-mode .filter-menu-btn:hover,
+.dark-mode .filter-menu-btn:showing {
+    -fx-background-color: #374151;
+    -fx-text-fill: #F9FAFB;
+}
+
+.dark-mode .filter-menu-btn:hover .label,
+.dark-mode .filter-menu-btn:showing .label {
+    -fx-text-fill: #F9FAFB;
+}
+
+.dark-mode .filter-menu-btn .arrow-button .arrow {
+    -fx-background-color: #F9FAFB;
+}
+
+/* ── Reporter field (dark mode — matches other input fields) ─────────── */
+.dark-mode .reporter-field {
+    -fx-background-color: #374151;
+    -fx-text-fill: #D1D5DB;
+    -fx-border-color: #4B5563;
+}
+
+/* ── ComboBox (auth-field style) ─────────────────────────────────────── */
+.dark-mode .combo-box-base {
+    -fx-background-color: #374151;
+    -fx-text-fill: #F9FAFB;
+    -fx-border-color: #4B5563;
+}
+
+.dark-mode .combo-box-base .arrow-button {
+    -fx-background-color: #374151;
+}
+
+.dark-mode .combo-box-base .arrow {
+    -fx-background-color: #D1D5DB;
+}
+
+.dark-mode .combo-box-base .list-cell {
+    -fx-background-color: #374151;
+    -fx-text-fill: #F9FAFB;
+}
+
+/* ── ComboBox popup dropdown ─────────────────────────────────────────── */
+.dark-mode .combo-box-popup .list-view {
+    -fx-background-color: #1F2937;
+    -fx-border-color: #4B5563;
+}
+
+.dark-mode .combo-box-popup .list-cell {
+    -fx-background-color: #1F2937;
+    -fx-text-fill: #F9FAFB;
+}
+
+.dark-mode .combo-box-popup .list-cell:hover {
+    -fx-background-color: #374151;
+}
+
+.dark-mode .combo-box-popup .list-cell:selected,
+.dark-mode .combo-box-popup .list-cell:selected:hover {
+    -fx-background-color: #1D3461;
+    -fx-text-fill: #F9FAFB;
+}
+
+/* ── Context menu (autocomplete, MenuButton items) ───────────────────── */
+.dark-mode .context-menu {
+    -fx-background-color: #1F2937;
+    -fx-border-color: #4B5563;
+}
+
+.dark-mode .context-menu .menu-item {
+    -fx-background-color: transparent;
+}
+
+.dark-mode .context-menu .menu-item:hover,
+.dark-mode .context-menu .menu-item:focused {
+    -fx-background-color: #374151;
+}
+
+.dark-mode .context-menu .menu-item .label {
+    -fx-text-fill: #F9FAFB;
+}
+
+.dark-mode .context-menu .separator .line {
+    -fx-border-color: #374151;
+}
+
+/* ── Detail bottom-sheet panel (Report Details) ──────────────────────── */
+.dark-mode .detail-panel,
+.dark-mode #detailPanel {
+    -fx-background-color: #1F2937;
+}
+
+/* ScrollPane inside the detail panel */
+/* Detail panel ScrollPane background */
+.dark-mode .scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: #1F2937;
+    -fx-border-width: 0;
+}
+
+.dark-mode .scroll-pane > .viewport {
+    -fx-background-color: #1F2937;
+}
+
+/* TextArea (description field) */
+.dark-mode .text-area {
+    -fx-background-color: #374151;
+    -fx-text-fill: #F9FAFB;
+    -fx-border-color: #4B5563;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-prompt-text-fill: #6B7280;
+    -fx-control-inner-background: #374151;
+}
+
+.dark-mode .text-area .content {
+    -fx-background-color: #374151;
+    -fx-text-fill: #F9FAFB;
+}
+
+/* TextArea's internal scroll pane wrapper must not show white */
+.dark-mode .text-area .scroll-pane,
+.dark-mode .text-area .scroll-pane > .viewport {
+    -fx-background-color: #374151;
+    -fx-background: #374151;
+}
+
+/* DatePicker */
+.dark-mode .date-picker {
+    -fx-background-color: #374151;
+    -fx-border-color: #4B5563;
+    -fx-text-fill: #F9FAFB;
+}
+
+.dark-mode .date-picker .text-field {
+    -fx-background-color: #374151;
+    -fx-text-fill: #F9FAFB;
+    -fx-border-width: 0;
+    -fx-prompt-text-fill: #6B7280;
+}
+
+.dark-mode .date-picker .arrow-button {
+    -fx-background-color: #374151;
+}
+
+.dark-mode .date-picker .arrow-button .arrow {
+    -fx-background-color: #D1D5DB;
+}
+
+/* ── General labels — white text on dark backgrounds ─────────────────── */
+.dark-mode Label {
+    -fx-text-fill: #D1D5DB;
+}
+
+/* ── Card checkbox (profile screen) ─────────────────────────────────── */
+.dark-mode .card-checkbox .box {
+    -fx-background-color: #374151;
+    -fx-border-color: #4B5563;
+}
+
+.dark-mode .card-checkbox:selected .box {
+    -fx-background-color: #3B82F6;
+    -fx-border-color: #3B82F6;
+}
+
+.dark-mode .card-checkbox .text { -fx-fill: #D1D5DB; }
+
+/* Anonymous checkbox in report detail */
+.dark-mode CheckBox .text { -fx-fill: #D1D5DB; }
+
+.dark-mode CheckBox .box {
+    -fx-background-color: #374151;
+    -fx-border-color: #4B5563;
+}
+
+/* ── Alert / dialog pane ─────────────────────────────────────────────── */
+.dark-mode .alert-dialog-pane {
+    -fx-background-color: #1F2937;
+}
+
+.dark-mode .alert-dialog-pane .header-panel {
+    -fx-background-color: #1F2937;
+}
+
+.dark-mode .alert-dialog-pane .header-panel .label {
+    -fx-text-fill: #F9FAFB;
+}
+
+.dark-mode .alert-dialog-pane .content.label {
+    -fx-text-fill: #D1D5DB;
+}
+
+.dark-mode .alert-dialog-pane .button-bar {
+    -fx-background-color: #111827;
+    -fx-border-color: #374151;
+}

@@ -61,7 +61,7 @@ public class CrimesController {
     @FXML
     private ComboBox<CrimeCategory> categoryComboBox;
     @FXML
-    private Label idLabel, severityLabel;
+    private Label severityLabel;
     @FXML
     private Label severityDot;
     @FXML
@@ -74,6 +74,17 @@ public class CrimesController {
     private CheckBox anonymousCheckBox;
     @FXML
     private TextArea descriptionArea;
+
+    // Read-only detail view bindings (view panel shown for existing crimes)
+    @FXML private javafx.scene.control.ScrollPane viewScrollPane;
+    @FXML private javafx.scene.control.ScrollPane editScrollPane;
+    @FXML private Label detailCategoryLabel;
+    @FXML private Label detailDateLabel;
+    @FXML private Label detailStatusLabel;
+    @FXML private Label severityDotEdit;
+    @FXML private Label severityLabelEdit;
+    @FXML private TextField locationFieldEdit;
+    @FXML private TextArea descriptionAreaEdit;
 
     // New bindings for the redesigned list and detail panel
     @FXML
@@ -116,6 +127,13 @@ public class CrimesController {
     @FXML private ComboBox<String> crimeCategoryFilter;
     @FXML private ComboBox<String> crimeDaysFilter;
     @FXML private ComboBox<String> crimeSeverityFilter;
+    // Inline-styled strips — needed for programmatic dark mode override
+    @FXML private HBox severityLegendStrip;
+    @FXML private HBox sectionHeader;
+    @FXML private Label recentLabel;
+    @FXML private VBox submitStripList;
+    @FXML private HBox mapSeverityLegend;
+    @FXML private VBox submitStripMap;
 
     // Crime map search state — mirrors DashboardController pattern
     private double[] crimeActiveBoundingBox = null;
@@ -131,6 +149,8 @@ public class CrimesController {
     private StackPane crimesRoot;
     @FXML
     private Button hamburgerBtn;
+    @FXML
+    private Button crimeFilterToggleBtn;
 
     private HamburgerMenu hamburgerMenu;
 
@@ -217,6 +237,9 @@ public class CrimesController {
         // Set List tab as active by default
         setActiveTab(true);
 
+        // Apply dark mode to inline-styled nodes
+        applyDarkStrips();
+
         // Wire hamburger menu after scene is attached
         // Platform.runLater ensures getScene().getWindow() is not null
         Platform.runLater(() -> {
@@ -226,6 +249,7 @@ public class CrimesController {
             hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
             crimesRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+            hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
         });
 
         anonymousCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
@@ -240,6 +264,73 @@ public class CrimesController {
                 }
             }
         });
+    }
+
+    /**
+     * Applies dark mode overrides to nodes that use hardcoded inline style= in FXML.
+     * CSS cannot override inline styles, so we patch them programmatically here.
+     */
+    private void applyDarkStrips() {
+        if (!UserSession.isDarkMode()) return;
+        String darkStrip   = "-fx-background-color: #1F2937; -fx-border-color: #374151;";
+        String darkSection = "-fx-padding: 12 20 8 20; -fx-background-color: #1F2937;";
+        String darkPanel   = "-fx-background-color: #1F2937; -fx-background-radius: 20 20 0 0; "
+                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0.3, 0, -4);";
+        String darkInput   = "-fx-background-color: #374151; -fx-control-inner-background: #374151; "
+                + "-fx-text-fill: #F9FAFB; -fx-border-color: #4B5563; "
+                + "-fx-border-radius: 8; -fx-background-radius: 8;";
+        String darkReadOnly = "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; "
+                + "-fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; "
+                + "-fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;";
+        if (severityLegendStrip != null) severityLegendStrip.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+        if (sectionHeader       != null) sectionHeader.setStyle(darkSection);
+        if (recentLabel         != null) recentLabel.setStyle("-fx-text-fill: #F9FAFB; -fx-font-size: 13px; -fx-font-weight: bold;");
+        if (submitStripList     != null) submitStripList.setStyle(darkStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+        if (mapSeverityLegend   != null) mapSeverityLegend.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 1 0 0 0;");
+        if (submitStripMap      != null) submitStripMap.setStyle(darkStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+        if (detailPanel         != null) detailPanel.setStyle(darkPanel);
+        // Read-only view fields
+        if (locationField       != null) locationField.setStyle(darkReadOnly);
+        if (descriptionArea     != null) descriptionArea.setStyle(darkReadOnly);
+        // Editable form fields (shown only when creating a new report)
+        if (locationFieldEdit   != null) locationFieldEdit.setStyle(darkInput);
+        if (descriptionAreaEdit != null) descriptionAreaEdit.setStyle(darkInput);
+        if (reporterField       != null) reporterField.setStyle(darkReadOnly);
+        // Brighten inline-styled value labels in the read-only view
+        String brightLabel = "-fx-font-weight: bold; -fx-text-fill: #E5E7EB;";
+        String brightLabelNormal = "-fx-text-fill: #E5E7EB;";
+        if (detailCategoryLabel != null) detailCategoryLabel.setStyle(brightLabel);
+        if (detailDateLabel     != null) detailDateLabel.setStyle(brightLabelNormal);
+    }
+
+    private void refreshDarkMode() {
+        if (UserSession.isDarkMode()) {
+            applyDarkStrips();
+            crimeListView.refresh();
+        } else {
+            String lightStrip   = "-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB;";
+            String lightSection = "-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;";
+            String lightPanel   = "-fx-background-color: #FFFFFF; -fx-background-radius: 20 20 0 0; "
+                    + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0.3, 0, -4);";
+            if (severityLegendStrip != null) severityLegendStrip.setStyle(lightStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+            if (sectionHeader       != null) sectionHeader.setStyle(lightSection);
+            if (recentLabel         != null) recentLabel.setStyle("-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;");
+            if (submitStripList     != null) submitStripList.setStyle(lightStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+            if (mapSeverityLegend   != null) mapSeverityLegend.setStyle(lightStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 1 0 0 0;");
+            if (submitStripMap      != null) submitStripMap.setStyle(lightStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+            if (detailPanel         != null) detailPanel.setStyle(lightPanel);
+            // Read-only view fields
+            if (locationField       != null) locationField.setStyle("-fx-opacity: 1;");
+            if (descriptionArea     != null) descriptionArea.setStyle("-fx-opacity: 1;");
+            // Editable form fields
+            if (locationFieldEdit   != null) locationFieldEdit.setStyle(null);
+            if (descriptionAreaEdit != null) descriptionAreaEdit.setStyle(null);
+            if (reporterField       != null) reporterField.setStyle("-fx-opacity: 1;");
+            // Restore value label colours for light mode
+            if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
+            if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
+            crimeListView.refresh();
+        }
     }
 
     /**
@@ -410,8 +501,8 @@ public class CrimesController {
         String status = crimeActiveBoundingBox == null && filtered.size() == allCrimes.size()
                 ? ""
                 : filtered.isEmpty()
-                  ? "No crimes match these filters"
-                  : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
+                ? "No crimes match these filters"
+                : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
         if (crimeSearchStatusLabel != null) {
             Platform.runLater(() -> crimeSearchStatusLabel.setText(status));
         }
@@ -939,6 +1030,9 @@ public class CrimesController {
 
         if (severityDot  != null) severityDot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 13px;");
         if (severityLabel != null) { severityLabel.setText(severityText); severityLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: " + dotColor + ";"); }
+        // Also update edit panel severity indicators
+        if (severityDotEdit  != null) severityDotEdit.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 13px;");
+        if (severityLabelEdit != null) { severityLabelEdit.setText(severityText); severityLabelEdit.setStyle("-fx-font-weight: bold; -fx-text-fill: " + dotColor + ";"); }
     }
 
     /**
@@ -978,24 +1072,30 @@ public class CrimesController {
                 Label dot = new Label("●");
                 dot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 14px;");
 
+                boolean dark = UserSession.isDarkMode();
+
                 Label category = new Label(crime.getCategory().toString());
-                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1A1A2E;");
+                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: "
+                        + (dark ? "#F9FAFB" : "#1A1A2E") + ";");
 
                 String statusText = crime.isActioned() ? "Police Dispatched" : "Pending";
                 Label status = new Label(statusText);
-                status.setStyle("-fx-font-size: 11px; -fx-text-fill: #6B7280;");
+                status.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#9CA3AF" : "#6B7280") + ";");
 
                 String locationText = addressCache.containsKey(crime.getId())
                         ? addressCache.get(crime.getId())
                         : String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
 
                 Label location = new Label(locationText);
-                location.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+                location.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#6B7280" : "#9CA3AF") + ";");
 
                 VBox textBlock = new VBox(2, category, status, location);
 
                 Label time = new Label(getRelativeTime(crime.getTimestamp()));
-                time.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+                time.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#6B7280" : "#9CA3AF") + ";");
 
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -1030,6 +1130,24 @@ public class CrimesController {
         saveBtn.setVisible(canSave);
         saveBtn.setManaged(canSave);
 
+        // Re-apply dark mode field styles each time the panel opens,
+        // since setText() calls reset the skin and can clear inline styles.
+        if (UserSession.isDarkMode()) {
+            String darkReadOnly = "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; "
+                    + "-fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; "
+                    + "-fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;";
+            String darkInput = "-fx-background-color: #374151; -fx-control-inner-background: #374151; "
+                    + "-fx-text-fill: #F9FAFB; -fx-border-color: #4B5563; "
+                    + "-fx-border-radius: 8; -fx-background-radius: 8;";
+            if (locationField       != null) locationField.setStyle(darkReadOnly);
+            if (descriptionArea     != null) descriptionArea.setStyle(darkReadOnly);
+            if (locationFieldEdit   != null) locationFieldEdit.setStyle(darkInput);
+            if (descriptionAreaEdit != null) descriptionAreaEdit.setStyle(darkInput);
+            // Re-brighten value labels after setText() resets skins
+            if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
+            if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
+        }
+
         // Show backdrop
         detailBackdrop.setVisible(true);
         detailBackdrop.setManaged(true);
@@ -1050,33 +1168,36 @@ public class CrimesController {
      * @param crime the CrimeRecord whose data should populate the form
      */
     private void populateForm(CrimeRecord crime) {
-        // Set ID label
-        idLabel.setText(String.valueOf(crime.getId()));
+        boolean isNew = (crime.getId() == 0);
 
-        // Get LocalDateTime object from CrimeRecord
+        // Always populate read-only view labels
+        if (detailCategoryLabel != null) detailCategoryLabel.setText(crime.getCategory().toString());
+        if (detailDateLabel != null) detailDateLabel.setText(UIUtils.formatLocalDateTime(crime.getTimestamp()));
+        if (detailStatusLabel != null) detailStatusLabel.setText(crime.isActioned() ? "Police Dispatched" : "Pending");
+
+        // Populate editable form fields (used when creating a new report)
         LocalDateTime dt = crime.getTimestamp();
-
         categoryComboBox.setValue(crime.getCategory());
         updateSeverityDisplay(crime.getCategory());
         datePicker.setValue(dt.toLocalDate());
-
-        // Set AM/PM box based on 24hr time input value
         int hour = dt.getHour();
         ampmBox.setValue(hour >= 12 ? "PM" : "AM");
-
-        // Display hours in 12hr format instead of 24hr (modulo 12)
         int displayHour = (hour % 12 == 0) ? 12 : hour % 12;
         hourBox.setValue(String.format("%02d", displayHour));
-
-        // Display minutes by closest 15min interval (via integer division)
         int mins = dt.getMinute();
         minuteBox.setValue(String.format("%02d", (mins / 15) * 15));
+        if (descriptionAreaEdit != null) descriptionAreaEdit.setText(crime.getDescription());
+        reporterField.setText(crime.getReporterDisplayName());
 
-        // Use cached address if already geocoded, otherwise geocode and cache.
-        // After caching, refresh the list view so the cell picks up the address.
+        // Geocode address and populate both location fields
         if (addressCache.containsKey(crime.getId())) {
-            locationField.setText(addressCache.get(crime.getId()));
+            String addr = addressCache.get(crime.getId());
+            locationField.setText(addr);
+            if (locationFieldEdit != null) locationFieldEdit.setText(addr);
         } else {
+            String coords = String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
+            locationField.setText(coords);
+            if (locationFieldEdit != null) locationFieldEdit.setText(coords);
             new Thread(() -> {
                 try {
                     String address = geocoder.reverseGeocode(crime.getLatitude(), crime.getLongitude());
@@ -1086,23 +1207,36 @@ public class CrimesController {
                             : address;
                     addressCache.put(crime.getId(), shortAddress);
                     Platform.runLater(() -> {
-                        locationField.setText(address); // full address in detail panel
-                        crimeListView.refresh();        // update list cell with short address
+                        locationField.setText(address);
+                        if (locationFieldEdit != null) locationFieldEdit.setText(address);
+                        crimeListView.refresh();
                     });
                 } catch (Exception e) {
-                    Platform.runLater(() ->
-                            locationField.setText(String.format("%.4f, %.4f",
-                                    crime.getLatitude(), crime.getLongitude()))
-                    );
+                    Platform.runLater(() -> {
+                        String c = String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
+                        locationField.setText(c);
+                        if (locationFieldEdit != null) locationFieldEdit.setText(c);
+                    });
                 }
             }).start();
         }
 
-        descriptionArea.setText(crime.getDescription());
-        reporterField.setText(crime.getReporterDisplayName());
+        // Apply dark mode styles to read-only fields after text is set
+        if (UserSession.isDarkMode()) {
+            String darkReadOnly = "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; "
+                    + "-fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; "
+                    + "-fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;";
+            if (locationField   != null) locationField.setStyle(darkReadOnly);
+            if (descriptionArea != null) descriptionArea.setStyle(darkReadOnly);
+            if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
+            if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
+            if (detailStatusLabel   != null) detailStatusLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
+        }
 
-        setFormEditable(crime.getId() == 0);
-        isCreatingNew = (crime.getId() == 0);
+        descriptionArea.setText(crime.getDescription());
+
+        setFormEditable(isNew);
+        isCreatingNew = isNew;
     }
 
     /**
@@ -1129,7 +1263,7 @@ public class CrimesController {
         LocalDateTime newTimestamp = LocalDateTime.of(datePicker.getValue(), LocalTime.of(hour, min));
 
         // Parse coordinates using regex to handle spaces automatically
-        String address = locationField.getText().trim();
+        String address = locationFieldEdit != null ? locationFieldEdit.getText().trim() : locationField.getText().trim();
 
         if (address.isEmpty()) {
             throw new IllegalArgumentException("Please enter an address.");
@@ -1142,6 +1276,8 @@ public class CrimesController {
         System.out.println("Address entered: " + address);
         System.out.println("Resolved coordinates: " + lat + ", " + lon);
 
+        String description = descriptionAreaEdit != null ? descriptionAreaEdit.getText() : descriptionArea.getText();
+
         // Bundle everything into the updated object
         return new CrimeRecord(
                 original.getId(),
@@ -1149,7 +1285,7 @@ public class CrimesController {
                 newTimestamp,
                 lat,
                 lon,
-                descriptionArea.getText(),
+                description,
                 anonymousCheckBox.isSelected() ? "" : original.getReporter(),
                 original.isActioned() // Preserve original raw reporter data (username/null)
         );
@@ -1159,7 +1295,9 @@ public class CrimesController {
      * Clears all form fields and resets them to default values.
      */
     private void clearForm() {
-        idLabel.setText("-");
+        if (detailCategoryLabel != null) detailCategoryLabel.setText("-");
+        if (detailDateLabel     != null) detailDateLabel.setText("-");
+        if (detailStatusLabel   != null) detailStatusLabel.setText("-");
         updateSeverityDisplay(null);
         categoryComboBox.setValue(null);
         datePicker.setValue(null);
@@ -1168,6 +1306,8 @@ public class CrimesController {
         ampmBox.setValue(null);
         locationField.clear();
         descriptionArea.clear();
+        if (locationFieldEdit   != null) locationFieldEdit.clear();
+        if (descriptionAreaEdit != null) descriptionAreaEdit.clear();
         reporterField.clear();
         setFormEditable(true);
     }
@@ -1177,23 +1317,14 @@ public class CrimesController {
      * @param editable true to make fields editable, false to lock them as read-only
      */
     private void setFormEditable(boolean editable) {
-        categoryComboBox.setDisable(!editable);
-        datePicker.setDisable(!editable);
-        hourBox.setDisable(!editable);
-        minuteBox.setDisable(!editable);
-        ampmBox.setDisable(!editable);
-        anonymousCheckBox.setDisable(!editable);
-
-        locationField.setEditable(editable);
-        descriptionArea.setEditable(editable);
-        anonymousCheckBox.setDisable(!editable);
-
-        if (!editable) {
-            locationField.setStyle("-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;");
-            descriptionArea.setStyle("-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;");
-        } else {
-            locationField.setStyle("");
-            descriptionArea.setStyle("");
+        // Swap between read-only view panel and editable form panel
+        if (viewScrollPane != null) {
+            viewScrollPane.setVisible(!editable);
+            viewScrollPane.setManaged(!editable);
+        }
+        if (editScrollPane != null) {
+            editScrollPane.setVisible(editable);
+            editScrollPane.setManaged(editable);
         }
     }
 
@@ -1214,7 +1345,10 @@ public class CrimesController {
      * to improve usability and prevent unnecessary interactions during viewing.
      */
     private void setupAddressAutocomplete() {
-        locationField.textProperty().addListener((obs, oldText, newText) -> {
+        // Autocomplete attaches to the editable location field in the new-report form
+        TextField autoField = locationFieldEdit != null ? locationFieldEdit : locationField;
+
+        autoField.textProperty().addListener((obs, oldText, newText) -> {
 
             if (!isCreatingNew) {
                 suggestionsPopup.hide();
@@ -1232,7 +1366,7 @@ public class CrimesController {
             suggestionDelay.playFromStart();
         });
 
-        locationField.focusedProperty().addListener((obs, oldVal, focused) -> {
+        autoField.focusedProperty().addListener((obs, oldVal, focused) -> {
             if (!focused) {
                 suggestionsPopup.hide();
             }
@@ -1274,6 +1408,7 @@ public class CrimesController {
 
             CustomMenuItem item = new CustomMenuItem(entryLabel, true);
             item.setOnAction(e -> {
+                if (locationFieldEdit != null) locationFieldEdit.setText(suggestion);
                 locationField.setText(suggestion);
                 suggestionsPopup.hide();
             });
@@ -1281,8 +1416,10 @@ public class CrimesController {
             suggestionsPopup.getItems().add(item);
         }
 
+        TextField anchorField = locationFieldEdit != null && locationFieldEdit.isVisible()
+                ? locationFieldEdit : locationField;
         if (!suggestionsPopup.isShowing()) {
-            suggestionsPopup.show(locationField, Side.BOTTOM, 0, 0);
+            suggestionsPopup.show(anchorField, Side.BOTTOM, 0, 0);
         }
     }
 }

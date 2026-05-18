@@ -30,14 +30,14 @@
         </HBox>
 
         <!-- Severity legend -->
-        <HBox alignment="CENTER_LEFT" spacing="16"
+        <HBox fx:id="severityLegendStrip" alignment="CENTER_LEFT" spacing="16"
               style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
                      -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;">
-            <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
+            <Label text="&#9679;" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
             <Label text="Severe" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
-            <Label text="●" style="-fx-text-fill: #FF8C00; -fx-font-size: 11px;"/>
+            <Label text="&#9679;" style="-fx-text-fill: #FF8C00; -fx-font-size: 11px;"/>
             <Label text="Moderate" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
-            <Label text="●" style="-fx-text-fill: #FFD700; -fx-font-size: 11px;"/>
+            <Label text="&#9679;" style="-fx-text-fill: #FFD700; -fx-font-size: 11px;"/>
             <Label text="Low" style="-fx-text-fill: #6B7280; -fx-font-size: 11px;"/>
         </HBox>
 
@@ -48,13 +48,14 @@
             <TableView fx:id="crimeTable" visible="false" managed="false"/>
 
             <!-- Section header -->
-            <HBox alignment="CENTER_LEFT" spacing="10"
+            <HBox fx:id="sectionHeader" alignment="CENTER_LEFT" spacing="10"
                   style="-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;">
-                <Label text="Your Reports"
+                <Label fx:id="yourReportsLabel" text="Your Reports"
                        style="-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <MenuButton fx:id="filterMenuButton"
                             text="Filter"
+                            styleClass="filter-menu-btn"
                             popupSide="BOTTOM">
                     <items>
                         <MenuItem text="Filter By" disable="true"/>
@@ -96,7 +97,7 @@
                              -fx-border-width: 0;"/>
 
             <!-- Submit new report pinned to bottom -->
-            <VBox style="-fx-background-color: #FFFFFF;
+            <VBox fx:id="submitStrip" style="-fx-background-color: #FFFFFF;
                          -fx-border-color: #E5E7EB;
                          -fx-border-width: 1 0 0 0;
                          -fx-padding: 12 20 12 20;">
@@ -139,7 +140,7 @@
                          -fx-min-width: 40; -fx-max-width: 40;
                          -fx-min-height: 4; -fx-max-height: 4;"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="✕" onAction="#onCloseDetail"
+            <Button text="X" onAction="#onCloseDetail"
                     style="-fx-background-color: #F3F4F6;
                            -fx-text-fill: #6B7280; -fx-cursor: hand;
                            -fx-font-size: 13px; -fx-border-width: 0;
@@ -184,7 +185,7 @@
                 </HBox>
 
                 <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label text="Date &amp; Time" styleClass="auth-label"/>
+                    <Label text="Date and Time" styleClass="auth-label"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <Label fx:id="detailDateLabel" text="-"
                            style="-fx-text-fill: #2A364E;"/>

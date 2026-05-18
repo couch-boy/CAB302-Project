@@ -7,6 +7,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Pane;
@@ -44,7 +45,9 @@ public class DashboardController {
     @FXML private ComboBox<String> daysFilter;
     @FXML private ComboBox<String> actionedFilter;
     @FXML private StackPane filterBackdrop;
-
+    @FXML private HBox legendStrip;
+    @FXML private VBox submitStrip;
+    @FXML private Button filterToggleBtn;
 
     private IAppDAO dao;
     private HamburgerMenu hamburgerMenu;
@@ -197,8 +200,8 @@ public class DashboardController {
             String status = activeBoundingBox == null && filtered.size() == allCrimes.size()
                     ? ""
                     : filtered.isEmpty()
-                      ? "No crimes match these filters"
-                      : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
+                    ? "No crimes match these filters"
+                    : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
             Platform.runLater(() -> searchStatusLabel.setText(status));
         }
 
@@ -435,6 +438,9 @@ public class DashboardController {
             navBarController.setActiveTab("map");
         }
 
+        // Apply dark mode to inline-styled nodes
+        applyDarkStrips();
+
         // Wire hamburger menu after scene is attached
         // Platform.runLater ensures getScene().getWindow() is not null
         Platform.runLater(() -> {
@@ -444,7 +450,29 @@ public class DashboardController {
             hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
             dashboardRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+            hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
         });
+    }
+
+    /**
+     * Applies dark mode overrides to nodes that use hardcoded inline style= attributes
+     * in FXML. CSS cannot override inline styles, so we set them programmatically here.
+     */
+    private void applyDarkStrips() {
+        if (!UserSession.isDarkMode()) return;
+        String darkStrip = "-fx-background-color: #1F2937; -fx-border-color: #374151;";
+        if (legendStrip != null)  legendStrip.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 1 0 0 0;");
+        if (submitStrip != null)  submitStrip.setStyle(darkStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+    }
+
+    private void refreshDarkMode() {
+        if (UserSession.isDarkMode()) {
+            applyDarkStrips();
+        } else {
+            // Restore light mode inline styles
+            if (legendStrip != null) legendStrip.setStyle("-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20; -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;");
+            if (submitStrip != null) submitStrip.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+        }
     }
 
     /**

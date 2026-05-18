@@ -30,6 +30,7 @@ public class PoliceHamburgerMenu extends StackPane {
     private Stage     stage;
     private IAppDAO   dao;
     private StackPane loaded;
+    private Runnable  onDarkModeChanged;
 
     /**
      * Loads the police hamburger menu FXML and attaches it to the scene graph.
@@ -83,7 +84,6 @@ public class PoliceHamburgerMenu extends StackPane {
         loaded.lookup("#btnMap").setOnMouseClicked(e -> onMap());
         loaded.lookup("#btnReports").setOnMouseClicked(e -> onReports());
         loaded.lookup("#btnProfile").setOnMouseClicked(e -> onProfile());
-        loaded.lookup("#btnSettings").setOnMouseClicked(e -> onSettings());
         loaded.lookup("#btnLogout").setOnMouseClicked(e -> onLogout());
         if (darkModeToggle != null) darkModeToggle.setOnAction(e -> onDarkModeToggle());
     }
@@ -148,10 +148,6 @@ public class PoliceHamburgerMenu extends StackPane {
         UIUtils.switchScene(stage, "police-dashboard-view.fxml");
     }
 
-    /**
-     * Closes the drawer with no further action. Placeholder for settings screen.
-     */
-    private void onSettings() { close(); }
 
     /**
      * Closes the drawer and navigates to the police crime reports screen.
@@ -177,7 +173,20 @@ public class PoliceHamburgerMenu extends StackPane {
         if (session != null && session.getUser() != null) {
             session.getUser().setDarkMode(darkModeToggle.isSelected());
             dao.updateUser(session.getUser());
+            // Reflect the change immediately on the current scene
+            if (getScene() != null) {
+                ThemeManager.apply(getScene());
+            }
+            // Notify the host controller to refresh inline-styled nodes
+            if (onDarkModeChanged != null) {
+                onDarkModeChanged.run();
+            }
         }
+    }
+
+    /** Sets a callback invoked whenever dark mode is toggled. */
+    public void setOnDarkModeChanged(Runnable callback) {
+        this.onDarkModeChanged = callback;
     }
 
     /**
