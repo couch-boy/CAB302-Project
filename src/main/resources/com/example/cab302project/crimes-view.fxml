@@ -397,6 +397,10 @@
                                style="-fx-opacity: 1; -fx-background-color: #f4f4f4;"/>
                 </VBox>
 
+                <CheckBox fx:id="anonymousCheckBox"
+                          text="Submit Anonymously"
+                          style="-fx-text-fill: #6B7280;"/>
+
             </VBox>
         </ScrollPane>
 
