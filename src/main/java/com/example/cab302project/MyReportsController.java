@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 /**
  * Controller responsible for displaying and managing the user's submitted crime reports.
  * It loads reports specific to the logged-in user, displays them in both list and table views,
@@ -28,7 +29,6 @@ public class MyReportsController {
     @FXML private Label reportCountLabel;
     @FXML private VBox detailPanel;
     @FXML private Pane detailBackdrop;
-    @FXML private Label detailIdLabel;
     @FXML private Label detailCategoryLabel;
     @FXML private Label detailSeverityLabel;
     @FXML private Label detailDateLabel;
@@ -44,6 +44,12 @@ public class MyReportsController {
             crimeTypeDomesticAbuseItem, crimeTypeHomicideItem;
     @FXML private RadioMenuItem statusAllItem, statusPendingItem, statusActionedItem;
     @FXML private RadioMenuItem dateAllItem, dateTodayItem, dateLast7DaysItem, dateLast30DaysItem;
+
+    // Inline-styled strips — needed for programmatic dark mode override
+    @FXML private HBox severityLegendStrip;
+    @FXML private HBox sectionHeader;
+    @FXML private Label yourReportsLabel;
+    @FXML private VBox submitStrip;
 
     private HamburgerMenu hamburgerMenu;
     private IAppDAO dao;
@@ -61,7 +67,6 @@ public class MyReportsController {
      * the DAO from the main application database instance.
      */
     public MyReportsController() {
-
         this.dao = HelloApplication.DATABASE;
     }
 
@@ -95,6 +100,9 @@ public class MyReportsController {
         // Preload addresses in background
         preloadAddresses(allMyReports);
 
+        // Apply dark mode to inline-styled nodes
+        applyDarkStrips();
+
         // Wire hamburger menu after scene is attached
         Platform.runLater(() -> {
             Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
@@ -103,18 +111,68 @@ public class MyReportsController {
             hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
             myReportsRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+            hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
         });
+    }
+
+    // ── Dark mode ─────────────────────────────────────────────────────
+
+    /**
+     * Applies dark mode overrides to nodes that use hardcoded inline style= in FXML.
+     * CSS cannot override inline styles, so we patch them programmatically here.
+     */
+    private void applyDarkStrips() {
+        if (!UserSession.isDarkMode()) return;
+        String darkStrip   = "-fx-background-color: #1F2937; -fx-border-color: #374151;";
+        String darkSection = "-fx-padding: 12 20 8 20; -fx-background-color: #1F2937;";
+        String darkPanel   = "-fx-background-color: #1F2937; -fx-background-radius: 20 20 0 0; "
+                + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0.3, 0, -4);";
+        String darkReadOnly = "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; "
+                + "-fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; "
+                + "-fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;";
+
+        if (severityLegendStrip != null) severityLegendStrip.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+        if (sectionHeader       != null) sectionHeader.setStyle(darkSection);
+        if (yourReportsLabel    != null) yourReportsLabel.setStyle("-fx-text-fill: #F9FAFB; -fx-font-size: 13px; -fx-font-weight: bold;");
+        if (submitStrip         != null) submitStrip.setStyle(darkStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+        if (detailPanel         != null) detailPanel.setStyle(darkPanel);
+        if (detailLocationField != null) detailLocationField.setStyle(darkReadOnly);
+        if (detailDescriptionArea != null) detailDescriptionArea.setStyle(darkReadOnly);
+        // Brighten inline-styled value labels
+        String brightLabel = "-fx-font-weight: bold; -fx-text-fill: #E5E7EB;";
+        if (detailCategoryLabel != null) detailCategoryLabel.setStyle(brightLabel);
+        if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
+    }
+
+    /**
+     * Called by the hamburger menu when the user toggles dark mode.
+     * Re-applies or removes dark mode overrides and refreshes the list cells.
+     */
+    private void refreshDarkMode() {
+        if (UserSession.isDarkMode()) {
+            applyDarkStrips();
+            crimeListView.refresh();
+        } else {
+            String lightStrip   = "-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB;";
+            String lightSection = "-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;";
+            String lightPanel   = "-fx-background-color: #FFFFFF; -fx-background-radius: 20 20 0 0; "
+                    + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0.3, 0, -4);";
+            if (severityLegendStrip != null) severityLegendStrip.setStyle(lightStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+            if (sectionHeader       != null) sectionHeader.setStyle(lightSection);
+            if (yourReportsLabel    != null) yourReportsLabel.setStyle("-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;");
+            if (submitStrip         != null) submitStrip.setStyle(lightStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+            if (detailPanel         != null) detailPanel.setStyle(lightPanel);
+            if (detailLocationField != null) detailLocationField.setStyle("-fx-opacity: 1;");
+            if (detailDescriptionArea != null) detailDescriptionArea.setStyle("-fx-opacity: 1;");
+            // Restore value label colours for light mode
+            if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
+            if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
+            crimeListView.refresh();
+        }
     }
 
     // ── List setup ────────────────────────────────────────────────────
 
-    /**
-     * Configures the cell factory for the crime list view.
-     *
-     * Each cell displays a severity colour dot, crime category, dispatch
-     * status, geocoded location, and a relative timestamp. Selecting a cell
-     * populates and slides up the detail panel.
-     */
     /**
      * Groups filter menu options so one item can be active in each section.
      */
@@ -234,6 +292,14 @@ public class MyReportsController {
         filterMenuButton.setText(activeFilters == 0 ? "Filter" : "Filter (" + activeFilters + ")");
     }
 
+    /**
+     * Configures the cell factory for the crime list view.
+     *
+     * Each cell displays a severity colour dot, crime category, dispatch
+     * status, geocoded location, and a relative timestamp. Dark mode is
+     * applied to text colours using {@link UserSession#isDarkMode()}.
+     * Selecting a cell populates and slides up the detail panel.
+     */
     private void setupListView() {
         crimeListView.setCellFactory(lv -> new ListCell<CrimeRecord>() {
             {
@@ -260,27 +326,33 @@ public class MyReportsController {
                     default       -> "#FFD700";
                 };
 
-                Label dot = new Label("●");
+                Label dot = new Label("\u25CF");
                 dot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 14px;");
 
+                boolean dark = UserSession.isDarkMode();
+
                 Label category = new Label(crime.getCategory().toString());
-                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1A1A2E;");
+                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: "
+                        + (dark ? "#F9FAFB" : "#1A1A2E") + ";");
 
                 String statusText = crime.isActioned() ? "Police Dispatched" : "Pending";
                 Label status = new Label(statusText);
-                status.setStyle("-fx-font-size: 11px; -fx-text-fill: #6B7280;");
+                status.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#9CA3AF" : "#6B7280") + ";");
 
                 // Show cached address if available, otherwise show raw coordinates
                 String locationText = addressCache.containsKey(crime.getId())
                         ? addressCache.get(crime.getId())
                         : String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
                 Label location = new Label(locationText);
-                location.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+                location.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#6B7280" : "#9CA3AF") + ";");
 
                 VBox textBlock = new VBox(2, category, status, location);
 
                 Label time = new Label(getRelativeTime(crime.getTimestamp()));
-                time.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+                time.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#6B7280" : "#9CA3AF") + ";");
 
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -309,11 +381,12 @@ public class MyReportsController {
      * If a cached address exists for the record it is shown immediately.
      * Otherwise, the raw coordinates are displayed while a background thread
      * performs reverse geocoding and updates the field when complete.
+     * Dark mode field styles are re-applied after population since setText()
+     * can reset the skin and clear inline styles.
      *
      * @param crime the selected {@link CrimeRecord} whose details are to be displayed
      */
     private void populateDetailPanel(CrimeRecord crime) {
-        detailIdLabel.setText(String.valueOf(crime.getId()));
         detailCategoryLabel.setText(crime.getCategory().toString());
         detailSeverityLabel.setText(crime.getCategory().getSeverity().toString());
         detailDateLabel.setText(UIUtils.formatLocalDateTime(crime.getTimestamp()));
@@ -346,6 +419,18 @@ public class MyReportsController {
             default       -> "#B8860B";
         };
         detailSeverityLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: " + colour + ";");
+
+        // Re-apply dark mode field styles after setText() calls which can reset the skin
+        if (UserSession.isDarkMode()) {
+            String darkReadOnly = "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; "
+                    + "-fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; "
+                    + "-fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;";
+            if (detailLocationField   != null) detailLocationField.setStyle(darkReadOnly);
+            if (detailDescriptionArea != null) detailDescriptionArea.setStyle(darkReadOnly);
+            if (detailCategoryLabel   != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
+            if (detailDateLabel       != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
+            if (detailStatusLabel     != null) detailStatusLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
+        }
     }
 
     /**
