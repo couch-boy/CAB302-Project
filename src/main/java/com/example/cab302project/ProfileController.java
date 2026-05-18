@@ -119,6 +119,8 @@ public class ProfileController {
             updateUserFromForm();
 
             if (dao.updateUser(currentUser)) {
+                // Apply theme change immediately (dark mode may have been toggled)
+                ThemeManager.apply(profileRoot.getScene());
                 UIUtils.showAlert(Alert.AlertType.INFORMATION, "Success", "Profile updated successfully.");
                 populateFields(); // Refresh UI to confirm saved state
             } else {
