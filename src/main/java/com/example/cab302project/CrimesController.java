@@ -71,6 +71,8 @@ public class CrimesController {
     @FXML
     private TextField reporterField, locationField;
     @FXML
+    private CheckBox anonymousCheckBox;
+    @FXML
     private TextArea descriptionArea;
 
     // New bindings for the redesigned list and detail panel
@@ -224,6 +226,19 @@ public class CrimesController {
             hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
             crimesRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+        });
+
+        anonymousCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+
+            if (newVal) {
+                reporterField.setText("Anonymous");
+            } else {
+                if (UserSession.getInstance().getUser() != null) {
+                    reporterField.setText(
+                            UserSession.getInstance().getUser().getUsername()
+                    );
+                }
+            }
         });
     }
 
@@ -629,6 +644,7 @@ public class CrimesController {
 
         // Select template so the form populates with default values from the template
         crimeTable.getSelectionModel().select(newRecord);
+        anonymousCheckBox.setSelected(false);
 
         // Scroll to the template in the crime table so the user sees the new entry
         crimeTable.scrollTo(newRecord);
@@ -1134,7 +1150,7 @@ public class CrimesController {
                 lat,
                 lon,
                 descriptionArea.getText(),
-                original.getReporter(),
+                anonymousCheckBox.isSelected() ? "" : original.getReporter(),
                 original.isActioned() // Preserve original raw reporter data (username/null)
         );
     }
@@ -1166,9 +1182,11 @@ public class CrimesController {
         hourBox.setDisable(!editable);
         minuteBox.setDisable(!editable);
         ampmBox.setDisable(!editable);
+        anonymousCheckBox.setDisable(!editable);
 
         locationField.setEditable(editable);
         descriptionArea.setEditable(editable);
+        anonymousCheckBox.setDisable(!editable);
 
         if (!editable) {
             locationField.setStyle("-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;");
