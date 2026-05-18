@@ -38,7 +38,7 @@
                  HBox.hgrow="ALWAYS"/>
 
         <!-- Hotspot intensity legend -->
-        <HBox fx:id="legendStrip" alignment="CENTER_LEFT" spacing="16"
+        <HBox alignment="CENTER_LEFT" spacing="16"
               style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
                      -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;">
             <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
@@ -50,7 +50,7 @@
         </HBox>
 
         <!-- Submit Report -->
-        <VBox fx:id="submitStrip" style="-fx-background-color: #FFFFFF;
+        <VBox style="-fx-background-color: #FFFFFF;
                      -fx-border-color: #E5E7EB;
                      -fx-border-width: 1 0 0 0;
                      -fx-padding: 12 20 12 20;">
@@ -101,11 +101,6 @@
                 <graphic><FontIcon iconLiteral="fas-sliders-h" iconSize="14" iconColor="#2A364E"/></graphic>
             </Button>
         </HBox>
-
-        <!-- Status label shown below search bar when suburb or filter is active -->
-        <Label fx:id="searchStatusLabel"
-               styleClass="search-status-float"
-               maxWidth="Infinity"/>
 
     </VBox>
 
