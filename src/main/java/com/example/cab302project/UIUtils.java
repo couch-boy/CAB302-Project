@@ -145,6 +145,7 @@ public class UIUtils {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource(fxmlFile));
             Scene scene = new Scene(fxmlLoader.load(), HelloApplication.WIDTH, HelloApplication.HEIGHT);
+            ThemeManager.apply(scene);
             stage.setScene(scene);
             stage.show();
         } catch (IOException e) {
