@@ -1,0 +1,363 @@
+CAB302 - USER TESTING SURVEYS
+
+
+***FINN USER TESTING***
+
+
+JULIE
+Registration/sign in UI easy to navigate: 3
+Registration/sign in process simple/intuitive: 3
+Aesthetic design appealing: 4
+View hotspots and filter reports: 2
+Hotspot map UI easy to navigate: 2
+Create and submit report: 3
+Report screen UI easy to navigate: 3
+View and update details: 4
+Notes:
+The map on the dashboard is nice but I wasn't sure how to use the filter, the sliders icon didn't really explain itself. The sign-up form was straightforward though. The colour scheme looks clean and professional.
+
+STEVEN
+Registration/sign in UI easy to navigate: 5
+Registration/sign in process simple/intuitive: 5
+Aesthetic design appealing: 4
+View hotspots and filter reports: 4
+Hotspot map UI easy to navigate: 4
+Create and submit report: 4
+Report screen UI easy to navigate: 5
+View and update details: 5
+Notes:
+Tab switching between List and Map on the crime reports screen is a nice touch. The filter drawer on the dashboard is a bit buried, took me a second to find the sliders button. Overall solid UX. The home location field asking for raw lat/long on the profile page is a bit clunky, would prefer a suburb search.
+
+JONAH
+Registration/sign in UI easy to navigate: 4
+Registration/sign in process simple/intuitive: 4
+Aesthetic design appealing: 5
+View hotspots and filter reports: 3
+Hotspot map UI easy to navigate: 3
+Create and submit report: 4
+Report screen UI easy to navigate: 4
+View and update details: 3
+Notes:
+The colour coding for severity (red/orange/yellow) is very clear and makes sense immediately. I was confused by what 'Home Location' meant on the profile, it asks for latitude and longitude which I had to look up. The app looks professional and trustworthy which matters for a safety app.
+
+ARLO
+Registration/sign in UI easy to navigate: 4
+Registration/sign in process simple/intuitive: 5
+Aesthetic design appealing: 3
+View hotspots and filter reports: 3
+Hotspot map UI easy to navigate: 3
+Create and submit report: 3
+Report screen UI easy to navigate: 4
+View and update details: 4
+Notes:
+Sign-up was quick which I liked. The Submit Report button is prominent which is good. The filter on the hotspot map, the little icon button, wasn't obvious at first. The map tab on the crimes screen is useful for seeing where things happened geographically. Nothing about the app is ugly, just feels a bit plain.
+
+JESS
+Registration/sign in UI easy to navigate: 2
+Registration/sign in process simple/intuitive: 3
+Aesthetic design appealing: 4
+View hotspots and filter reports: 2
+Hotspot map UI easy to navigate: 2
+Create and submit report: 3
+Report screen UI easy to navigate: 2
+View and update details: 2
+Notes:
+I found it confusing that the 'My Reports' and 'Crime Reports' sections are separate, I wasn't sure which one to use to report something. The text is a decent size. The map was hard to interact with and I wasn't sure what the dots meant until I noticed the legend at the bottom. The profile page asked for coordinates which I didn't understand at all.
+
+
+***JACK USER TESTING***
+
+
+Julie
+Registration/sign in UI easy to navigate: 5
+Registration/sign in process simple/intuitive: 5
+Aesthetic design appealing: 5
+View hotspots and filter reports: 4
+Hotspot map UI easy to navigate: 4
+Create and submit report: 4
+Report screen UI easy to navigate: 3
+View and update details: 3
+Notes:
+- Login and sign up was simple and clean
+- App looks modern and polished
+- Suburb search on the map worked well
+- I wish my location was visible in zoom on the map instead of seeing a wider map upon open
+- Dark mode toggle in profile doesn't do anything
+- Viewing reports details is somewhat messy, I prefer the my report details
+
+Ryan (police officer)
+Registration/sign in UI easy to navigate: 5
+Registration/sign in process simple/intuitive: 5
+Aesthetic design appealing: 5
+View hotspots and filter reports: 5
+Hotspot map UI easy to navigate: 5
+Create and submit report: N/A 
+Report screen UI easy to navigate: 4
+View and update details: 4
+Notes:
+- Filtering by severity and crime type was straightforward
+- Marking reports as dealt with worked well
+- Some sort of colour identification for marked as dealt with would be nice or even a priority ranking
+- Hotspot map colour legend was clear and useful
+- Home location field format is in long lat 
+- A summary of the area that I search could be useful
+- Searching on the hotspot map is not a feature on the police view
+
+Harry
+Registration/sign in UI easy to navigate: 5
+Registration/sign in process simple/intuitive: 5
+Aesthetic design appealing: 4
+View hotspots and filter reports: 3
+Hotspot map UI easy to navigate: 4
+Create and submit report: 4
+Report screen UI easy to navigate: 4
+View and update details: 3
+Notes:
+- Filter sliders icon on the map wasn't obvious at first
+- Report form was easy to fill out
+- Dark mode checkbox in profile is visible but not yet functional
+- Overall design was clean 
+- The filter buttons on the report screen can be neater
+- The maps should zoom on my location, so I can see crimes around me 
+
+Mia
+Registration/sign in UI easy to navigate: 4
+Registration/sign in process simple/intuitive: 4
+Aesthetic design appealing: 5
+View hotspots and filter reports: 4
+Hotspot map UI easy to navigate: 3
+Create and submit report: 5
+Report screen UI easy to navigate: 4
+View and update details: 4
+Notes:
+- Sign in was quick and straightforward
+- The app looks really clean and professional
+- The hotspot colours made it easy to understand severity at a glance
+- The filter icon on the map took me a moment to find
+- Submitting a report was the easiest part of the app
+- Dark mode option is in the profile but doesn't do anything yet
+- Would be nice if the map defaulted to my area automatically
+
+Liam
+Registration/sign in UI easy to navigate: 5
+Registration/sign in process simple/intuitive: 4
+Aesthetic design appealing: 4
+View hotspots and filter reports: 3
+Hotspot map UI easy to navigate: 4
+Create and submit report: 4
+Report screen UI easy to navigate: 3
+View and update details: 4
+Notes:
+- Login screen was clean and easy to understand
+- The suburb search on the hotspot map was a great feature
+- Hotspot map didn't open on my location which made it less useful at first
+- The report detail panel felt a bit cluttered with information
+- Filter options on the report screen could be more visually clear
+- Profile details were easy to update
+
+
+***MAAN USER TESTING***
+
+
+Jaydeep
+
+Registration/sign in UI easy to navigate: 5
+Registration/sign in process simple/intuitive: 5
+Aesthetic design appealing: 4
+View hotspots and filter reports: 4
+Hotspot map UI easy to navigate: 4
+Create and submit report: 5
+Report screen UI easy to navigate: 5
+View and update details: 4
+Additional Information:
+The app was generally easy to use and the main actions were clear. The report submission process was straightforward. The hotspot map was useful, but the filter options could be made slightly more obvious for first-time users.
+
+------------------------------------------------------------------------------------------------------------------------------------------
+Khushi
+
+Registration/sign in UI easy to navigate: 4
+Registration/sign in process simple/intuitive: 4
+Aesthetic design appealing: 5
+View hotspots and filter reports: 3
+Hotspot map UI easy to navigate: 4
+Create and submit report: 4
+Report screen UI easy to navigate: 4
+View and update details: 5
+Additional Information:
+The design looked clean and professional. Signing in and editing profile details felt simple. The hotspot map was helpful, but I would like clearer labels or guidance when filtering reports.
+
+------------------------------------------------------------------------------------------------------------------------------------------
+Aum
+
+Registration/sign in UI easy to navigate: 5
+Registration/sign in process simple/intuitive: 4
+Aesthetic design appealing: 4
+View hotspots and filter reports: 5
+Hotspot map UI easy to navigate: 5
+Create and submit report: 4
+Report screen UI easy to navigate: 4
+View and update details: 4
+Additional Information:
+The hotspot and report views were easy to understand. I liked that reports could be filtered by different criteria. One improvement would 
+be adding clearer confirmation after submitting a report or updating details.
+
+------------------------------------------------------------------------------------------------------------------------------------------Tarcio
+
+Registration/sign in UI easy to navigate: 5
+Registration/sign in process simple/intuitive: 4
+Aesthetic design appealing: 4
+View hotspots and filter reports: 5
+Hotspot map UI easy to navigate: 4
+Create and submit report: 4
+Report screen UI easy to navigate: 4
+View and update details: 4
+
+Additional Information:
+The police report management screen was useful because reports could be viewed, edited, filtered, and marked as dealt with. The status workflow was clear, especially with the “Mark as Dealt With” action. One improvement would be adding more detailed police workflow states, such as under review or dispatched, instead of only pending/actioned. It would also be useful if reports could be sorted by severity or most recent after filtering.
+
+------------------------------------------------------------------------------------------------------------------------------------------
+Prem
+
+Registration/sign in UI easy to navigate: 4
+Registration/sign in process simple/intuitive: 4
+Aesthetic design appealing: 5
+View hotspots and filter reports: 4
+Hotspot map UI easy to navigate: 5
+Create and submit report: 3
+Report screen UI easy to navigate: 4
+View and update details: 4
+
+Additional Information:
+The report details panel was easy to understand and the “Mark as Dealt With” button made the police action clear. The filter dropdown was compact and included useful options without cluttering the page. A possible improvement would be making the report detail panel more clearly distinguish between view mode and edit mode, since fields appear editable immediately. It may also help to show a confirmation or timestamp when a report is marked as dealt with.
+
+
+***JORDAN USER TESTING***
+
+
+Playtest 1
+<Ryley> 
+Registration/sign in UI easy to navigate: <1-5>  4
+Registration/sign in process simple/intuitive: <1-5>  4
+Aesthetic design appealing: <1-5> 4
+View hotspots and filter reports: <1-5>  5
+Hotspot map UI easy to navigate: <1-5> 4
+Create and submit report: <1-5> 5
+Report screen UI easy to navigate: <1-5> 5
+View and update details: <1-5> 4
+
+
+Playtest 2
+<Axyl> 
+Registration/sign in UI easy to navigate: <1-5> 4
+Registration/sign in process simple/intuitive: <1-5> 3
+Aesthetic design appealing: <1-5> 4
+View hotspots and filter reports: <1-5> 2
+Hotspot map UI easy to navigate: <1-5> 2
+Create and submit report: <1-5> 5
+Report screen UI easy to navigate: <1-5> 5
+View and update details: <1-5> 4
+
+Playtest 3
+<Li xin> 
+Registration/sign in UI easy to navigate: <1-5> 5
+Registration/sign in process simple/intuitive: <1-5> 5
+Aesthetic design appealing: <1-5> 5
+View hotspots and filter reports: <1-5> 3
+Hotspot map UI easy to navigate: <1-5> 2
+Create and submit report: <1-5> 5
+Report screen UI easy to navigate: <1-5> 5
+View and update details: <1-5> 5
+
+
+Playtest 4
+<Byron> 
+Registration/sign in UI easy to navigate: <1-5> 5
+Registration/sign in process simple/intuitive: <1-5> 5
+Aesthetic design appealing: <1-5> 4
+View hotspots and filter reports: <1-5> 3
+Hotspot map UI easy to navigate: <1-5> 3
+Create and submit report: <1-5> 5
+Report screen UI easy to navigate: <1-5> 5
+View and update details: <1-5> 4
+
+Playtest 5
+<Jacob> 
+Registration/sign in UI easy to navigate: <1-5> 5
+Registration/sign in process simple/intuitive: <1-5> 5
+Aesthetic design appealing: <1-5> 5
+View hotspots and filter reports: <1-5> 3
+Hotspot map UI easy to navigate: <1-5> 1
+Create and submit report: <1-5> 4
+Report screen UI easy to navigate: <1-5> 3
+View and update details: <1-5> 4
+
+
+Overall Notes / Playtesters thoughts
+* Too focused on the red spots didn't see the legend
+* Didn't know immediately know how to access more information on the crimes
+* Why is 25 days ago at the top of the reports section
+* The filters work nicely
+* Enabling Dark mode does not work in the slightest
+* The maps are completely different on the report screen and the map screen
+* Why do all the dots say ‘crime’
+* Is severity auto set in the report area as i cant change it
+* The crime is updated on the map area not the reports map area they are different
+* Didn't see hamburger menu
+* I cant edit my own reports upon submission
+* Settings button does not work
+* Home location is lat and long, i would rather an address
+* The map does not work when i scroll to the left or right the reports go away
+* Can't hover/click on the hotspot areas on map to see the crime happening.
+* No save filter button, keep accidentally clicking on discard changes. 
+* My reports button should not be hidden in hamburger menu, can be placed below. 
+* Dark mode does not work X5
+* Hamburger menu has little use as the bottom 3 selections do everything already
+* HUGE drop down for filters, does not fit inside window
+* In filter options, a nearby option would be cool to see what's around myself
+* Circles on the map gets over crowded because they get larger with each report nearby
+
+
+***MITCHELL USER TESTING***
+
+
+Daniel/Mitchell/Brian/Alex/John
+Registration/sign in UI easy to navigate: 5
+Registration/sign in process simple/intuitive: 5
+Aesthetic design appealing: 5
+View hotspots and filter reports: 4
+Hotspot map UI easy to navigate: 4.5 (need autocomplete for location filtering)
+Create and submit report: 4 (would be a 5 if not for broken functionality)
+Report screen UI easy to navigate: 1
+View and update details: 4.5 (autocomplete popup)
+Notes:
+- maybe should use real name instead of username?
+- who runs/develops the app? (who am I giving my details to)
+- how would the police contact you?
+- couldn't criminals metagame people into getting robbed/stabbed (making false reports to affect the public's actions)?
+- does the app need to have public visibility?
+- filter by severity rather than crime type itself
+- selection boxes for multiple options to be displayed
+- time range for filter: 1hr, 24hr, 3day, 7day, all
+- filter popup needs a "done" button instead of just clicking off of it
+- when clicking hotspot, display crimes that form the hotspot
+- group by severity (desc), sort by most recent
+- search suburb filter should have dropdown autocomplete
+- report screen crime type filter is unneeded
+- date filters as above
+- reports list feels unnecessary and should be removed
+- map view should be the default
+- bottom buttons should be: map, reports (my reports screen with option to submit new), profile
+- map should have options to toggle hotspot grouping
+- when creating new report, the default location autocomplete pops up and pushes the notification to the background
+- save changes button for report submission disappears when clicking off then back onto a template report
+- reports should not have a valid default category, one should have to be selected before submission
+- should not be able to report a future crime
+- should give option to drop a location pin instead of always entering an address
+- need a scroll bar for autocomplete with too many options to display (chermside shopping centre)
+- when viewing reports that are already submitted (not pending) the autocomplete address thingo should not pop up
+- should not be able to see reporter name for crimes that aren't ours
+- when creating a new report multiple times in a row, the scroll bar for category selection does not initialise at the top of the selection
+- hotbar disappears when going to reports map view
+- autocomplete dropdown keeps popping up after selecting an autocomplete option previously
+- autocomplete SHOULD ONLY SHOW WHEN THE BOX IS SELECTED
+- profile should have "edit profile" button, which enables ui elements to be edited, then the button would show "save changes" or "cancel" (instead of being in edit mode on open and the only button being to save changes)
