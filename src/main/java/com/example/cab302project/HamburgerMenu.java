@@ -28,6 +28,7 @@ public class HamburgerMenu extends StackPane {
     private CheckBox darkModeToggle;
 
     private boolean  isOpen = false;
+    private Runnable onDarkModeChanged;
     private Stage    stage;
     private IAppDAO  dao;
     private StackPane loaded;
@@ -85,7 +86,6 @@ public class HamburgerMenu extends StackPane {
         loaded.lookup("#btnMyReports").setOnMouseClicked(e -> onMyReports());
         loaded.lookup("#btnNewReport").setOnMouseClicked(e -> onNewReport());
         loaded.lookup("#btnProfile").setOnMouseClicked(e -> onProfile());
-        loaded.lookup("#btnSettings").setOnMouseClicked(e -> onSettings());
         loaded.lookup("#btnLogout").setOnMouseClicked(e -> onLogout());
         if (darkModeToggle != null) darkModeToggle.setOnAction(e -> onDarkModeToggle());
     }
@@ -151,10 +151,6 @@ public class HamburgerMenu extends StackPane {
         UIUtils.switchScene(stage, "dashboard-view.fxml");
     }
 
-    /**
-     * Closes the drawer with no further action. Placeholder for settings screen.
-     */
-    private void onSettings() { close(); }
 
     /**
      * Closes the drawer and navigates to the public crime reports screen.
@@ -188,7 +184,20 @@ public class HamburgerMenu extends StackPane {
         if (session != null && session.getUser() != null) {
             session.getUser().setDarkMode(darkModeToggle.isSelected());
             dao.updateUser(session.getUser());
+            // Apply CSS class change immediately
+            if (getScene() != null) {
+                ThemeManager.apply(getScene());
+            }
+            // Notify the host controller to refresh inline-styled nodes
+            if (onDarkModeChanged != null) {
+                onDarkModeChanged.run();
+            }
         }
+    }
+
+    /** Sets a callback invoked whenever dark mode is toggled. */
+    public void setOnDarkModeChanged(Runnable callback) {
+        this.onDarkModeChanged = callback;
     }
 
     /**

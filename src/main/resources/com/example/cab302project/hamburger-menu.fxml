@@ -49,9 +49,7 @@
             <Button fx:id="btnProfile" styleClass="drawer-item" maxWidth="Infinity" text="  Profile">
                 <graphic><FontIcon iconLiteral="fas-user" iconSize="14" iconColor="rgba(255,255,255,0.78)"/></graphic>
             </Button>
-            <Button fx:id="btnSettings" styleClass="drawer-item" maxWidth="Infinity" text="  Settings">
-                <graphic><FontIcon iconLiteral="fas-cog" iconSize="14" iconColor="rgba(255,255,255,0.78)"/></graphic>
-            </Button>
+
 
 
             <Region VBox.vgrow="ALWAYS"/>
