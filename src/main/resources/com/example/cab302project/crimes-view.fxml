@@ -46,7 +46,7 @@
         <VBox fx:id="listPane" VBox.vgrow="ALWAYS" spacing="0">
 
             <!-- Severity legend -->
-            <HBox alignment="CENTER_LEFT" spacing="16"
+            <HBox fx:id="severityLegendStrip" alignment="CENTER_LEFT" spacing="16"
                   style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
                          -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;">
                 <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
@@ -73,9 +73,9 @@
                 </TableView>
 
                 <!-- Section header -->
-                <HBox alignment="CENTER_LEFT" spacing="10"
+                <HBox fx:id="sectionHeader" alignment="CENTER_LEFT" spacing="10"
                       style="-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;">
-                    <Label text="Recent"
+                    <Label fx:id="recentLabel" text="Recent"
                            style="-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;"/>
                     <Region HBox.hgrow="ALWAYS"/>
                     <MenuButton fx:id="filterMenuButton"
@@ -119,7 +119,7 @@
                                  -fx-border-width: 0;"/>
 
                 <!-- Submit Report always pinned to bottom -->
-                <VBox style="-fx-background-color: #FFFFFF;
+                <VBox fx:id="submitStripList" style="-fx-background-color: #FFFFFF;
                              -fx-border-color: #E5E7EB;
                              -fx-border-width: 1 0 0 0;
                              -fx-padding: 12 20 12 20;">
@@ -147,7 +147,7 @@
                      VBox.vgrow="ALWAYS"/>
 
             <!-- Severity legend below the map -->
-            <HBox alignment="CENTER_LEFT" spacing="16"
+            <HBox fx:id="mapSeverityLegend" alignment="CENTER_LEFT" spacing="16"
                   style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
                          -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;">
                 <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
@@ -159,7 +159,7 @@
             </HBox>
 
             <!-- Submit Report pinned to bottom of map pane -->
-            <VBox style="-fx-background-color: #FFFFFF;
+            <VBox fx:id="submitStripMap" style="-fx-background-color: #FFFFFF;
                          -fx-border-color: #E5E7EB;
                          -fx-border-width: 1 0 0 0;
                          -fx-padding: 12 20 12 20;">
@@ -331,19 +331,74 @@
                    style="-fx-font-size: 15px;"/>
         </HBox>
 
-        <!-- Scrollable form fields -->
-        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+        <!-- Scrollable detail fields — two views swapped by controller:
+             viewScrollPane (read-only) shown for existing crimes,
+             editScrollPane (editable form) shown only when creating a new report. -->
+
+        <!-- READ-ONLY view (default) -->
+        <ScrollPane fx:id="viewScrollPane" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
                     VBox.vgrow="ALWAYS"
                     style="-fx-background-color: transparent; -fx-background: transparent;
                            -fx-border-width: 0;">
             <VBox spacing="16" style="-fx-padding: 20 20 20 20;">
 
                 <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label text="Crime ID" styleClass="auth-label"/>
+                    <Label text="Category" styleClass="auth-label"/>
                     <Region HBox.hgrow="ALWAYS"/>
-                    <Label fx:id="idLabel" text="-"
-                           style="-fx-font-weight: bold; -fx-text-fill: #2A364E;"/>
+                    <Label fx:id="detailCategoryLabel" text="-"
+                           style="-fx-font-weight: bold; -fx-text-fill: #E5E7EB;"/>
                 </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Severity" styleClass="auth-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="severityDot" text="&#9679;"
+                           style="-fx-text-fill: #D1D5DB; -fx-font-size: 13px;"/>
+                    <Label fx:id="severityLabel" text="-"
+                           style="-fx-font-weight: bold; -fx-text-fill: #6B7280;"/>
+                </HBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Date and Time" styleClass="auth-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="detailDateLabel" text="-"
+                           style="-fx-text-fill: #E5E7EB;"/>
+                </HBox>
+
+                <VBox spacing="6">
+                    <Label text="Location" styleClass="auth-label"/>
+                    <TextField fx:id="locationField"
+                               editable="false"
+                               styleClass="auth-field"
+                               style="-fx-opacity: 1;"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Description" styleClass="auth-label"/>
+                    <TextArea fx:id="descriptionArea"
+                              wrapText="true" prefHeight="90"
+                              editable="false"
+                              styleClass="auth-field"
+                              style="-fx-opacity: 1;"/>
+                </VBox>
+
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Status" styleClass="auth-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="detailStatusLabel" text="-"
+                           style="-fx-font-weight: bold; -fx-text-fill: #E5E7EB;"/>
+                </HBox>
+
+            </VBox>
+        </ScrollPane>
+
+        <!-- EDITABLE view — only visible when creating a new report (id == 0) -->
+        <ScrollPane fx:id="editScrollPane" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                    VBox.vgrow="ALWAYS"
+                    visible="false" managed="false"
+                    style="-fx-background-color: transparent; -fx-background: transparent;
+                           -fx-border-width: 0;">
+            <VBox spacing="16" style="-fx-padding: 20 20 20 20;">
 
                 <VBox spacing="6">
                     <Label text="Category" styleClass="auth-label"/>
@@ -354,11 +409,9 @@
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label text="Severity" styleClass="auth-label"/>
                     <Region HBox.hgrow="ALWAYS"/>
-                    <!-- Severity dot and text update automatically when the crime category is selected.
-                         The dot colour mirrors the list view: red=Critical, orange=Medium, yellow=Low. -->
-                    <Label fx:id="severityDot" text="●"
+                    <Label fx:id="severityDotEdit" text="&#9679;"
                            style="-fx-text-fill: #D1D5DB; -fx-font-size: 13px;"/>
-                    <Label fx:id="severityLabel" text="-"
+                    <Label fx:id="severityLabelEdit" text="-"
                            style="-fx-font-weight: bold; -fx-text-fill: #6B7280;"/>
                 </HBox>
 
@@ -378,14 +431,14 @@
 
                 <VBox spacing="6">
                     <Label text="Location" styleClass="auth-label"/>
-                    <TextField fx:id="locationField"
+                    <TextField fx:id="locationFieldEdit"
                                promptText="Enter address"
                                styleClass="auth-field"/>
                 </VBox>
 
                 <VBox spacing="6">
                     <Label text="Description" styleClass="auth-label"/>
-                    <TextArea fx:id="descriptionArea"
+                    <TextArea fx:id="descriptionAreaEdit"
                               wrapText="true" prefHeight="100"
                               styleClass="auth-field"/>
                 </VBox>
@@ -393,8 +446,8 @@
                 <VBox spacing="6">
                     <Label text="Reporter" styleClass="auth-label"/>
                     <TextField fx:id="reporterField" editable="false"
-                               styleClass="auth-field"
-                               style="-fx-opacity: 1; -fx-background-color: #f4f4f4;"/>
+                               styleClass="auth-field reporter-field"
+                               style="-fx-opacity: 1;"/>
                 </VBox>
 
                 <CheckBox fx:id="anonymousCheckBox"
