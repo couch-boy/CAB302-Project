@@ -7,7 +7,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Pane;
@@ -37,7 +36,6 @@ public class DashboardController {
 
     // Floating search bar elements
     @FXML private TextField searchField;
-    @FXML private Label searchStatusLabel;
     @FXML private VBox filterDrawer;
 
     // Filter drawer dropdowns
@@ -45,9 +43,6 @@ public class DashboardController {
     @FXML private ComboBox<String> daysFilter;
     @FXML private ComboBox<String> actionedFilter;
     @FXML private StackPane filterBackdrop;
-    @FXML private HBox legendStrip;
-    @FXML private VBox submitStrip;
-    @FXML private Button filterToggleBtn;
 
     private IAppDAO dao;
     private HamburgerMenu hamburgerMenu;
@@ -114,6 +109,10 @@ public class DashboardController {
 
     /**
      * Calculates the distance in kilometres between two lat/lon coordinates using the Haversine formula.
+     * @param lat1 latitude of the first point
+     * @param lon1 longitude of the first point
+     * @param lat2 latitude of the second point
+     * @param lon2 longitude of the second point
      * @return distance in kilometres between the two points
      */
     private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
@@ -195,16 +194,6 @@ public class DashboardController {
         String json = buildHotspotJson(hotspots);
         final String safeJson = json.replace("\\", "\\\\").replace("'", "\\'");
 
-        // Update status label — only show it when filters or suburb are active
-        if (searchStatusLabel != null) {
-            String status = activeBoundingBox == null && filtered.size() == allCrimes.size()
-                    ? ""
-                    : filtered.isEmpty()
-                    ? "No crimes match these filters"
-                    : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
-            Platform.runLater(() -> searchStatusLabel.setText(status));
-        }
-
         Platform.runLater(() -> {
             try {
                 String safeGeoJsonFilter = (activeGeoJson != null)
@@ -249,17 +238,12 @@ public class DashboardController {
             return;
         }
 
-        if (searchStatusLabel != null) searchStatusLabel.setText("Searching...");
-
         Thread searchThread = new Thread(() -> {
             SuburbSearchService service = new SuburbSearchService();
             SuburbSearchService.SuburbResult result = service.search(query);
 
             Platform.runLater(() -> {
                 if (result == null) {
-                    if (searchStatusLabel != null) {
-                        searchStatusLabel.setText("Suburb not found. Try a different name.");
-                    }
                     return;
                 }
 
@@ -302,7 +286,6 @@ public class DashboardController {
         activeBoundingBox = null;
         activeGeoJson = null;
         if (searchField != null) searchField.clear();
-        if (searchStatusLabel != null) searchStatusLabel.setText("");
         try {
             engine.executeScript("clearSuburbBoundary()");
         } catch (Exception ignored) {}
@@ -334,6 +317,7 @@ public class DashboardController {
     /**
      * Consumes mouse clicks on the filter drawer itself so they do not
      * propagate to the backdrop and accidentally close the panel.
+     * @param event the mouse event to consume
      */
     @FXML
     public void onFilterDrawerClicked(MouseEvent event) {
@@ -438,9 +422,6 @@ public class DashboardController {
             navBarController.setActiveTab("map");
         }
 
-        // Apply dark mode to inline-styled nodes
-        applyDarkStrips();
-
         // Wire hamburger menu after scene is attached
         // Platform.runLater ensures getScene().getWindow() is not null
         Platform.runLater(() -> {
@@ -450,33 +431,11 @@ public class DashboardController {
             hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
             dashboardRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
-            hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
         });
     }
 
     /**
-     * Applies dark mode overrides to nodes that use hardcoded inline style= attributes
-     * in FXML. CSS cannot override inline styles, so we set them programmatically here.
-     */
-    private void applyDarkStrips() {
-        if (!UserSession.isDarkMode()) return;
-        String darkStrip = "-fx-background-color: #1F2937; -fx-border-color: #374151;";
-        if (legendStrip != null)  legendStrip.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 1 0 0 0;");
-        if (submitStrip != null)  submitStrip.setStyle(darkStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
-    }
-
-    private void refreshDarkMode() {
-        if (UserSession.isDarkMode()) {
-            applyDarkStrips();
-        } else {
-            // Restore light mode inline styles
-            if (legendStrip != null) legendStrip.setStyle("-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20; -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;");
-            if (submitStrip != null) submitStrip.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
-        }
-    }
-
-    /**
-     * Return to login screen and logout current UserSession
+     * Returns to the login screen and logs out the current UserSession.
      */
     @FXML
     public void onLogout() {
@@ -486,7 +445,7 @@ public class DashboardController {
     }
 
     /**
-     * Go to crimes view
+     * Navigates to the crimes view.
      */
     @FXML
     public void viewCrimes() {
@@ -495,7 +454,7 @@ public class DashboardController {
     }
 
     /**
-     * Go to profile view
+     * Navigates to the profile view.
      */
     @FXML
     public void viewProfile() {

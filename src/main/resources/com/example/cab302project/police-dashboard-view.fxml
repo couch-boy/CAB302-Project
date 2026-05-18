@@ -9,12 +9,14 @@
 <?import javafx.scene.web.WebView?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<!-- Root is StackPane so PoliceHamburgerMenu can overlay on top of all content -->
+<!-- Root is StackPane so PoliceHamburgerMenu and the floating search bar
+     can overlay on top of map content -->
 <StackPane xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.example.cab302project.PoliceDashboardController"
            fx:id="dashboardRoot"
            stylesheets="@styles.css">
 
+    <!-- Base layer: full-height map + fixed bars at top and bottom -->
     <VBox alignment="TOP_LEFT" spacing="0">
 
         <!-- App bar with hamburger button and RADIUS title -->
@@ -33,8 +35,12 @@
             <Region minWidth="40"/>
         </HBox>
 
-        <!-- Hotspots map fills remaining height -->
-        <WebView fx:id="mapView" VBox.vgrow="ALWAYS"/>
+        <!-- Map fills ALL remaining space — search bar floats over it -->
+        <WebView fx:id="mapView"
+                 prefWidth="1920"
+                 prefHeight="1920"
+                 VBox.vgrow="ALWAYS"
+                 HBox.hgrow="ALWAYS"/>
 
         <!-- Hotspot intensity legend -->
         <HBox alignment="CENTER_LEFT" spacing="16"
@@ -53,6 +59,116 @@
 
     </VBox>
 
-    <!-- PoliceHamburgerMenu is added programmatically in PoliceDashboardController.initialize() -->
+    <!-- Floating search bar overlay — pinned to top-right, 360px wide.
+         StackPane.margin top=60 clears the 52px app bar. -->
+    <VBox fx:id="searchOverlay"
+          styleClass="search-overlay"
+          StackPane.alignment="TOP_RIGHT"
+          maxHeight="-Infinity"
+          maxWidth="360"
+          pickOnBounds="false">
+        <StackPane.margin>
+            <Insets top="60" right="12"/>
+        </StackPane.margin>
+
+        <padding><Insets top="0" right="0" bottom="0" left="0"/></padding>
+
+        <!-- Search row: field + Search + Clear + Filter icon -->
+        <HBox spacing="6" alignment="CENTER_LEFT">
+            <TextField fx:id="searchField"
+                       promptText="Search suburb or area..."
+                       styleClass="search-field-float"
+                       onAction="#onSearch"
+                       HBox.hgrow="ALWAYS"/>
+            <Button text="Search"
+                    onAction="#onSearch"
+                    styleClass="search-btn-float"/>
+            <Button text="✕"
+                    onAction="#onClearSearch"
+                    styleClass="icon-btn-float"
+                    fx:id="clearBtn"/>
+            <!-- Filter toggle button — shows/hides the filter drawer -->
+            <Button fx:id="filterToggleBtn"
+                    onAction="#onToggleFilter"
+                    styleClass="icon-btn-float">
+                <graphic><FontIcon iconLiteral="fas-sliders-h" iconSize="14" iconColor="#2A364E"/></graphic>
+            </Button>
+        </HBox>
+
+    </VBox>
+
+    <!-- Full-width filter drawer — overlays the entire map when open.
+         Sits as its own StackPane child so it is not constrained by the
+         360px search overlay. Clicking the transparent backdrop closes it. -->
+    <StackPane fx:id="filterBackdrop"
+               managed="false"
+               visible="false"
+               onMouseClicked="#onBackdropClicked"
+               StackPane.alignment="TOP_CENTER">
+        <StackPane.margin>
+            <!-- top=115 clears the 60px app-bar offset + ~50px search bar row -->
+            <Insets top="115" left="12" right="12"/>
+        </StackPane.margin>
+
+        <!-- Semi-transparent backdrop covers the map and catches outside clicks -->
+        <Pane style="-fx-background-color: rgba(0,0,0,0.01);"
+              mouseTransparent="false"/>
+
+        <!-- Filter card aligned to top, inset 12px each side leaving map edges visible -->
+        <VBox fx:id="filterDrawer"
+              styleClass="filter-drawer"
+              spacing="10"
+              StackPane.alignment="TOP_CENTER"
+              maxHeight="-Infinity"
+              onMouseClicked="#onFilterDrawerClicked">
+            <padding><Insets top="12" right="16" bottom="16" left="16"/></padding>
+
+            <HBox alignment="CENTER_RIGHT">
+                <Label text="Filter crimes" styleClass="filter-drawer-title" HBox.hgrow="ALWAYS"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="✕"
+                        onAction="#onToggleFilter"
+                        styleClass="icon-btn-float"
+                        style="-fx-font-size: 11px; -fx-padding: 4 8 4 8;"/>
+            </HBox>
+
+            <!-- Crime type -->
+            <VBox spacing="4">
+                <Label text="Crime type" styleClass="filter-drawer-label"/>
+                <ComboBox fx:id="categoryFilter"
+                          onAction="#onCategoryChanged"
+                          styleClass="filter-drawer-combo"
+                          maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Time range -->
+            <VBox spacing="4">
+                <Label text="Time range" styleClass="filter-drawer-label"/>
+                <ComboBox fx:id="daysFilter"
+                          onAction="#onDaysChanged"
+                          styleClass="filter-drawer-combo"
+                          maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Actioned status -->
+            <VBox spacing="4">
+                <Label text="Status" styleClass="filter-drawer-label"/>
+                <ComboBox fx:id="actionedFilter"
+                          onAction="#onActionedChanged"
+                          styleClass="filter-drawer-combo"
+                          maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- Reset filters -->
+            <Button text="Reset all filters"
+                    onAction="#onResetFilters"
+                    maxWidth="Infinity"
+                    styleClass="btn-secondary"
+                    style="-fx-padding: 10 0 10 0;"/>
+
+        </VBox>
+    </StackPane>
+
+    <!-- PoliceHamburgerMenu added programmatically in PoliceDashboardController.initialize() -->
 
 </StackPane>
