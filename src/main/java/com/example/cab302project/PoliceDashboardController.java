@@ -5,6 +5,8 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -35,6 +37,9 @@ public class PoliceDashboardController {
     // Floating search bar elements
     @FXML private TextField searchField;
     @FXML private VBox filterDrawer;
+    @FXML private VBox aiSummaryPopup;
+    @FXML private Label aiSummaryLabel;
+    @FXML private ScrollPane aiSummaryScrollPane;
 
     // Filter drawer dropdowns
     @FXML private ComboBox<String> categoryFilter;
@@ -43,6 +48,7 @@ public class PoliceDashboardController {
     @FXML private StackPane filterBackdrop;
 
     private IAppDAO dao;
+    private final OllamaService ollamaService = new OllamaService();
     private PoliceHamburgerMenu hamburgerMenu;
     private WebEngine engine;
 
@@ -159,14 +165,37 @@ public class PoliceDashboardController {
      * actioned status) to the full crime list, clusters the results into hotspots,
      * and pushes the updated JSON to the map.
      */
-    private void applyFiltersAndRefreshMap() {
+    private List<CrimeRecord> applyFiltersAndRefreshMap() {
+        List<CrimeRecord> filtered = getFilteredCrimeRecords();
+
+        List<Hotspot> hotspots = buildHotspots(filtered, 0.5);
+        String json = buildHotspotJson(hotspots);
+        final String safeJson = json.replace("\\", "\\\\").replace("'", "\\'");
+
+        Platform.runLater(() -> {
+            try {
+                String safeGeoJsonFilter = (activeGeoJson != null)
+                        ? activeGeoJson.replace("\\", "\\\\").replace("'", "\\'") : "";
+                engine.executeScript("loadHotspots('" + safeJson + "','" + safeGeoJsonFilter + "')");
+            } catch (Exception e) {
+                System.out.println("JS execution failed: " + e.getMessage());
+            }
+        });
+
+        return filtered;
+    }
+
+    /**
+     * Returns the same filtered crime records that are displayed on the map.
+     */
+    private List<CrimeRecord> getFilteredCrimeRecords() {
         List<CrimeRecord> allCrimes = dao.getAllCrimes();
 
         String selectedCategory = categoryFilter != null ? categoryFilter.getValue() : "All Types";
         String selectedDays     = daysFilter     != null ? daysFilter.getValue()     : "All time";
         String selectedActioned = actionedFilter != null ? actionedFilter.getValue() : "All";
 
-        // Resolve the days filter to a cutoff date — null means no cutoff
+        // Resolve the days filter to a cutoff date; null means no cutoff.
         LocalDateTime cutoff = resolveDaysCutoff(selectedDays);
 
         List<CrimeRecord> filtered = new ArrayList<>();
@@ -184,7 +213,7 @@ public class PoliceDashboardController {
                 if (!crime.getCategory().getName().equals(selectedCategory)) continue;
             }
 
-            // Time range filter — compare crime timestamp against the cutoff
+            // Time range filter; compare crime timestamp against the cutoff.
             if (cutoff != null && crime.getTimestamp() != null) {
                 if (crime.getTimestamp().isBefore(cutoff)) continue;
             }
@@ -198,21 +227,8 @@ public class PoliceDashboardController {
             filtered.add(crime);
         }
 
-        List<Hotspot> hotspots = buildHotspots(filtered, 0.5);
-        String json = buildHotspotJson(hotspots);
-        final String safeJson = json.replace("\\", "\\\\").replace("'", "\\'");
-
-        Platform.runLater(() -> {
-            try {
-                String safeGeoJsonFilter = (activeGeoJson != null)
-                        ? activeGeoJson.replace("\\", "\\\\").replace("'", "\\'") : "";
-                engine.executeScript("loadHotspots('" + safeJson + "','" + safeGeoJsonFilter + "')");
-            } catch (Exception e) {
-                System.out.println("JS execution failed: " + e.getMessage());
-            }
-        });
+        return filtered;
     }
-
     /**
      * Converts the days-filter label into a LocalDateTime cutoff.
      * Returns null when "All time" is selected (no cutoff applied).
@@ -278,7 +294,9 @@ public class PoliceDashboardController {
                     System.out.println("Map update failed: " + e.getMessage());
                 }
 
-                applyFiltersAndRefreshMap();
+                List<CrimeRecord> displayedCrimes = applyFiltersAndRefreshMap();
+                // Trigger the AI summary only after the suburb search has updated the visible map results.
+                requestAiCrimeSummary(result.displayName, displayedCrimes);
             });
         });
 
@@ -294,6 +312,7 @@ public class PoliceDashboardController {
         activeBoundingBox = null;
         activeGeoJson = null;
         if (searchField != null) searchField.clear();
+        hideAiSummaryPopup();
         try {
             engine.executeScript("clearSuburbBoundary()");
         } catch (Exception ignored) {}
@@ -368,6 +387,177 @@ public class PoliceDashboardController {
     }
 
     /**
+     * Starts a background Ollama request after a suburb search has produced visible results.
+     * The no-data and Ollama-failure messages are handled here so the popup always gives a clear outcome.
+     * Running this on a separate thread keeps the JavaFX map and controls responsive.
+     */
+    private void requestAiCrimeSummary(String suburbName, List<CrimeRecord> displayedCrimes) {
+        if (displayedCrimes == null || displayedCrimes.isEmpty()) {
+            showAiSummaryPopup("No crime data available to summarise for this suburb.");
+            return;
+        }
+
+        showAiSummaryPopup("Generating AI summary...");
+
+        Thread summaryThread = new Thread(() -> {
+            try {
+                String prompt = buildCrimeSummaryPrompt(suburbName, displayedCrimes);
+                String summary = ollamaService.generateSummary(prompt);
+
+                if (summary == null || summary.isBlank()) {
+                    summary = "AI summary unavailable. Please make sure Ollama is running.";
+                }
+
+                String finalSummary = summary;
+                Platform.runLater(() -> showAiSummaryPopup(finalSummary));
+            } catch (Exception e) {
+                Platform.runLater(() -> showAiSummaryPopup(
+                        "AI summary unavailable. Please make sure Ollama is running."));
+            }
+        });
+
+        summaryThread.setDaemon(true);
+        summaryThread.start();
+    }
+
+    /**
+     * Converts the visible crime records into a compact Ollama prompt.
+     * CrimeRecord does not currently store a readable address field, so coordinates are not included;
+     * the prompt uses the searched suburb plus a general spread description instead.
+     */
+    private String buildCrimeSummaryPrompt(String suburbName, List<CrimeRecord> crimes) {
+        String displaySuburb = getSimpleSuburbName(suburbName);
+        StringBuilder records = new StringBuilder();
+        int maxRecords = Math.min(crimes.size(), 30);
+
+        for (int i = 0; i < maxRecords; i++) {
+            CrimeRecord crime = crimes.get(i);
+            records.append("- Type: ").append(crime.getCategory().getName())
+                    .append("; severity: ").append(crime.getCategory().getSeverity())
+                    .append("; date/time: ").append(UIUtils.formatLocalDateTime(crime.getTimestamp()))
+                    .append("; status: ").append(crime.isActioned() ? "Actioned" : "Pending")
+                    .append("; location: ").append(formatCrimeLocation(crime, displaySuburb));
+
+            if (crime.getDescription() != null && !crime.getDescription().isBlank()) {
+                records.append("; description: ").append(limitText(crime.getDescription(), 120));
+            }
+
+            records.append("\n");
+        }
+
+        if (crimes.size() > maxRecords) {
+            records.append("- ").append(crimes.size() - maxRecords)
+                    .append(" additional visible records were omitted to keep the prompt short.\n");
+        }
+
+        return "You are assisting a police dashboard. Summarise the displayed records for "
+                + displaySuburb + ". Base your answer only on the records below. Start with the wording "
+                + "'The displayed records show'. Write exactly 3 short bullet points and keep the total under "
+                + "90 words. The bullets must cover: most common crime types shown; any repeated status or "
+                + "type pattern if visible; and the general location spread using the suburb/readable location. "
+                + "Do not say the suburb has experienced crime in general. Do not call the suburb dangerous. "
+                + "Do not make predictions or stereotype the area. Do not mention raw latitude/longitude ranges.\n\n"
+                + "Location context: " + buildLocationSpreadDescription(crimes, displaySuburb) + "\n\n"
+                + "Visible crime records:\n" + records;
+    }
+
+    /**
+     * Prefer a readable location if the model gains one later. At present CrimeRecord only has
+     * coordinates, so this returns suburb-level wording and keeps raw lat/lon out of the prompt.
+     */
+    private String formatCrimeLocation(CrimeRecord crime, String suburbName) {
+        if (suburbName != null && !suburbName.isBlank()) {
+            return "within " + suburbName;
+        }
+        return "within the searched suburb area";
+    }
+
+    private String getSimpleSuburbName(String suburbName) {
+        if (suburbName == null || suburbName.isBlank()) {
+            return "the searched suburb";
+        }
+        String[] parts = suburbName.split(",");
+        String simpleName = parts.length > 0 ? parts[0].trim() : suburbName.trim();
+        return toTitleCase(simpleName);
+    }
+
+    private String toTitleCase(String text) {
+        String[] words = text.toLowerCase().split("\\s+");
+        StringBuilder formatted = new StringBuilder();
+
+        for (String word : words) {
+            if (word.isBlank()) {
+                continue;
+            }
+            if (!formatted.isEmpty()) {
+                formatted.append(" ");
+            }
+            formatted.append(Character.toUpperCase(word.charAt(0)));
+            if (word.length() > 1) {
+                formatted.append(word.substring(1));
+            }
+        }
+
+        return formatted.isEmpty() ? text.trim() : formatted.toString();
+    }
+
+    private String buildLocationSpreadDescription(List<CrimeRecord> crimes, String suburbName) {
+        if (crimes.size() <= 1) {
+            return "the visible incident is within " + suburbName + "; raw coordinates are not provided to the AI.";
+        }
+
+        double maxDistanceKm = getMaxDistanceFromFirstCrime(crimes);
+        if (maxDistanceKm <= 0.25) {
+            return "incidents appear clustered within the searched suburb area.";
+        }
+        return "incidents are spread across multiple nearby points in " + suburbName + ".";
+    }
+
+    private double getMaxDistanceFromFirstCrime(List<CrimeRecord> crimes) {
+        CrimeRecord first = crimes.get(0);
+        double maxDistance = 0;
+        for (CrimeRecord crime : crimes) {
+            maxDistance = Math.max(maxDistance, distanceKm(
+                    first.getLatitude(), first.getLongitude(),
+                    crime.getLatitude(), crime.getLongitude()));
+        }
+        return maxDistance;
+    }
+
+    private String limitText(String text, int maxLength) {
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength - 3) + "...";
+    }
+
+    /**
+     * Shows the compact bottom popup and scrolls its content back to the top for each new summary.
+     */
+    private void showAiSummaryPopup(String message) {
+        if (aiSummaryPopup == null || aiSummaryLabel == null) {
+            return;
+        }
+        aiSummaryLabel.setText(message);
+        if (aiSummaryScrollPane != null) {
+            aiSummaryScrollPane.setVvalue(0);
+        }
+        aiSummaryPopup.setVisible(true);
+        aiSummaryPopup.setManaged(true);
+    }
+
+    /**
+     * Hides the AI summary card when the user closes it or clears the suburb search.
+     */
+    @FXML
+    public void hideAiSummaryPopup() {
+        if (aiSummaryPopup == null) {
+            return;
+        }
+        aiSummaryPopup.setVisible(false);
+        aiSummaryPopup.setManaged(false);
+    }
+    /**
      * Populates all filter ComboBoxes with their option lists.
      */
     private void setupFilters() {
@@ -417,11 +607,31 @@ public class PoliceDashboardController {
     }
 
     /**
+     * Keeps the AI summary as a compact bottom card instead of a full-screen modal.
+     */
+    private void configureAiSummaryPopupSizing() {
+        if (dashboardRoot == null || aiSummaryPopup == null) {
+            return;
+        }
+
+        dashboardRoot.heightProperty().addListener((obs, oldHeight, newHeight) -> {
+            double height = newHeight.doubleValue();
+            aiSummaryPopup.setMaxHeight(Math.max(180, height * 0.42));
+        });
+
+        dashboardRoot.widthProperty().addListener((obs, oldWidth, newWidth) -> {
+            double width = newWidth.doubleValue();
+            aiSummaryPopup.setMaxWidth(Math.min(760, Math.max(320, width * 0.88)));
+        });
+    }
+    /**
      * Runs automatically after the FXML has loaded.
      */
     @FXML
     public void initialize() {
         setupFilters();
+
+        configureAiSummaryPopupSizing();
 
         Platform.runLater(this::loadMap);
 
