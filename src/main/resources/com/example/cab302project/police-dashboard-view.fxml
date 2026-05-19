@@ -169,6 +169,37 @@
         </VBox>
     </StackPane>
 
+    <!-- AI summary popup shown after a successful suburb crime search -->
+    <VBox fx:id="aiSummaryPopup"
+          visible="false"
+          managed="false"
+          styleClass="ai-summary-popup"
+          spacing="0"
+          maxWidth="760"
+          StackPane.alignment="BOTTOM_CENTER">
+        <StackPane.margin>
+            <Insets left="16" right="16" bottom="78"/>
+        </StackPane.margin>
+
+        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="ai-summary-header">
+            <Label text="AI Crime Summary" styleClass="ai-summary-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="X"
+                    onAction="#hideAiSummaryPopup"
+                    styleClass="ai-summary-close-button"/>
+        </HBox>
+
+        <ScrollPane fx:id="aiSummaryScrollPane"
+                    fitToWidth="true"
+                    hbarPolicy="NEVER"
+                    vbarPolicy="AS_NEEDED"
+                    VBox.vgrow="ALWAYS"
+                    styleClass="ai-summary-content">
+            <Label fx:id="aiSummaryLabel"
+                   wrapText="true"
+                   styleClass="ai-summary-text"/>
+        </ScrollPane>
+    </VBox>
     <!-- PoliceHamburgerMenu added programmatically in PoliceDashboardController.initialize() -->
 
 </StackPane>

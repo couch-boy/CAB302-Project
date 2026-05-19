@@ -3,6 +3,7 @@ module com.example.cab302project {
     requires javafx.fxml;
     requires javafx.web;
     requires java.sql;
+    requires java.net.http;
     requires org.json;
     requires org.kordamp.ikonli.core;
     requires org.kordamp.ikonli.javafx;
