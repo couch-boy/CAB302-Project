@@ -1217,3 +1217,88 @@
     -fx-background-color: #111827;
     -fx-border-color: #374151;
 }
+/* AI crime summary popup */
+.ai-summary-popup {
+    -fx-background-color: rgba(255, 255, 255, 0.97);
+    -fx-background-radius: 14 14 10 10;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 1;
+    -fx-border-radius: 14 14 10 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 16, 0.25, 0, 3);
+}
+
+.ai-summary-header {
+    -fx-padding: 12 14 10 16;
+    -fx-border-color: #E5E7EB;
+    -fx-border-width: 0 0 1 0;
+}
+
+.ai-summary-title {
+    -fx-text-fill: #1A1A2E;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.ai-summary-content {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-fit-to-width: true;
+}
+
+.ai-summary-content > .viewport {
+    -fx-background-color: transparent;
+}
+
+.ai-summary-text {
+    -fx-text-fill: #374151;
+    -fx-font-size: 12px;
+    -fx-line-spacing: 2;
+    -fx-padding: 12 16 14 16;
+}
+
+.ai-summary-close-button {
+    -fx-background-color: #F3F4F6;
+    -fx-text-fill: #6B7280;
+    -fx-cursor: hand;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-border-width: 0;
+    -fx-background-radius: 6;
+    -fx-min-width: 28;
+    -fx-min-height: 26;
+    -fx-padding: 4 8 4 8;
+}
+
+.ai-summary-close-button:hover {
+    -fx-background-color: #E5E7EB;
+    -fx-text-fill: #374151;
+}
+
+.dark-mode .ai-summary-popup {
+    -fx-background-color: rgba(31, 41, 55, 0.97);
+    -fx-border-color: #4B5563;
+}
+
+.dark-mode .ai-summary-header {
+    -fx-border-color: #374151;
+}
+
+.dark-mode .ai-summary-title {
+    -fx-text-fill: #F9FAFB;
+}
+
+.dark-mode .ai-summary-text {
+    -fx-text-fill: #D1D5DB;
+}
+
+.dark-mode .ai-summary-close-button {
+    -fx-background-color: #374151;
+    -fx-text-fill: #D1D5DB;
+}
+
+.dark-mode .ai-summary-close-button:hover {
+    -fx-background-color: #4B5563;
+    -fx-text-fill: #F9FAFB;
+}
