@@ -516,8 +516,8 @@ public class CrimesController {
         String status = crimeActiveBoundingBox == null && filtered.size() == allCrimes.size()
                 ? ""
                 : filtered.isEmpty()
-                  ? "No crimes match these filters"
-                  : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
+                ? "No crimes match these filters"
+                : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
         if (crimeSearchStatusLabel != null) {
             Platform.runLater(() -> crimeSearchStatusLabel.setText(status));
         }
@@ -711,6 +711,26 @@ public class CrimesController {
                     updateSelectionAfterChange();
                     onCloseDetail();
                 }
+
+                return;
+            }
+
+            // only owner or police can edit
+            if (isOwner(selected) || UserSession.isPolice()) {
+
+                if (dao.updateCrime(recordFromForm)) {
+
+                    UIUtils.showAlert(
+                            Alert.AlertType.INFORMATION,
+                            "Success",
+                            "Crime report updated successfully."
+                    );
+
+                    refreshList();
+                    updateSelectionAfterChange();
+                    onCloseDetail();
+                }
+
             } else {
                 // Existing crimes are view-only
                 UIUtils.showAlert(Alert.AlertType.WARNING, "View Only", "Existing crime reports cannot be edited.");
@@ -828,6 +848,21 @@ public class CrimesController {
                     pendingRecord.getCategory().toString() + " - Tap to continue editing and submit"
             );
         }
+    }
+
+    /**
+     * Returns true if the currently logged-in user owns this report.
+     */
+    private boolean isOwner(CrimeRecord crime) {
+        if (crime == null || UserSession.getInstance().getUser() == null) {
+            return false;
+        }
+
+        String currentUser =
+                UserSession.getInstance().getUser().getUsername();
+
+        return crime.getReporter() != null
+                && crime.getReporter().equals(currentUser);
     }
 
 
@@ -1232,7 +1267,8 @@ public class CrimesController {
             if (newVal != null) {
                 if (openedListView != null) openedListView.getSelectionModel().clearSelection();
                 crimeTable.getSelectionModel().select(newVal);
-                showDetailPanel(false);
+                boolean canEdit = isOwner(newVal) || UserSession.isPolice();
+                showDetailPanel(canEdit);
             }
         });
 
@@ -1365,7 +1401,8 @@ public class CrimesController {
 
         descriptionArea.setText(crime.getDescription());
 
-        setFormEditable(isNew);
+        boolean editable = isNew || isOwner(crime) || UserSession.isPolice();
+        setFormEditable(editable);
         isCreatingNew = isNew;
     }
 
