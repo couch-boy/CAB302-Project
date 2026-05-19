@@ -177,6 +177,9 @@ public class CrimesController {
     // Holds the unsaved report (id == 0) across filter and refresh cycles.
     // Kept separately from allCrimeRecords which only contains database records.
     private CrimeRecord pendingRecord = null;
+
+    // Caches the raw address text the user typed so it survives panel close/reopen
+    private String pendingLocationText = null;
     private List<CrimeRecord> allCrimeRecords = new ArrayList<>();
 
     // Tracks whether the crime map has been loaded yet (loaded lazily on first Map tab open)
@@ -778,11 +781,25 @@ public class CrimesController {
     /**
      * Re-opens the detail panel for the current pending report.
      * Called when the user taps the Opened Report banner.
+     * The table is re-synced with the latest pendingRecord reference so
+     * any edits saved on close are restored into the form fields.
      */
     private void openDetailForPending() {
         if (pendingRecord == null) return;
+
+        // Re-sync the table with the current pendingRecord so populateForm
+        // reads the values saved when the panel was last closed
+        if (!crimeTable.getItems().contains(pendingRecord)) {
+            crimeTable.getItems().add(0, pendingRecord);
+        } else {
+            // Replace the old reference in the table with the updated one
+            int idx = crimeTable.getItems().indexOf(pendingRecord);
+            if (idx >= 0) crimeTable.getItems().set(idx, pendingRecord);
+        }
+
         crimeTable.getSelectionModel().select(pendingRecord);
-        anonymousCheckBox.setSelected(false);
+        anonymousCheckBox.setSelected(pendingRecord.getReporter() == null
+                || pendingRecord.getReporter().isEmpty());
         showDetailPanel(true);
     }
 
@@ -824,10 +841,32 @@ public class CrimesController {
     }
 
     /**
-     * Close the detail panel - slides back down off screen
+     * Close the detail panel - slides back down off screen.
+     * If a pending report is open, its current form values are saved back into
+     * pendingRecord before closing so they are restored when the user reopens it.
      */
     @FXML
     public void onCloseDetail() {
+        // Persist any edits the user has made back into the pending record
+        // so reopening the banner restores what they typed rather than the defaults
+        if (pendingRecord != null && isCreatingNew) {
+            if (categoryComboBox.getValue() != null) {
+                pendingRecord = new CrimeRecord(
+                        0,
+                        categoryComboBox.getValue(),
+                        pendingRecord.getTimestamp(),
+                        pendingRecord.getLatitude(),
+                        pendingRecord.getLongitude(),
+                        descriptionAreaEdit != null ? descriptionAreaEdit.getText() : descriptionArea.getText(),
+                        anonymousCheckBox.isSelected() ? "" : pendingRecord.getReporter(),
+                        false
+                );
+            }
+        }
+
+        // Cache the raw address text since CrimeRecord only stores coordinates
+        if (locationFieldEdit != null) pendingLocationText = locationFieldEdit.getText();
+
         TranslateTransition slide = new TranslateTransition(Duration.millis(280), detailPanel);
         slide.setToY(detailPanel.getHeight() + 40);
         slide.setOnFinished(e -> {
@@ -1300,6 +1339,12 @@ public class CrimesController {
                     });
                 }
             }).start();
+        }
+
+        // For the pending record, restore the raw address text the user had typed
+        if (isNew && pendingLocationText != null && !pendingLocationText.isEmpty()) {
+            locationField.setText(pendingLocationText);
+            if (locationFieldEdit != null) locationFieldEdit.setText(pendingLocationText);
         }
 
         // Apply dark mode styles to read-only fields after text is set
