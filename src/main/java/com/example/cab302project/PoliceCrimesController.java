@@ -202,49 +202,6 @@ public class PoliceCrimesController {
             UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not save: " + e.getMessage());
         }
     }
-    /**
-     * Add a new crime to the database after entering details
-     */
-    @FXML
-    public void onAddNewCrime() {
-        // Check if there is a pending new CrimeRecord waiting to be saved
-        if (crimeTable.getItems().stream().anyMatch(c -> c.getId() == 0)) {
-            UIUtils.showAlert(Alert.AlertType.WARNING, "Pending Report",
-                    "Please save or refresh before creating another new report.");
-            return;
-        }
-
-        // Create blank CrimeRecord object template
-        // Set id to 0
-        // Default lat/lon for Brisbane CBD
-        // UserSession.getInstance().getUser().getUsername() provides the reporter username
-        isCreatingNew = true;
-        CrimeRecord newRecord = new CrimeRecord(
-                0,
-                CrimeCategory.OTHER,
-                LocalDateTime.now(),
-                -27.4709,
-                153.0235,
-                "",
-                UserSession.getInstance().getUser().getUsername(),
-                false
-        );
-
-        // Add template to the table temporarily
-        crimeTable.getItems().add(newRecord);
-
-        // Select template so the form populates with default values from the template
-        crimeTable.getSelectionModel().select(newRecord);
-
-        // Scroll to the template in the crime table so the user sees the new entry
-        crimeTable.scrollTo(newRecord);
-
-        // Display popup prompting user to fill in template details and save to store in database
-        UIUtils.showAlert(Alert.AlertType.INFORMATION, "New Report",
-                "A new blank report has been created. Fill in the details and click 'Save Changes'.");
-
-    }
-
 
 
     /**

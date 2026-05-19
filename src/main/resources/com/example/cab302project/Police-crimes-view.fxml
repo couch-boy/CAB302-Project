@@ -103,18 +103,6 @@
                              -fx-background: transparent;
                              -fx-border-width: 0;"/>
 
-            <!-- Create Report pinned to bottom -->
-            <VBox style="-fx-background-color: #FFFFFF;
-                         -fx-border-color: #E5E7EB;
-                         -fx-border-width: 1 0 0 0;
-                         -fx-padding: 12 20 12 20;">
-                <Button text="CREATE NEW REPORT"
-                        onAction="#onAddNewCrime"
-                        maxWidth="Infinity"
-                        styleClass="btn-primary"
-                        style="-fx-padding: 14 0 14 0;"/>
-            </VBox>
-
             <!-- Bottom navigation bar -->
             <fx:include fx:id="navBar" source="nav-bar.fxml"/>
 
