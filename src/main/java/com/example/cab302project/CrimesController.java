@@ -862,6 +862,10 @@ public class CrimesController {
                         false
                 );
             }
+            // Cache the raw address text since CrimeRecord only stores coordinates
+            if (locationFieldEdit != null) pendingLocationText = locationFieldEdit.getText();
+            // Refresh the banner subtitle to reflect any category change made in the form
+            refreshOpenedSection();
         }
 
         // Cache the raw address text since CrimeRecord only stores coordinates
