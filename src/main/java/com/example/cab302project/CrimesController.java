@@ -1146,6 +1146,23 @@ public class CrimesController {
         hourBox.setValue("12");
         minuteBox.setValue("00");
         ampmBox.setValue("PM");
+
+        datePicker.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+
+                if (empty || date == null) {
+                    return;
+                }
+
+                // Disable future dates
+                if (date.isAfter(LocalDate.now())) {
+                    setDisable(true);
+                    setStyle("-fx-background-color: #D3D3D3;");
+                }
+            }
+        });
     }
 
     /**
@@ -1465,6 +1482,10 @@ public class CrimesController {
         if (ampm.equals("AM") && hour == 12) hour = 0;
 
         LocalDateTime newTimestamp = LocalDateTime.of(datePicker.getValue(), LocalTime.of(hour, min));
+
+        if (newTimestamp.isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Crime reports cannot use a future date or time.");
+        }
 
         // Parse coordinates using regex to handle spaces automatically
         String address = locationFieldEdit != null ? locationFieldEdit.getText().trim() : locationField.getText().trim();
