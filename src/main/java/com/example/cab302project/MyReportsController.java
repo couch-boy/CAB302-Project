@@ -21,10 +21,15 @@ import java.util.Map;
  * It loads reports specific to the logged-in user, displays them in both list and table views,
  * and provides a detailed panel for viewing individual report information. It also integrates
  * geocoding services to resolve and display readable addresses.
+ *
+ * Reports with id == 0 are treated as opened (not yet submitted) and are shown
+ * in a separate Opened Reports section above the main submitted list.
  */
 public class MyReportsController {
 
     @FXML private ListView<CrimeRecord> crimeListView;
+    @FXML private ListView<CrimeRecord> openedListView;
+    @FXML private VBox openedSection;
     @FXML private TableView<CrimeRecord> crimeTable;
     @FXML private Label reportCountLabel;
     @FXML private VBox detailPanel;
@@ -35,6 +40,7 @@ public class MyReportsController {
     @FXML private TextField detailLocationField;
     @FXML private TextArea detailDescriptionArea;
     @FXML private Label detailStatusLabel;
+    @FXML private VBox saveChangesBtn;
     @FXML private Button hamburgerBtn;
     @FXML private StackPane myReportsRoot;
     @FXML private NavBarController navBarController;
@@ -55,6 +61,9 @@ public class MyReportsController {
     private IAppDAO dao;
     private IGeocodingService geocoder = new OpenStreetMapGeoCoder();
     private List<CrimeRecord> allMyReports = new ArrayList<>();
+
+    // The crime record currently open in the detail panel
+    private CrimeRecord selectedRecord = null;
 
     /**
      * Shared cache of reverse-geocoded addresses keyed by crime record ID.
@@ -94,7 +103,7 @@ public class MyReportsController {
             navBarController.setActiveTab("crimes");
         }
 
-        // Build styled list cells
+        // Build styled list cells for both the submitted and opened list views
         setupListView();
 
         // Preload addresses in background
@@ -152,6 +161,7 @@ public class MyReportsController {
         if (UserSession.isDarkMode()) {
             applyDarkStrips();
             crimeListView.refresh();
+            if (openedListView != null) openedListView.refresh();
         } else {
             String lightStrip   = "-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB;";
             String lightSection = "-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;";
@@ -168,6 +178,7 @@ public class MyReportsController {
             if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
             if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
             crimeListView.refresh();
+            if (openedListView != null) openedListView.refresh();
         }
     }
 
@@ -213,18 +224,35 @@ public class MyReportsController {
 
     /**
      * Applies the selected filter values to the table and styled list view.
+     * Opened reports (id == 0) are always shown unfiltered in the Opened Reports
+     * section. Submitted reports (id != 0) pass through all active filters.
      */
     private void applyFilters() {
-        List<CrimeRecord> filteredReports = allMyReports.stream()
+        // Separate opened (not yet submitted) reports from submitted ones
+        List<CrimeRecord> openedReports = allMyReports.stream()
+                .filter(c -> c.getId() == 0)
+                .toList();
+
+        List<CrimeRecord> submittedReports = allMyReports.stream()
+                .filter(c -> c.getId() != 0)
                 .filter(this::matchesSeverityFilter)
                 .filter(this::matchesCrimeTypeFilter)
                 .filter(this::matchesStatusFilter)
                 .filter(this::matchesDateFilter)
                 .toList();
 
-        crimeTable.getItems().setAll(filteredReports);
-        crimeListView.getItems().setAll(filteredReports);
-        reportCountLabel.setText(filteredReports.size() + " report" + (filteredReports.size() == 1 ? "" : "s"));
+        // Show or hide the opened section depending on whether any opened reports exist
+        if (openedSection != null) {
+            openedSection.setVisible(!openedReports.isEmpty());
+            openedSection.setManaged(!openedReports.isEmpty());
+        }
+        if (openedListView != null) {
+            openedListView.getItems().setAll(openedReports);
+        }
+
+        crimeTable.getItems().setAll(submittedReports);
+        crimeListView.getItems().setAll(submittedReports);
+        reportCountLabel.setText(submittedReports.size() + " report" + (submittedReports.size() == 1 ? "" : "s"));
     }
 
     private boolean matchesSeverityFilter(CrimeRecord crime) {
@@ -293,12 +321,14 @@ public class MyReportsController {
     }
 
     /**
-     * Configures the cell factory for the crime list view.
+     * Configures cell factories for both the submitted and opened crime list views.
      *
-     * Each cell displays a severity colour dot, crime category, dispatch
-     * status, geocoded location, and a relative timestamp. Dark mode is
-     * applied to text colours using {@link UserSession#isDarkMode()}.
-     * Selecting a cell populates and slides up the detail panel.
+     * Submitted list cells display severity colour dot, crime category, dispatch
+     * status, geocoded location, and a relative timestamp. Selecting a cell
+     * populates and slides up the read-only detail panel.
+     *
+     * Opened list cells use the same styling but show "Not Submitted" as the status.
+     * Selecting an opened cell slides up the detail panel with Save Changes visible.
      */
     private void setupListView() {
         crimeListView.setCellFactory(lv -> new ListCell<CrimeRecord>() {
@@ -365,12 +395,92 @@ public class MyReportsController {
             }
         });
 
+        // Submitted list selection — opens read-only detail panel
         crimeListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
+                if (openedListView != null) openedListView.getSelectionModel().clearSelection();
+                selectedRecord = newVal;
                 populateDetailPanel(newVal);
-                showDetailPanel();
+                showDetailPanel(false);
             }
         });
+
+        // Set up the opened reports list view with matching cell style
+        if (openedListView != null) {
+            openedListView.setCellFactory(lv -> new ListCell<CrimeRecord>() {
+                {
+                    getStyleClass().add("crime-list-cell");
+                }
+
+                @Override
+                protected void updateItem(CrimeRecord crime, boolean empty) {
+                    super.updateItem(crime, empty);
+
+                    if (empty || crime == null) {
+                        setGraphic(null);
+                        setText(null);
+                        getStyleClass().remove("crime-list-cell-populated");
+                        return;
+                    }
+
+                    getStyleClass().add("crime-list-cell-populated");
+
+                    // Choose dot colour based on severity tier
+                    String dotColor = switch (crime.getCategory().getSeverity()) {
+                        case CRITICAL -> "#DC143C";
+                        case MEDIUM   -> "#FF8C00";
+                        default       -> "#FFD700";
+                    };
+
+                    Label dot = new Label("\u25CF");
+                    dot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 14px;");
+
+                    boolean dark = UserSession.isDarkMode();
+
+                    Label category = new Label(crime.getCategory().toString());
+                    category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: "
+                            + (dark ? "#F9FAFB" : "#1A1A2E") + ";");
+
+                    // Opened reports always show as "Not Submitted"
+                    Label status = new Label("Not Submitted");
+                    status.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                            + (dark ? "#9CA3AF" : "#6B7280") + ";");
+
+                    Label location = new Label(String.format("%.4f, %.4f",
+                            crime.getLatitude(), crime.getLongitude()));
+                    location.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                            + (dark ? "#6B7280" : "#9CA3AF") + ";");
+
+                    VBox textBlock = new VBox(2, category, status, location);
+
+                    Label time = new Label(getRelativeTime(crime.getTimestamp()));
+                    time.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                            + (dark ? "#6B7280" : "#9CA3AF") + ";");
+
+                    Region spacer = new Region();
+                    HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                    HBox row = new HBox(10, dot, textBlock, spacer, time);
+                    row.setAlignment(Pos.CENTER_LEFT);
+                    row.setStyle("-fx-padding: 12 20 12 20; -fx-cursor: hand;");
+
+                    setGraphic(row);
+                }
+            });
+
+            // Opened list selection — opens editable detail panel with Save Changes visible
+            openedListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    crimeListView.getSelectionModel().clearSelection();
+                    selectedRecord = newVal;
+                    populateDetailPanel(newVal);
+                    showDetailPanel(true);
+                }
+            });
+
+            openedListView.setStyle("-fx-background-color: #FFFDF7; " +
+                    "-fx-background: #FFFDF7; -fx-border-width: 0;");
+        }
     }
 
     // ── Detail panel ─────────────────────────────────────────────────
@@ -436,8 +546,15 @@ public class MyReportsController {
     /**
      * Makes the detail panel visible and animates it sliding up from the bottom of the screen.
      * The semi-transparent backdrop is also shown to focus attention on the panel.
+     * @param showSave true shows the Save Changes button for opened (unsubmitted) reports
      */
-    private void showDetailPanel() {
+    private void showDetailPanel(boolean showSave) {
+        // Show or hide the Save Changes button depending on report type
+        if (saveChangesBtn != null) {
+            saveChangesBtn.setVisible(showSave);
+            saveChangesBtn.setManaged(showSave);
+        }
+
         detailBackdrop.setVisible(true);
         detailBackdrop.setManaged(true);
         detailPanel.setVisible(true);
@@ -451,7 +568,7 @@ public class MyReportsController {
 
     /**
      * Closes the detail panel by animating it sliding back down off-screen.
-     * Clears the list selection and hides the backdrop once the animation completes.
+     * Clears both list selections and hides the backdrop once the animation completes.
      */
     @FXML
     public void onCloseDetail() {
@@ -463,11 +580,46 @@ public class MyReportsController {
             detailBackdrop.setVisible(false);
             detailBackdrop.setManaged(false);
             crimeListView.getSelectionModel().clearSelection();
+            if (openedListView != null) openedListView.getSelectionModel().clearSelection();
+            selectedRecord = null;
         });
         slide.play();
     }
 
     // ── Actions ───────────────────────────────────────────────────────
+
+    /**
+     * Saves the currently opened (unsubmitted) report to the database.
+     *
+     * Only callable when an opened report (id == 0) is selected. On success
+     * the report moves from the Opened Reports section into the submitted list
+     * and the detail panel closes.
+     */
+    @FXML
+    public void onSaveChanges() {
+        if (selectedRecord == null || selectedRecord.getId() != 0) return;
+
+        // Update the description from the panel field before saving
+        selectedRecord.setDescription(detailDescriptionArea.getText());
+
+        try {
+            if (dao.addCrime(selectedRecord)) {
+                UIUtils.showAlert(Alert.AlertType.INFORMATION, "Success", "Report submitted successfully.");
+
+                // Reload this user's reports and refresh both list sections
+                String currentUsername = UserSession.getInstance().getUser().getUsername();
+                allMyReports = dao.getAllCrimes().stream()
+                        .filter(c -> currentUsername.equals(c.getReporter()))
+                        .toList();
+
+                applyFilters();
+                preloadAddresses(allMyReports);
+                onCloseDetail();
+            }
+        } catch (Exception e) {
+            UIUtils.showAlert(Alert.AlertType.ERROR, "Error", "Could not save: " + e.getMessage());
+        }
+    }
 
     /**
      * Navigates to the report submission view.

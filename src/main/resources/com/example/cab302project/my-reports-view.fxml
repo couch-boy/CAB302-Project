@@ -47,6 +47,29 @@
             <!-- Hidden TableView - keeps existing controller logic intact -->
             <TableView fx:id="crimeTable" visible="false" managed="false"/>
 
+            <!-- Opened reports section — hidden when there are no opened reports -->
+            <VBox fx:id="openedSection" visible="false" managed="false" spacing="0">
+
+                <!-- Opened section header -->
+                <HBox alignment="CENTER_LEFT" spacing="10"
+                      style="-fx-padding: 10 20 8 20; -fx-background-color: #FFF8F0;
+                             -fx-border-color: #FFD7AA; -fx-border-width: 0 0 1 0;">
+                    <Label text="Opened Reports"
+                           style="-fx-text-fill: #B45309; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+                    <Label text="Tap to continue editing and submit"
+                           style="-fx-text-fill: #92400E; -fx-font-size: 11px;"/>
+                </HBox>
+
+                <!-- Opened reports list — capped at 160px so it does not crowd the main list -->
+                <ListView fx:id="openedListView"
+                          maxHeight="160"
+                          style="-fx-background-color: #FFFDF7;
+                                 -fx-background: #FFFDF7;
+                                 -fx-border-color: #FFD7AA;
+                                 -fx-border-width: 0 0 1 0;"/>
+
+            </VBox>
+
             <!-- Section header -->
             <HBox fx:id="sectionHeader" alignment="CENTER_LEFT" spacing="10"
                   style="-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;">
@@ -89,7 +112,7 @@
                        style="-fx-text-fill: #6B7280; -fx-font-size: 12px;"/>
             </HBox>
 
-            <!-- Styled list view -->
+            <!-- Styled submitted reports list view -->
             <ListView fx:id="crimeListView"
                       VBox.vgrow="ALWAYS"
                       style="-fx-background-color: transparent;
@@ -217,6 +240,20 @@
 
             </VBox>
         </ScrollPane>
+
+        <!-- Save Changes button — only visible for opened (unsubmitted) reports -->
+        <VBox visible="false" managed="false"
+              fx:id="saveChangesBtn"
+              style="-fx-background-color: #FFFFFF;
+                     -fx-border-color: #E5E7EB;
+                     -fx-border-width: 1 0 0 0;
+                     -fx-padding: 12 20 12 20;">
+            <Button text="Save Changes"
+                    onAction="#onSaveChanges"
+                    maxWidth="Infinity"
+                    styleClass="btn-primary"
+                    style="-fx-padding: 14 0 14 0;"/>
+        </VBox>
 
     </VBox>
 
