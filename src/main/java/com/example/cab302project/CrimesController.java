@@ -107,6 +107,13 @@ public class CrimesController {
     @FXML
     private Button saveBtn;
 
+    // Opened report banner - shown above the list when an unsaved report exists
+    @FXML private VBox openedSection;
+    @FXML private Label openedBannerSubtitle;
+    @FXML private VBox saveChangesStrip;
+
+    @FXML private ListView<CrimeRecord> openedListView;
+
     // Tab bar buttons and content panes
     @FXML
     private Button listTabBtn;
@@ -118,7 +125,7 @@ public class CrimesController {
     private VBox mapPane;
     @FXML
     private WebView crimeMapView;
-    // Crime map search overlay fields — mirror the dashboard floating search bar
+    // Crime map search overlay fields - mirror the dashboard floating search bar
     @FXML private VBox crimeSearchOverlay;
     @FXML private TextField crimeSearchField;
     @FXML private Label crimeSearchStatusLabel;
@@ -127,7 +134,7 @@ public class CrimesController {
     @FXML private ComboBox<String> crimeCategoryFilter;
     @FXML private ComboBox<String> crimeDaysFilter;
     @FXML private ComboBox<String> crimeSeverityFilter;
-    // Inline-styled strips — needed for programmatic dark mode override
+    // Inline-styled strips - needed for programmatic dark mode override
     @FXML private HBox severityLegendStrip;
     @FXML private HBox sectionHeader;
     @FXML private Label recentLabel;
@@ -135,7 +142,7 @@ public class CrimesController {
     @FXML private HBox mapSeverityLegend;
     @FXML private VBox submitStripMap;
 
-    // Crime map search state — mirrors DashboardController pattern
+    // Crime map search state - mirrors DashboardController pattern
     private double[] crimeActiveBoundingBox = null;
     private String crimeActiveGeoJson = null;
     private boolean crimeFilterDrawerOpen = false;
@@ -166,6 +173,13 @@ public class CrimesController {
     private final PauseTransition suggestionDelay = new PauseTransition(Duration.millis(400));
 
     private boolean isCreatingNew = false;
+
+    // Holds the unsaved report (id == 0) across filter and refresh cycles.
+    // Kept separately from allCrimeRecords which only contains database records.
+    private CrimeRecord pendingRecord = null;
+
+    // Caches the raw address text the user typed so it survives panel close/reopen
+    private String pendingLocationText = null;
     private List<CrimeRecord> allCrimeRecords = new ArrayList<>();
 
     // Tracks whether the crime map has been loaded yet (loaded lazily on first Map tab open)
@@ -289,6 +303,7 @@ public class CrimesController {
         if (mapSeverityLegend   != null) mapSeverityLegend.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 1 0 0 0;");
         if (submitStripMap      != null) submitStripMap.setStyle(darkStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
         if (detailPanel         != null) detailPanel.setStyle(darkPanel);
+        if (saveChangesStrip    != null) saveChangesStrip.setStyle(darkStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 16 20;");
         // Read-only view fields
         if (locationField       != null) locationField.setStyle(darkReadOnly);
         if (descriptionArea     != null) descriptionArea.setStyle(darkReadOnly);
@@ -319,6 +334,7 @@ public class CrimesController {
             if (mapSeverityLegend   != null) mapSeverityLegend.setStyle(lightStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 1 0 0 0;");
             if (submitStripMap      != null) submitStripMap.setStyle(lightStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
             if (detailPanel         != null) detailPanel.setStyle(lightPanel);
+            if (saveChangesStrip    != null) saveChangesStrip.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0; -fx-padding: 12 20 16 20;");
             // Read-only view fields
             if (locationField       != null) locationField.setStyle("-fx-opacity: 1;");
             if (descriptionArea     != null) descriptionArea.setStyle("-fx-opacity: 1;");
@@ -440,8 +456,8 @@ public class CrimesController {
     }
 
     /**
-     * Applies all active crime map filters — suburb bounding box, crime type,
-     * severity and time range — and pushes the filtered JSON to the map.
+     * Applies all active crime map filters - suburb bounding box, crime type,
+     * severity and time range - and pushes the filtered JSON to the map.
      * Also passes the active GeoJSON polygon so JavaScript can perform a precise
      * point-in-polygon check inside the suburb boundary.
      */
@@ -459,7 +475,7 @@ public class CrimesController {
         List<CrimeRecord> filtered = new ArrayList<>();
         for (CrimeRecord c : allCrimes) {
 
-            // Suburb bounding box pre-filter — fast rectangle check before polygon test
+            // Suburb bounding box pre-filter - fast rectangle check before polygon test
             if (crimeActiveBoundingBox != null &&
                     !SuburbSearchService.isInBoundingBox(
                             c.getLatitude(), c.getLongitude(), crimeActiveBoundingBox)) continue;
@@ -468,8 +484,7 @@ public class CrimesController {
             if (selCat != null && !selCat.equals("All Types") &&
                     !c.getCategory().getName().equals(selCat)) continue;
 
-            // Severity filter
-            // Severity filter — map display labels to the internal enum values
+            // Severity filter - map display labels to the internal enum values
             if (selSev != null && !selSev.equals("All Severities")) {
                 String severityLabel = switch (selSev) {
                     case "Severe"   -> "Critical";
@@ -501,8 +516,8 @@ public class CrimesController {
         String status = crimeActiveBoundingBox == null && filtered.size() == allCrimes.size()
                 ? ""
                 : filtered.isEmpty()
-                ? "No crimes match these filters"
-                : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
+                  ? "No crimes match these filters"
+                  : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
         if (crimeSearchStatusLabel != null) {
             Platform.runLater(() -> crimeSearchStatusLabel.setText(status));
         }
@@ -620,6 +635,7 @@ public class CrimesController {
     /**
      * Consumes mouse clicks on the filter drawer itself so they do not
      * propagate to the backdrop and accidentally close the panel.
+     * @param event the mouse event to consume
      */
     @FXML
     public void onCrimeFilterDrawerClicked(MouseEvent event) {
@@ -689,6 +705,8 @@ public class CrimesController {
                 // CASE: This is a brand new record
                 if (dao.addCrime(recordFromForm)) {
                     UIUtils.showAlert(Alert.AlertType.INFORMATION, "Success", "New crime reported successfully.");
+                    // Clear the pending record now that it has been saved
+                    pendingRecord = null;
                     refreshList();
                     updateSelectionAfterChange();
                     onCloseDetail();
@@ -703,14 +721,18 @@ public class CrimesController {
     }
 
     /**
-     * Add a new crime to the database after entering details
+     * Add a new crime to the database after entering details.
+     * The new blank record is stored in pendingRecord and shown in the
+     * Opened Report banner above the list. The list scrolls to the top
+     * so the user sees the banner immediately.
      */
     @FXML
     public void onAddNewCrime() {
-        // Check if there is a pending new CrimeRecord waiting to be saved
-        if (crimeTable.getItems().stream().anyMatch(c -> c.getId() == 0)) {
+        // Check if there is already a pending unsaved report
+        if (pendingRecord != null) {
             UIUtils.showAlert(Alert.AlertType.WARNING, "Pending Report",
-                    "Please save or refresh before creating another new report.");
+                    "Please save or discard your opened report before creating another.");
+            openDetailForPending();
             return;
         }
 
@@ -719,7 +741,7 @@ public class CrimesController {
         // Default lat/lon for Brisbane CBD
         // UserSession.getInstance().getUser().getUsername() provides the reporter username
         isCreatingNew = true;
-        CrimeRecord newRecord = new CrimeRecord(
+        pendingRecord = new CrimeRecord(
                 0,
                 CrimeCategory.OTHER,
                 LocalDateTime.now(),
@@ -730,25 +752,84 @@ public class CrimesController {
                 false
         );
 
-        // Add template to the table temporarily
-        crimeTable.getItems().add(newRecord);
-
-        // Select template so the form populates with default values from the template
-        crimeTable.getSelectionModel().select(newRecord);
+        // Add to table so existing form population logic still works
+        crimeTable.getItems().add(0, pendingRecord);
+        crimeTable.getSelectionModel().select(pendingRecord);
         anonymousCheckBox.setSelected(false);
 
-        // Scroll to the template in the crime table so the user sees the new entry
-        crimeTable.scrollTo(newRecord);
+        // Show the banner and scroll the list to the top
+        refreshOpenedSection();
+        crimeListView.scrollTo(0);
 
-        // Sync list view and open detail panel with save button visible
-        crimeListView.getItems().setAll(crimeTable.getItems());
-        crimeListView.getSelectionModel().selectLast();
+        // Open detail panel with the save button visible
         showDetailPanel(true);
 
-        // Display popup prompting user to fill in template details and save to store in database
+        // Open detail panel with the save button visible
+        showDetailPanel(true);
+
+        // Open detail panel with the save button visible
+        showDetailPanel(true);
+
+        // Show the alert over the panel - passing the owner stage ensures it
+        // renders on top of the JavaFX window rather than behind the detail panel
+        Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
         UIUtils.showAlert(Alert.AlertType.INFORMATION, "New Report",
-                "A new blank report has been created. Fill in the details and click 'Save Changes'.");
+                "A new blank report has been created. Fill in the details and click 'Save Changes'.",
+                stage);
     }
+
+    /**
+     * Re-opens the detail panel for the current pending report.
+     * Called when the user taps the Opened Report banner.
+     * The table is re-synced with the latest pendingRecord reference so
+     * any edits saved on close are restored into the form fields.
+     */
+    private void openDetailForPending() {
+        if (pendingRecord == null) return;
+
+        // Re-sync the table with the current pendingRecord so populateForm
+        // reads the values saved when the panel was last closed
+        if (!crimeTable.getItems().contains(pendingRecord)) {
+            crimeTable.getItems().add(0, pendingRecord);
+        } else {
+            // Replace the old reference in the table with the updated one
+            int idx = crimeTable.getItems().indexOf(pendingRecord);
+            if (idx >= 0) crimeTable.getItems().set(idx, pendingRecord);
+        }
+
+        crimeTable.getSelectionModel().select(pendingRecord);
+        anonymousCheckBox.setSelected(pendingRecord.getReporter() == null
+                || pendingRecord.getReporter().isEmpty());
+        showDetailPanel(true);
+    }
+
+    /**
+     * Handles a tap on the Opened Report banner above the list.
+     * Re-opens the detail panel so the user can continue editing
+     * and submit the pending report.
+     */
+    @FXML
+    public void onOpenedBannerClicked() {
+        openDetailForPending();
+    }
+
+    /**
+     * Refreshes the Opened Report banner visibility and subtitle.
+     * Shows the banner when a pending record exists, hides it when there is none.
+     */
+    private void refreshOpenedSection() {
+        boolean hasPending = pendingRecord != null;
+        if (openedSection != null) {
+            openedSection.setVisible(hasPending);
+            openedSection.setManaged(hasPending);
+        }
+        if (openedBannerSubtitle != null && hasPending) {
+            openedBannerSubtitle.setText(
+                    pendingRecord.getCategory().toString() + " - Tap to continue editing and submit"
+            );
+        }
+    }
+
 
     /**
      * Return to the previous menu (dashboard)
@@ -760,10 +841,36 @@ public class CrimesController {
     }
 
     /**
-     * Close the detail panel - slides back down off screen
+     * Close the detail panel - slides back down off screen.
+     * If a pending report is open, its current form values are saved back into
+     * pendingRecord before closing so they are restored when the user reopens it.
      */
     @FXML
     public void onCloseDetail() {
+        // Persist any edits the user has made back into the pending record
+        // so reopening the banner restores what they typed rather than the defaults
+        if (pendingRecord != null && isCreatingNew) {
+            if (categoryComboBox.getValue() != null) {
+                pendingRecord = new CrimeRecord(
+                        0,
+                        categoryComboBox.getValue(),
+                        pendingRecord.getTimestamp(),
+                        pendingRecord.getLatitude(),
+                        pendingRecord.getLongitude(),
+                        descriptionAreaEdit != null ? descriptionAreaEdit.getText() : descriptionArea.getText(),
+                        anonymousCheckBox.isSelected() ? "" : pendingRecord.getReporter(),
+                        false
+                );
+            }
+            // Cache the raw address text since CrimeRecord only stores coordinates
+            if (locationFieldEdit != null) pendingLocationText = locationFieldEdit.getText();
+            // Refresh the banner subtitle to reflect any category change made in the form
+            refreshOpenedSection();
+        }
+
+        // Cache the raw address text since CrimeRecord only stores coordinates
+        if (locationFieldEdit != null) pendingLocationText = locationFieldEdit.getText();
+
         TranslateTransition slide = new TranslateTransition(Duration.millis(280), detailPanel);
         slide.setToY(detailPanel.getHeight() + 40);
         slide.setOnFinished(e -> {
@@ -780,8 +887,10 @@ public class CrimesController {
     /**
      * Refreshes the crime list by loading non-actioned records
      * and keeping the current selection in sync.
+     * Pending records (id == 0) are preserved across refreshes since
+     * they only exist in memory and are not returned by the database.
      */
-    // Helper function to refresh crime table with updated crime data
+// Helper function to refresh crime table with updated crime data
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
 
@@ -795,6 +904,10 @@ public class CrimesController {
         if (selectedIndex >= 0) {
             crimeTable.getSelectionModel().select(selectedIndex);
         }
+
+        // Restore the banner - pending record lives only in memory so it
+        // would be lost if refreshOpenedSection is not called after each refresh
+        refreshOpenedSection();
     }
 
     /**
@@ -836,9 +949,12 @@ public class CrimesController {
 
     /**
      * Applies the selected filter values to the table and styled list view.
+     * Opened reports (id == 0) are excluded from the filtered list and
+     * shown only in the Opened Report banner above the list.
      */
     private void applyFilters() {
         List<CrimeRecord> filteredCrimes = allCrimeRecords.stream()
+                .filter(c -> c.getId() != 0) // opened reports are handled separately
                 .filter(this::matchesSeverityFilter)
                 .filter(this::matchesCrimeTypeFilter)
                 .filter(this::matchesStatusFilter)
@@ -867,6 +983,7 @@ public class CrimesController {
         }
         return true;
     }
+
     /**
      * Checks whether a crime record matches the currently selected crime type filter.
      * Returns true if no specific crime type filter is selected.
@@ -886,11 +1003,11 @@ public class CrimesController {
         }
         return true;
     }
+
     /**
      * Checks whether a crime record matches the currently selected status filter.
      * Pending crimes are identified as records that have not yet been actioned.
      */
-
     private boolean matchesStatusFilter(CrimeRecord crime) {
         if (statusPendingItem.isSelected()) {
             return !crime.isActioned();
@@ -1036,8 +1153,9 @@ public class CrimesController {
     }
 
     /**
-     * Builds the styled ListView with custom cells showing category, status, location and time.
-     * Selection on the ListView mirrors to the hidden TableView so all existing logic stays intact.
+     * Builds the styled ListView and the opened reports ListView with custom cells.
+     * The opened list shows unsaved reports (id == 0) above the main list.
+     * Selection on either ListView mirrors to the hidden TableView so all existing logic stays intact.
      */
     private void setupListView() {
         crimeListView.getItems().setAll(crimeTable.getItems());
@@ -1108,10 +1226,11 @@ public class CrimesController {
             }
         });
 
-        // Selecting a list row mirrors to the table and opens the detail panel.
-        // Save button is hidden for public users viewing existing records.
+        // Selecting a submitted list row mirrors to the table and opens the detail panel.
+        // Save button is hidden for submitted records viewed by public users.
         crimeListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
+                if (openedListView != null) openedListView.getSelectionModel().clearSelection();
                 crimeTable.getSelectionModel().select(newVal);
                 showDetailPanel(false);
             }
@@ -1119,16 +1238,21 @@ public class CrimesController {
 
         crimeListView.setStyle("-fx-background-color: transparent; " +
                 "-fx-background: transparent; -fx-border-width: 0;");
+
     }
 
     /**
      * Slides the detail panel up from the bottom of the screen and dims the background.
-     * @param showSave true shows the Save button, used when creating a new report
+     * @param showSave true shows the Save Changes strip, used when creating a new report
      */
     private void showDetailPanel(boolean showSave) {
         boolean canSave = UserSession.isPolice() || showSave;
-        saveBtn.setVisible(canSave);
-        saveBtn.setManaged(canSave);
+
+        // Toggle the save strip that wraps the save button
+        if (saveChangesStrip != null) {
+            saveChangesStrip.setVisible(canSave);
+            saveChangesStrip.setManaged(canSave);
+        }
 
         // Re-apply dark mode field styles each time the panel opens,
         // since setText() calls reset the skin and can clear inline styles.
@@ -1219,6 +1343,12 @@ public class CrimesController {
                     });
                 }
             }).start();
+        }
+
+        // For the pending record, restore the raw address text the user had typed
+        if (isNew && pendingLocationText != null && !pendingLocationText.isEmpty()) {
+            locationField.setText(pendingLocationText);
+            if (locationFieldEdit != null) locationFieldEdit.setText(pendingLocationText);
         }
 
         // Apply dark mode styles to read-only fields after text is set
@@ -1372,7 +1502,6 @@ public class CrimesController {
             }
         });
     }
-
 
     /**
      * Runs an address search in the background and passes results to showSuggestions on the UI thread.

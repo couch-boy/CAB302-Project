@@ -135,6 +135,37 @@ public class UIUtils {
     }
 
     /**
+     * Displays a standardized JavaFX Alert dialog with an explicit owner stage.
+     * Setting the owner ensures the dialog always renders on top of the application window.
+     *
+     * @param alertType The {@link AlertType} (e.g., INFORMATION, ERROR, WARNING).
+     * @param title     The text to display in the window title bar.
+     * @param message   The main content text to display in the alert body.
+     * @param owner     The {@link Stage} that owns this dialog, ensuring it renders on top.
+     */
+    public static void showAlert(AlertType alertType, String title, String message, Stage owner) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        // Bind the dialog to the owner window so it always appears on top of it
+        if (owner != null) {
+            alert.initOwner(owner);
+        }
+
+        // Inject the RADIUS stylesheet and mark the dialog pane with our CSS class
+        DialogPane dialogPane = alert.getDialogPane();
+        URL stylesheet = HelloApplication.class.getResource("styles.css");
+        if (stylesheet != null) {
+            dialogPane.getStylesheets().add(stylesheet.toExternalForm());
+        }
+        dialogPane.getStyleClass().add("alert-dialog-pane");
+
+        alert.showAndWait();
+    }
+
+    /**
      * Transitions the application to a different scene by loading an FXML file.
      * This method uses the global width and height constants defined in {@link HelloApplication}.
      *
