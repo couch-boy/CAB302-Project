@@ -110,7 +110,7 @@
                     </MenuButton>
                 </HBox>
 
-                <!-- Opened report banner — visible only when an unsaved report exists.
+                <!-- Opened report banner - visible only when an unsaved report exists.
                      Tapping it re-opens the detail panel so the user can continue editing. -->
                 <VBox fx:id="openedSection"
                       visible="false" managed="false"
@@ -124,7 +124,7 @@
                         <Label text="●"
                                style="-fx-text-fill: #F59E0B; -fx-font-size: 16px;"/>
                         <VBox spacing="2">
-                            <Label text="Opened Report — Not Submitted"
+                            <Label text="Opened Report: Not Submitted"
                                    style="-fx-font-weight: bold; -fx-font-size: 13px;
                                           -fx-text-fill: #92400E;"/>
                             <Label fx:id="openedBannerSubtitle"
@@ -424,14 +424,16 @@
                                style="-fx-opacity: 1;"/>
                 </VBox>
 
-                <VBox spacing="6">
-                    <CheckBox fx:id="anonymousCheckBox" text="Submit Anonymously"/>
-                </VBox>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <CheckBox fx:id="anonymousCheckBox"/>
+                    <Label text="Submit Anonymously"
+                           style="-fx-font-size: 13px; -fx-text-fill: #2A364E;"/>
+                </HBox>
 
             </VBox>
         </ScrollPane>
 
-        <!-- Save Changes button strip — shown only when creating a new report -->
+        <!-- Save Changes button strip - shown only when creating a new report -->
         <VBox fx:id="saveChangesStrip"
               visible="false" managed="false"
               style="-fx-background-color: #FFFFFF;

@@ -125,7 +125,7 @@ public class CrimesController {
     private VBox mapPane;
     @FXML
     private WebView crimeMapView;
-    // Crime map search overlay fields — mirror the dashboard floating search bar
+    // Crime map search overlay fields - mirror the dashboard floating search bar
     @FXML private VBox crimeSearchOverlay;
     @FXML private TextField crimeSearchField;
     @FXML private Label crimeSearchStatusLabel;
@@ -134,7 +134,7 @@ public class CrimesController {
     @FXML private ComboBox<String> crimeCategoryFilter;
     @FXML private ComboBox<String> crimeDaysFilter;
     @FXML private ComboBox<String> crimeSeverityFilter;
-    // Inline-styled strips — needed for programmatic dark mode override
+    // Inline-styled strips - needed for programmatic dark mode override
     @FXML private HBox severityLegendStrip;
     @FXML private HBox sectionHeader;
     @FXML private Label recentLabel;
@@ -142,7 +142,7 @@ public class CrimesController {
     @FXML private HBox mapSeverityLegend;
     @FXML private VBox submitStripMap;
 
-    // Crime map search state — mirrors DashboardController pattern
+    // Crime map search state - mirrors DashboardController pattern
     private double[] crimeActiveBoundingBox = null;
     private String crimeActiveGeoJson = null;
     private boolean crimeFilterDrawerOpen = false;
@@ -453,8 +453,8 @@ public class CrimesController {
     }
 
     /**
-     * Applies all active crime map filters — suburb bounding box, crime type,
-     * severity and time range — and pushes the filtered JSON to the map.
+     * Applies all active crime map filters - suburb bounding box, crime type,
+     * severity and time range - and pushes the filtered JSON to the map.
      * Also passes the active GeoJSON polygon so JavaScript can perform a precise
      * point-in-polygon check inside the suburb boundary.
      */
@@ -472,7 +472,7 @@ public class CrimesController {
         List<CrimeRecord> filtered = new ArrayList<>();
         for (CrimeRecord c : allCrimes) {
 
-            // Suburb bounding box pre-filter — fast rectangle check before polygon test
+            // Suburb bounding box pre-filter - fast rectangle check before polygon test
             if (crimeActiveBoundingBox != null &&
                     !SuburbSearchService.isInBoundingBox(
                             c.getLatitude(), c.getLongitude(), crimeActiveBoundingBox)) continue;
@@ -481,7 +481,7 @@ public class CrimesController {
             if (selCat != null && !selCat.equals("All Types") &&
                     !c.getCategory().getName().equals(selCat)) continue;
 
-            // Severity filter — map display labels to the internal enum values
+            // Severity filter - map display labels to the internal enum values
             if (selSev != null && !selSev.equals("All Severities")) {
                 String severityLabel = switch (selSev) {
                     case "Severe"   -> "Critical";
@@ -761,9 +761,18 @@ public class CrimesController {
         // Open detail panel with the save button visible
         showDetailPanel(true);
 
-        // Display popup prompting user to fill in template details and save to store in database
+        // Open detail panel with the save button visible
+        showDetailPanel(true);
+
+        // Open detail panel with the save button visible
+        showDetailPanel(true);
+
+        // Show the alert over the panel - passing the owner stage ensures it
+        // renders on top of the JavaFX window rather than behind the detail panel
+        Stage stage = (Stage) hamburgerBtn.getScene().getWindow();
         UIUtils.showAlert(Alert.AlertType.INFORMATION, "New Report",
-                "A new blank report has been created. Fill in the details and click 'Save Changes'.");
+                "A new blank report has been created. Fill in the details and click 'Save Changes'.",
+                stage);
     }
 
     /**
@@ -799,7 +808,7 @@ public class CrimesController {
         }
         if (openedBannerSubtitle != null && hasPending) {
             openedBannerSubtitle.setText(
-                    pendingRecord.getCategory().toString() + " — Tap to continue editing and submit"
+                    pendingRecord.getCategory().toString() + " - Tap to continue editing and submit"
             );
         }
     }
@@ -853,7 +862,7 @@ public class CrimesController {
             crimeTable.getSelectionModel().select(selectedIndex);
         }
 
-        // Restore the banner — pending record lives only in memory so it
+        // Restore the banner - pending record lives only in memory so it
         // would be lost if refreshOpenedSection is not called after each refresh
         refreshOpenedSection();
     }
