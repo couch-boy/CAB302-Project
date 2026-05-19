@@ -474,6 +474,10 @@ public class CrimesController {
 
         List<CrimeRecord> filtered = new ArrayList<>();
         for (CrimeRecord c : allCrimes) {
+            CrimeCategory category = c.getCategory();
+            if (category == null) {
+                continue;
+            }
 
             // Suburb bounding box pre-filter - fast rectangle check before polygon test
             if (crimeActiveBoundingBox != null &&
@@ -675,7 +679,8 @@ public class CrimesController {
             sb.append("{")
                     .append("\"lat\":").append(c.getLatitude()).append(",")
                     .append("\"lon\":").append(c.getLongitude()).append(",")
-                    .append("\"severity\":\"").append(c.getCategory().getSeverity().toString().toUpperCase()).append("\"")
+                    .append("\"severity\":\"").append(c.getCategory() == null ? "LOW" : c.getCategory().getSeverity().toString().toUpperCase())
+                    .append("\"")
                     .append("}");
             if (i < crimes.size() - 1) sb.append(",");
         }
@@ -696,6 +701,15 @@ public class CrimesController {
 
         // Avoid writing null to database
         if (selected == null) return;
+
+        if (categoryComboBox.getValue() == null) {
+            UIUtils.showAlert(
+                    Alert.AlertType.WARNING,
+                    "Missing Category",
+                    "Please select a crime category before submitting."
+            );
+            return;
+        }
 
         try {
             // Create new CrimeRecord object using helper method to capture form data
@@ -763,7 +777,7 @@ public class CrimesController {
         isCreatingNew = true;
         pendingRecord = new CrimeRecord(
                 0,
-                CrimeCategory.OTHER,
+                null,
                 LocalDateTime.now(),
                 -27.4709,
                 153.0235,
@@ -844,8 +858,12 @@ public class CrimesController {
             openedSection.setManaged(hasPending);
         }
         if (openedBannerSubtitle != null && hasPending) {
+            String categoryText = pendingRecord.getCategory() == null
+                    ? "No category selected"
+                    : pendingRecord.getCategory().toString();
+
             openedBannerSubtitle.setText(
-                    pendingRecord.getCategory().toString() + " - Tap to continue editing and submit"
+                    categoryText + " - Tap to continue editing and submit"
             );
         }
     }
@@ -1007,6 +1025,9 @@ public class CrimesController {
      * Returns true if no specific severity filter is selected.
      */
     private boolean matchesSeverityFilter(CrimeRecord crime) {
+        if (crime.getCategory() == null) {
+            return severityAllItem.isSelected();
+        }
         if (severitySevereItem.isSelected()) {
             return crime.getCategory().getSeverity() == CrimeCategory.Severity.CRITICAL;
         }
@@ -1024,6 +1045,9 @@ public class CrimesController {
      * Returns true if no specific crime type filter is selected.
      */
     private boolean matchesCrimeTypeFilter(CrimeRecord crime) {
+        if (crime.getCategory() == null) {
+            return crimeTypeAllItem.isSelected();
+        }
         if (crimeTypeAssaultItem.isSelected()) {
             return crime.getCategory() == CrimeCategory.ASSAULT;
         }
@@ -1090,7 +1114,12 @@ public class CrimesController {
 
         // Check enum value for severity
         severityColumn.setCellValueFactory(cd ->
-                new SimpleStringProperty(cd.getValue().getCategory().getSeverity().toString()));
+        {
+            CrimeCategory category = cd.getValue().getCategory();
+
+            return new SimpleStringProperty(category == null ? "-" : category.getSeverity().toString()
+            );
+        });
 
         // Get formatted string from LocalDateTime timestamp
         timestampColumn.setCellValueFactory(cd ->
@@ -1216,18 +1245,26 @@ public class CrimesController {
 
                 getStyleClass().add("crime-list-cell-populated");
 
-                String dotColor = switch (crime.getCategory().getSeverity()) {
-                    case CRITICAL -> "#DC143C";
-                    case MEDIUM   -> "#FF8C00";
-                    default       -> "#FFD700";
-                };
+                CrimeCategory categoryValue = crime.getCategory();
+
+                String dotColor;
+
+                if (categoryValue == null) {
+                    dotColor = "#9CA3AF";
+                } else {
+                    dotColor = switch (categoryValue.getSeverity()) {
+                        case CRITICAL -> "#DC143C";
+                        case MEDIUM -> "#FF8C00";
+                        default -> "#FFD700";
+                    };
+                }
 
                 Label dot = new Label("●");
                 dot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 14px;");
 
                 boolean dark = UserSession.isDarkMode();
 
-                Label category = new Label(crime.getCategory().toString());
+                Label category = new Label(categoryValue == null ? "Select category" : categoryValue.toString());
                 category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: "
                         + (dark ? "#F9FAFB" : "#1A1A2E") + ";");
 
@@ -1331,7 +1368,7 @@ public class CrimesController {
         boolean isNew = (crime.getId() == 0);
 
         // Always populate read-only view labels
-        if (detailCategoryLabel != null) detailCategoryLabel.setText(crime.getCategory().toString());
+        if (detailCategoryLabel != null) detailCategoryLabel.setText(crime.getCategory() == null ? "No category selected" : crime.getCategory().toString());
         if (detailDateLabel != null) detailDateLabel.setText(UIUtils.formatLocalDateTime(crime.getTimestamp()));
         if (detailStatusLabel != null) detailStatusLabel.setText(crime.isActioned() ? "Police Dispatched" : "Pending");
 
@@ -1443,6 +1480,10 @@ public class CrimesController {
         System.out.println("Address entered: " + address);
         System.out.println("Resolved coordinates: " + lat + ", " + lon);
 
+        if (categoryComboBox.getValue() == null) {
+            throw new IllegalArgumentException("Crime category must be selected.");
+        }
+
         String description = descriptionAreaEdit != null ? descriptionAreaEdit.getText() : descriptionArea.getText();
 
         // Bundle everything into the updated object
@@ -1467,6 +1508,7 @@ public class CrimesController {
         if (detailStatusLabel   != null) detailStatusLabel.setText("-");
         updateSeverityDisplay(null);
         categoryComboBox.setValue(null);
+        categoryComboBox.setPromptText("Select category...");
         datePicker.setValue(null);
         hourBox.setValue(null);
         minuteBox.setValue(null);
