@@ -207,7 +207,7 @@
           pickOnBounds="false"
           visible="false" managed="false">
         <StackPane.margin>
-            <Insets top="60" right="12"/>
+            <Insets top="104" right="12"/>
         </StackPane.margin>
         <padding><Insets top="0" right="0" bottom="0" left="0"/></padding>
         <HBox spacing="6" alignment="CENTER_LEFT">
