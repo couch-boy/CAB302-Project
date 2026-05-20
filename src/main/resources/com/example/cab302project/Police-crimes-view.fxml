@@ -231,9 +231,9 @@
                  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0.3, 0, -4);">
 
         <!-- Drag handle + close button -->
-        <HBox alignment="CENTER" style="-fx-padding: 12 16 0 16;">
+        <HBox fx:id="detailDragRow" alignment="CENTER" style="-fx-padding: 12 16 0 16;">
             <Region HBox.hgrow="ALWAYS"/>
-            <Pane style="-fx-background-color: #D1D5DB;
+            <Pane fx:id="dragHandle" style="-fx-background-color: #D1D5DB;
                          -fx-background-radius: 4;
                          -fx-min-width: 40; -fx-max-width: 40;
                          -fx-min-height: 4; -fx-max-height: 4;"/>
@@ -247,7 +247,7 @@
         </HBox>
 
         <!-- Sheet title -->
-        <HBox alignment="CENTER_LEFT"
+        <HBox fx:id="detailTitleRow" alignment="CENTER_LEFT"
               style="-fx-padding: 10 20 12 20;
                      -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;">
             <Label text="Report Details" styleClass="auth-label"
@@ -315,7 +315,7 @@
                     <Label text="Reporter" styleClass="auth-label"/>
                     <TextField fx:id="reporterField" editable="false"
                                styleClass="auth-field"
-                               style="-fx-opacity: 1; -fx-background-color: #f4f4f4;"/>
+                               style="-fx-opacity: 1;"/>
                 </VBox>
 
                 <!-- Police-only: actioned status -->
@@ -330,7 +330,7 @@
         </ScrollPane>
 
         <!-- Police action buttons -->
-        <VBox spacing="8" style="-fx-padding: 12 20 16 20;
+        <VBox fx:id="actionButtonStrip" spacing="8" style="-fx-padding: 12 20 16 20;
                                   -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;">
             <Button fx:id="saveBtn"
                     text="Save Changes"

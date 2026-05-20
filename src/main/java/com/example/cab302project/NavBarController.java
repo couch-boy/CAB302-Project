@@ -103,15 +103,28 @@ public class NavBarController {
      * @param navBox the VBox containing the {@link FontIcon} and {@link Label} for this tab
      * @param label  the label to apply the active style class to
      */
+    /**
+     * Applies active styling to a single navigation tab.
+     *
+     * Updates the label CSS class to the active variant and colours the
+     * {@link FontIcon} to match the current theme: navy in light mode,
+     * light blue in dark mode (matching the CSS dark-mode active rule).
+     *
+     * @param navBox the VBox containing the {@link FontIcon} and {@link Label}
+     * @param label  the label to apply the active style class to
+     */
     private void setActive(VBox navBox, Label label) {
         label.getStyleClass().setAll("nav-btn-label-active");
 
-        // Find the FontIcon child and apply the active colour
+        // Use light blue in dark mode to match .dark-mode .nav-btn-icon-active,
+        // navy in light mode to match .nav-btn-icon-active
+        String activeColour = UserSession.isDarkMode() ? "#93C5FD" : "#2A364E";
+
         navBox.getChildren().stream()
                 .filter(node -> node instanceof FontIcon)
                 .map(node -> (FontIcon) node)
                 .findFirst()
                 .ifPresent(icon -> icon.setIconColor(
-                        javafx.scene.paint.Color.web("#2A364E")));
+                        javafx.scene.paint.Color.web(activeColour)));
     }
 }

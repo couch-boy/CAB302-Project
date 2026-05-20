@@ -91,6 +91,12 @@ public class PoliceCrimesController {
     @FXML private VBox detailPanel;
     @FXML private Pane detailBackdrop;
 
+    // Detail panel inline-styled elements needed for dark mode
+    @FXML private HBox detailDragRow;
+    @FXML private Pane dragHandle;
+    @FXML private HBox detailTitleRow;
+    @FXML private VBox actionButtonStrip;
+
     // Buttons for saving and marking crimes as dealt with
     @FXML private Button saveBtn, markDealtBtn;
 
@@ -347,6 +353,8 @@ public class PoliceCrimesController {
             if (crimeListView       != null) crimeListView.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
         }
         applyDarkFilterBar(dark);
+        // If the detail panel is currently open, restyle it too
+        if (detailPanel != null && detailPanel.isVisible()) applyDarkDetailPanel();
     }
 
     /**
@@ -449,8 +457,8 @@ public class PoliceCrimesController {
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
 
+        // Police see ALL crimes (both pending and actioned) so they can review the full database
         allCrimeRecords = dao.getAllCrimes().stream()
-                .filter(c -> !c.isActioned())
                 .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp())) // NEWEST FIRST
                 .toList();
 
@@ -718,7 +726,13 @@ public class PoliceCrimesController {
     /**
      * Displays the sliding detail panel for viewing/editing a crime.
      */
+    /**
+     * Slides the detail panel up from the bottom of the screen.
+     * Applies dark mode styles to all inline-styled panel elements before
+     * animating so they are correctly themed when they become visible.
+     */
     private void showDetailPanel() {
+        applyDarkDetailPanel();
         detailBackdrop.setVisible(true);
         detailBackdrop.setManaged(true);
         detailPanel.setVisible(true);
@@ -727,6 +741,47 @@ public class PoliceCrimesController {
         TranslateTransition slide = new TranslateTransition(Duration.millis(320), detailPanel);
         slide.setToY(0);
         slide.play();
+    }
+
+    /**
+     * Applies dark or light mode styling to every inline-styled node inside
+     * the detail panel. Called each time the panel opens so styles are correct
+     * regardless of when the user last toggled dark mode.
+     */
+    private void applyDarkDetailPanel() {
+        boolean dark = UserSession.isDarkMode();
+
+        String panelBg  = dark
+                ? "-fx-background-color: #1F2937; -fx-background-radius: 20 20 0 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0.3, 0, -4);"
+                : "-fx-background-color: #FFFFFF; -fx-background-radius: 20 20 0 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0.3, 0, -4);";
+        String dragRowBg = dark ? "-fx-padding: 12 16 0 16; -fx-background-color: #1F2937;" : "-fx-padding: 12 16 0 16;";
+        String dragColour = dark ? "#4B5563" : "#D1D5DB";
+        String titleBg  = dark
+                ? "-fx-padding: 10 20 12 20; -fx-border-color: #374151; -fx-border-width: 0 0 1 0;"
+                : "-fx-padding: 10 20 12 20; -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;";
+        String stripBg  = dark
+                ? "-fx-padding: 12 20 16 20; -fx-border-color: #374151; -fx-border-width: 1 0 0 0; -fx-background-color: #1F2937;"
+                : "-fx-padding: 12 20 16 20; -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;";
+        String valueLabelStyle = dark ? "-fx-font-weight: bold; -fx-text-fill: #E5E7EB;" : "-fx-font-weight: bold; -fx-text-fill: #2A364E;";
+        String statusLabelStyle = dark ? "-fx-font-weight: bold; -fx-text-fill: #E5E7EB;" : "-fx-font-weight: bold; -fx-text-fill: #2A364E;";
+        String fieldStyle = dark
+                ? "-fx-background-color: #374151; -fx-control-inner-background: #374151; -fx-text-fill: #F9FAFB; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;"
+                : "-fx-opacity: 1;";
+
+        if (detailPanel       != null) detailPanel.setStyle(panelBg);
+        if (detailDragRow     != null) detailDragRow.setStyle(dragRowBg);
+        if (dragHandle        != null) dragHandle.setStyle("-fx-background-color: " + dragColour + "; -fx-background-radius: 4; -fx-min-width: 40; -fx-max-width: 40; -fx-min-height: 4; -fx-max-height: 4;");
+        if (detailTitleRow    != null) detailTitleRow.setStyle(titleBg);
+        if (actionButtonStrip != null) actionButtonStrip.setStyle(stripBg);
+        if (idLabel           != null) idLabel.setStyle(valueLabelStyle);
+        if (actionedStatusLabel != null) actionedStatusLabel.setStyle(statusLabelStyle);
+        // Read-only reporter field uses the same dark styling as other read-only fields
+        if (reporterField     != null) reporterField.setStyle(dark
+                ? "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; -fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;"
+                : "-fx-opacity: 1;");
+        // Editable fields - only restyle if not overridden by setFormEditable
+        if (locationField     != null && locationField.isEditable()) locationField.setStyle(dark ? fieldStyle : "");
+        if (descriptionArea   != null && descriptionArea.isEditable()) descriptionArea.setStyle(dark ? fieldStyle : "");
     }
 
     /**
@@ -841,6 +896,8 @@ public class PoliceCrimesController {
 
         setFormEditable(true);
         isCreatingNew = (crime.getId() == 0);
+        // Re-apply dark panel styles after setText calls which can reset inline styles
+        applyDarkDetailPanel();
     }
 
     /**
@@ -907,6 +964,12 @@ public class PoliceCrimesController {
     /**
      * Enables or disables editing of form fields based on user interaction state.
      */
+    /**
+     * Enables or disables editing of form fields based on user interaction state.
+     * Field styles are applied respecting the current dark mode setting.
+     *
+     * @param editable true to allow editing, false to lock fields as read-only
+     */
     private void setFormEditable(boolean editable) {
         categoryComboBox.setDisable(!editable);
         datePicker.setDisable(!editable);
@@ -917,12 +980,19 @@ public class PoliceCrimesController {
         locationField.setEditable(editable);
         descriptionArea.setEditable(editable);
 
-        if (!editable) {
-            locationField.setStyle("-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;");
-            descriptionArea.setStyle("-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;");
+        boolean dark = UserSession.isDarkMode();
+        if (editable) {
+            String editStyle = dark
+                    ? "-fx-background-color: #374151; -fx-control-inner-background: #374151; -fx-text-fill: #F9FAFB; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8;"
+                    : "";
+            locationField.setStyle(editStyle);
+            descriptionArea.setStyle(editStyle);
         } else {
-            locationField.setStyle("");
-            descriptionArea.setStyle("");
+            String readStyle = dark
+                    ? "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; -fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;"
+                    : "-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;";
+            locationField.setStyle(readStyle);
+            descriptionArea.setStyle(readStyle);
         }
     }
 
