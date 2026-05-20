@@ -59,12 +59,11 @@ public class PoliceCrimesController {
     @FXML private RadioMenuItem statusAllItem, statusPendingItem, statusActionedItem;
     @FXML private RadioMenuItem dateAllItem, dateTodayItem, dateLast7DaysItem, dateLast30DaysItem;
 
-    // Inline-styled strips - needed for programmatic dark mode override
     @FXML private HBox severityLegendStrip;
     @FXML private HBox sectionHeader;
     @FXML private Label allReportsLabel;
 
-    // Filter bar outer container - needed for dark mode restyle
+    // Filter bar container
     @FXML private VBox filterBar;
 
     // Filter bar always-visible controls
@@ -91,7 +90,6 @@ public class PoliceCrimesController {
     @FXML private VBox detailPanel;
     @FXML private Pane detailBackdrop;
 
-    // Detail panel inline-styled elements needed for dark mode
     @FXML private HBox detailDragRow;
     @FXML private Pane dragHandle;
     @FXML private HBox detailTitleRow;
@@ -198,9 +196,7 @@ public class PoliceCrimesController {
             policeCrimesRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
             hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
-            // Apply dark mode to all inline-styled nodes now that the scene is attached
             applyDarkStrips();
-            // Refresh list cells so dark mode text colours apply on first load
             if (crimeListView != null) crimeListView.refresh();
         });
     }
@@ -681,10 +677,22 @@ public class PoliceCrimesController {
                 category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: "
                         + (dark ? "#F9FAFB" : "#1A1A2E") + ";");
 
-                String statusText = crime.isActioned() ? "Police Dispatched" : "Pending";
-                Label status = new Label(statusText);
-                status.setStyle("-fx-font-size: 11px; -fx-text-fill: "
-                        + (dark ? "#9CA3AF" : "#6B7280") + ";");
+                // Status badge: blue pill for dispatched, plain text for pending
+                Label status;
+                if (crime.isActioned()) {
+                    status = new Label("Police Dispatched");
+                    status.setStyle(dark
+                            ? "-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #93C5FD;"
+                              + " -fx-background-color: #1E3A5F; -fx-background-radius: 20;"
+                              + " -fx-padding: 2 8 2 8;"
+                            : "-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #1D4ED8;"
+                              + " -fx-background-color: #DBEAFE; -fx-background-radius: 20;"
+                              + " -fx-padding: 2 8 2 8;");
+                } else {
+                    status = new Label("Pending");
+                    status.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                            + (dark ? "#9CA3AF" : "#6B7280") + ";");
+                }
 
                 String locationText = addressCache.containsKey(crime.getId())
                         ? addressCache.get(crime.getId())
@@ -717,7 +725,6 @@ public class PoliceCrimesController {
             }
         });
 
-        // Inline style must match CSS .dark-mode .list-view background
         crimeListView.setStyle(UserSession.isDarkMode()
                 ? "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;"
                 : "-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
@@ -779,7 +786,6 @@ public class PoliceCrimesController {
         if (reporterField     != null) reporterField.setStyle(dark
                 ? "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; -fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;"
                 : "-fx-opacity: 1;");
-        // Editable fields - only restyle if not overridden by setFormEditable
         if (locationField     != null && locationField.isEditable()) locationField.setStyle(dark ? fieldStyle : "");
         if (descriptionArea   != null && descriptionArea.isEditable()) descriptionArea.setStyle(dark ? fieldStyle : "");
     }
@@ -896,7 +902,6 @@ public class PoliceCrimesController {
 
         setFormEditable(true);
         isCreatingNew = (crime.getId() == 0);
-        // Re-apply dark panel styles after setText calls which can reset inline styles
         applyDarkDetailPanel();
     }
 

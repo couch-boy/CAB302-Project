@@ -59,7 +59,7 @@ public class MyReportsController {
     @FXML private RadioMenuItem statusAllItem, statusPendingItem, statusActionedItem;
     @FXML private RadioMenuItem dateAllItem, dateTodayItem, dateLast7DaysItem, dateLast30DaysItem;
 
-    // Filter bar outer container - needed for dark mode restyle
+    // Filter bar container
     @FXML private VBox filterBar;
 
     // Filter bar always-visible controls
@@ -82,7 +82,6 @@ public class MyReportsController {
     // Tracks whether the advanced filter section is currently expanded
     private boolean advancedOpen = false;
 
-    // Inline-styled strips - needed for programmatic dark mode override
     @FXML private HBox severityLegendStrip;
     @FXML private HBox sectionHeader;
     @FXML private Label yourReportsLabel;
@@ -141,7 +140,6 @@ public class MyReportsController {
         // Preload addresses in background
         preloadAddresses(allMyReports);
 
-        // Apply dark mode to inline-styled nodes
         applyDarkStrips();
 
         // Wire hamburger menu after scene is attached
@@ -153,7 +151,7 @@ public class MyReportsController {
             myReportsRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
             hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
-            // Apply dark mode to filter bar now that all nodes are attached to the scene
+
             applyDarkFilterBar(UserSession.isDarkMode());
             if (crimeListView != null) crimeListView.refresh();
         });
@@ -345,7 +343,6 @@ public class MyReportsController {
         if (detailDescriptionArea != null) detailDescriptionArea.setStyle(darkReadOnly);
         if (crimeListView         != null) crimeListView.setStyle(listViewDark);
         if (openedListView        != null) openedListView.setStyle(darkStrip + " -fx-border-width: 0 0 1 0;");
-        // Brighten inline-styled value labels
         if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
         if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
         // Filter bar
@@ -563,10 +560,22 @@ public class MyReportsController {
                 category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: "
                         + (dark ? "#F9FAFB" : "#1A1A2E") + ";");
 
-                String statusText = crime.isActioned() ? "Police Dispatched" : "Pending";
-                Label status = new Label(statusText);
-                status.setStyle("-fx-font-size: 11px; -fx-text-fill: "
-                        + (dark ? "#9CA3AF" : "#6B7280") + ";");
+                // Status badge: blue pill for dispatched, plain text for pending
+                Label status;
+                if (crime.isActioned()) {
+                    status = new Label("Police Dispatched");
+                    status.setStyle(dark
+                            ? "-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #93C5FD;"
+                              + " -fx-background-color: #1E3A5F; -fx-background-radius: 20;"
+                              + " -fx-padding: 2 8 2 8;"
+                            : "-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #1D4ED8;"
+                              + " -fx-background-color: #DBEAFE; -fx-background-radius: 20;"
+                              + " -fx-padding: 2 8 2 8;");
+                } else {
+                    status = new Label("Pending");
+                    status.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                            + (dark ? "#9CA3AF" : "#6B7280") + ";");
+                }
 
                 // Show cached address if available, otherwise show raw coordinates
                 String locationText = addressCache.containsKey(crime.getId())
@@ -593,8 +602,6 @@ public class MyReportsController {
             }
         });
 
-        // Set list view background respecting dark mode - inline style must be set here
-        // because FXML transparent style would override the CSS .dark-mode .list-view rule
         crimeListView.setStyle(UserSession.isDarkMode()
                 ? "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;"
                 : "-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
@@ -733,7 +740,6 @@ public class MyReportsController {
         };
         detailSeverityLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: " + colour + ";");
 
-        // Re-apply dark mode field styles after setText() calls which can reset the skin
         if (UserSession.isDarkMode()) {
             String darkReadOnly = "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; "
                     + "-fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; "

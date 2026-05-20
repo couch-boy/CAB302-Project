@@ -115,7 +115,6 @@ public class CrimesController {
     @FXML private ComboBox<String> crimeDaysFilter;
     @FXML private ComboBox<String> crimeSeverityFilter;
 
-    // Inline-styled strips - needed for programmatic dark mode override
     @FXML private HBox severityLegendStrip;
     @FXML private HBox sectionHeader;
     @FXML private Label recentLabel;
@@ -123,7 +122,7 @@ public class CrimesController {
     @FXML private HBox mapSeverityLegend;
     @FXML private VBox submitStripMap;
 
-    // Filter bar outer container - needed for dark mode restyle
+    // Filter bar container
     @FXML private VBox filterBar;
 
     // Filter bar always-visible controls
@@ -246,7 +245,6 @@ public class CrimesController {
         // Set List tab as active by default
         setActiveTab(true);
 
-        // Apply dark mode to inline-styled nodes
         applyDarkStrips();
 
         // Wire hamburger menu after scene is attached
@@ -259,8 +257,6 @@ public class CrimesController {
             crimesRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
             hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
-            // Re-apply all dark mode overrides now the scene is attached so inline
-            // styles on the filter bar and list view are correctly themed on first load
             if (UserSession.isDarkMode()) applyDarkStrips();
             if (crimeListView != null) crimeListView.refresh();
         });
@@ -417,7 +413,6 @@ public class CrimesController {
         if (locationFieldEdit   != null) locationFieldEdit.setStyle(darkInput);
         if (descriptionAreaEdit != null) descriptionAreaEdit.setStyle(darkInput);
         if (reporterField       != null) reporterField.setStyle(darkReadOnly);
-        // Brighten inline-styled value labels in the read-only view
         String brightLabel = "-fx-font-weight: bold; -fx-text-fill: #E5E7EB;";
         String brightLabelNormal = "-fx-text-fill: #E5E7EB;";
         if (detailCategoryLabel != null) detailCategoryLabel.setStyle(brightLabel);
@@ -1349,7 +1344,6 @@ public class CrimesController {
 
         if (severityDot  != null) severityDot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 13px;");
         if (severityLabel != null) { severityLabel.setText(severityText); severityLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: " + dotColor + ";"); }
-        // Also update edit panel severity indicators
         if (severityDotEdit  != null) severityDotEdit.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 13px;");
         if (severityLabelEdit != null) { severityLabelEdit.setText(severityText); severityLabelEdit.setStyle("-fx-font-weight: bold; -fx-text-fill: " + dotColor + ";"); }
     }
@@ -1466,8 +1460,6 @@ public class CrimesController {
             saveChangesStrip.setManaged(canSave);
         }
 
-        // Re-apply dark mode field styles each time the panel opens,
-        // since setText() calls reset the skin and can clear inline styles.
         if (UserSession.isDarkMode()) {
             String darkReadOnly = "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; "
                     + "-fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; "
