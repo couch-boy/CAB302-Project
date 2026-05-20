@@ -944,10 +944,14 @@ public class AppTest {
     /*
     MAAN APP TESTING START
      */
+    // Helper: creates a simple CrimeRecord for hotspot and AI summary tests.
+    // Keeps the test setup short so each test can focus on one expected behaviour.
     private CrimeRecord maanCrime(int id, CrimeCategory category, double latitude, double longitude) {
         return new CrimeRecord(id, category, LocalDateTime.now(), latitude, longitude, "Maan test crime", "maan", false);
     }
 
+    // Helper: calls the private distanceKm() method so its calculation can still be tested.
+    // Reflection is used here because the production method is intentionally kept private in the controller.
     private double invokeDistanceKm(double lat1, double lon1, double lat2, double lon2) throws Exception {
         HotspotsController controller = new HotspotsController();
         var method = HotspotsController.class.getDeclaredMethod("distanceKm", double.class, double.class, double.class, double.class);
@@ -955,6 +959,7 @@ public class AppTest {
         return (double) method.invoke(controller, lat1, lon1, lat2, lon2);
     }
 
+    // Helper: calls the private buildHotspots() method to verify clustering without opening the JavaFX UI.
     private List<Hotspot> invokeBuildHotspots(List<CrimeRecord> crimes, double radiusKm) throws Exception {
         HotspotsController controller = new HotspotsController();
         var method = HotspotsController.class.getDeclaredMethod("buildHotspots", List.class, double.class);
@@ -962,13 +967,28 @@ public class AppTest {
         return (List<Hotspot>) method.invoke(controller, crimes, radiusKm);
     }
 
+    // Helper: calls the private JSON builder used to pass hotspot data to the map.
     private String invokeBuildHotspotJson(List<Hotspot> hotspots) throws Exception {
         HotspotsController controller = new HotspotsController();
         var method = HotspotsController.class.getDeclaredMethod("buildHotspotJson", List.class);
         method.setAccessible(true);
         return (String) method.invoke(controller, hotspots);
     }
-
+    // Helper: builds the AI summary prompt without requiring Ollama to be running.
+    // This lets the tests check wording, safety rules, and coordinate hiding locally.
+    private String invokeAiSummaryPrompt(String suburbName, List<CrimeRecord> crimes) throws Exception {
+        PoliceDashboardController controller = new PoliceDashboardController();
+        var method = PoliceDashboardController.class.getDeclaredMethod("buildCrimeSummaryPrompt", String.class, List.class);
+        method.setAccessible(true);
+        return (String) method.invoke(controller, suburbName, crimes);
+    }
+    // Helper: calls the private suburb-name formatter used before the suburb name is sent to Ollama.
+    private String invokeSimpleSuburbName(String suburbName) throws Exception {
+        PoliceDashboardController controller = new PoliceDashboardController();
+        var method = PoliceDashboardController.class.getDeclaredMethod("getSimpleSuburbName", String.class);
+        method.setAccessible(true);
+        return (String) method.invoke(controller, suburbName);
+    }
     // Test 1: distanceKm returns 0 for identical coordinates.
     @Test
     void testHotspotDistanceKmSameLocationIsZero() throws Exception {
@@ -1168,6 +1188,61 @@ public class AppTest {
         String json = invokeBuildHotspotJson(List.of(new Hotspot(-27.4709, 153.0235, 3)));
 
         assertTrue(json.contains("\"count\":3"));
+    }
+
+    // Test 21: AI suburb names are formatted cleanly for summaries.
+    // Ensures user-entered or Nominatim suburb names are title-cased before they appear in the AI prompt.
+    @Test
+    void testAiSummaryFormatsSuburbNameTitleCase() throws Exception {
+        assertEquals("Brisbane City", invokeSimpleSuburbName("brisbane City, Brisbane, Queensland"));
+        assertEquals("Kangaroo Point", invokeSimpleSuburbName("kangaroo point"));
+    }
+
+    // Test 22: AI summary prompt requests three short bullet points.
+    // This protects the user-facing summary from becoming one long paragraph in the popup.
+    @Test
+    void testAiSummaryPromptRequestsThreeShortBullets() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235),
+                maanCrime(2, CrimeCategory.ROBBERY, -27.4710, 153.0236)
+        );
+
+        String prompt = invokeAiSummaryPrompt("brisbane city", crimes);
+
+        assertTrue(prompt.contains("exactly 3 short bullet points"));
+        assertTrue(prompt.contains("under 90 words"));
+        assertTrue(prompt.contains("The displayed records show"));
+    }
+
+    // Test 23: AI summary prompt avoids exposing raw coordinates.
+    // CrimeRecord currently stores lat/lon only, so the prompt should use suburb-level wording instead.
+    @Test
+    void testAiSummaryPromptDoesNotIncludeRawCoordinates() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235),
+                maanCrime(2, CrimeCategory.ROBBERY, -27.4710, 153.0236)
+        );
+
+        String prompt = invokeAiSummaryPrompt("Kangaroo Point", crimes);
+
+        assertFalse(prompt.contains("-27.4709"));
+        assertFalse(prompt.contains("153.0235"));
+        assertTrue(prompt.contains("location: within Kangaroo Point"));
+    }
+
+    // Test 24: AI summary prompt includes safe wording rules.
+    // Ensures the local model is explicitly told not to make predictions or label a suburb as dangerous.
+    @Test
+    void testAiSummaryPromptIncludesSafetyRules() throws Exception {
+        List<CrimeRecord> crimes = List.of(
+                maanCrime(1, CrimeCategory.ASSAULT, -27.4709, 153.0235)
+        );
+
+        String prompt = invokeAiSummaryPrompt("Brisbane City", crimes);
+
+        assertTrue(prompt.contains("Do not call the suburb dangerous"));
+        assertTrue(prompt.contains("Do not make predictions"));
+        assertTrue(prompt.contains("Base your answer only on the records below"));
     }
      /*
     MAAN APP TESTING END

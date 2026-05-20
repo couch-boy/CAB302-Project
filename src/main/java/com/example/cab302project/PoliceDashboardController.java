@@ -397,11 +397,13 @@ public class PoliceDashboardController {
             return;
         }
 
+        // Give the officer immediate feedback while the local Ollama request is running.
         showAiSummaryPopup("Generating AI summary...");
 
         Thread summaryThread = new Thread(() -> {
             try {
                 String prompt = buildCrimeSummaryPrompt(suburbName, displayedCrimes);
+                // OllamaService sends the prompt to http://localhost:11434 using the llama3.2 model.
                 String summary = ollamaService.generateSummary(prompt);
 
                 if (summary == null || summary.isBlank()) {

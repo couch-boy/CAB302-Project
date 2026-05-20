@@ -39,6 +39,7 @@ public class OllamaService {
         requestJson.put("prompt", prompt);
         requestJson.put("stream", false);
 
+        // The request stays local to Ollama; no external AI API or API key is required.
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(OLLAMA_URL))
                 .timeout(Duration.ofSeconds(30))
@@ -53,6 +54,7 @@ public class OllamaService {
             throw new IOException("Ollama returned status " + response.statusCode());
         }
 
+        // With stream=false, Ollama returns the generated text in the response JSON field.
         JSONObject responseJson = new JSONObject(response.body());
         return responseJson.optString("response", "").trim();
     }
