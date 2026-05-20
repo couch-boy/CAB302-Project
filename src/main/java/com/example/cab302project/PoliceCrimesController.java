@@ -44,16 +44,58 @@ public class PoliceCrimesController {
 
     // Styled list view used for UI display (linked to table)
     @FXML private ListView<CrimeRecord> crimeListView;
+
+    /**
+     * Hidden MenuButton kept in FXML so updateFilterButtonText() does not
+     * throw NullPointerException. The visible filter UI is the inline filter bar.
+     */
     @FXML private MenuButton filterMenuButton;
+
+    // Hidden RadioMenuItems backing the filter bar chips for severity, status and date.
+    // Crime type filtering is handled directly via filterCrimeTypeCombo - see matchesCrimeTypeFilter().
     @FXML private RadioMenuItem severityAllItem, severitySevereItem, severityModerateItem, severityLowItem;
     @FXML private RadioMenuItem crimeTypeAllItem, crimeTypeAssaultItem, crimeTypeTrespassingItem,
             crimeTypeDomesticAbuseItem, crimeTypeHomicideItem;
     @FXML private RadioMenuItem statusAllItem, statusPendingItem, statusActionedItem;
     @FXML private RadioMenuItem dateAllItem, dateTodayItem, dateLast7DaysItem, dateLast30DaysItem;
 
+    // Inline-styled strips - needed for programmatic dark mode override
+    @FXML private HBox severityLegendStrip;
+    @FXML private HBox sectionHeader;
+    @FXML private Label allReportsLabel;
+
+    // Filter bar outer container - needed for dark mode restyle
+    @FXML private VBox filterBar;
+
+    // Filter bar always-visible controls
+    @FXML private ToggleButton chipSevAll;
+    @FXML private ToggleButton chipSevLow;
+    @FXML private ToggleButton chipSevModerate;
+    @FXML private ToggleButton chipSevSevere;
+    @FXML private ComboBox<String> filterCrimeTypeCombo;
+
+    // Expandable advanced filter section and its toggle button
+    @FXML private VBox filterBarAdvanced;
+    @FXML private Button advancedToggleBtn;
+
+    // Advanced filter controls (inside the collapsible section)
+    @FXML private ToggleButton chipStatusAll;
+    @FXML private ToggleButton chipStatusPending;
+    @FXML private ToggleButton chipStatusActioned;
+    @FXML private ComboBox<String> filterDateCombo;
+
+    // Tracks whether the advanced filter section is currently expanded
+    private boolean advancedOpen = false;
+
     // Detail panel and backdrop for viewing/editing a crime
     @FXML private VBox detailPanel;
     @FXML private Pane detailBackdrop;
+
+    // Detail panel inline-styled elements needed for dark mode
+    @FXML private HBox detailDragRow;
+    @FXML private Pane dragHandle;
+    @FXML private HBox detailTitleRow;
+    @FXML private VBox actionButtonStrip;
 
     // Buttons for saving and marking crimes as dealt with
     @FXML private Button saveBtn, markDealtBtn;
@@ -97,7 +139,6 @@ public class PoliceCrimesController {
 
     // Constructor initializes DAO reference
     public PoliceCrimesController() {
-
         //get main application dao instance
         this.dao = HelloApplication.DATABASE;
     }
@@ -121,6 +162,7 @@ public class PoliceCrimesController {
         // Set dropdown values
         categoryComboBox.getItems().setAll(CrimeCategory.values());
         setupFilters();
+        initFilterBar();
 
         // Initialize Listener -> Auto-update severity dot colour and label when category changes.
         // This gives the officer immediate visual feedback on the severity tier as they pick a crime type.
@@ -143,7 +185,7 @@ public class PoliceCrimesController {
         updateSelectionAfterChange();
         // Wire up styled ListView
         setupListView();
-        //  Initialize address autocomplete suggestions for location input
+        // Initialize address autocomplete suggestions for location input
         setupAddressAutocomplete();
 
         // Wire police hamburger menu after scene is attached
@@ -155,9 +197,206 @@ public class PoliceCrimesController {
             hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
             policeCrimesRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+            hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
+            // Apply dark mode to all inline-styled nodes now that the scene is attached
+            applyDarkStrips();
+            // Refresh list cells so dark mode text colours apply on first load
+            if (crimeListView != null) crimeListView.refresh();
+        });
+    }
+
+    /**
+     * Initialises the compact filter bar above the police crime list.
+     *
+     * The always-visible row contains severity chips and the crime type dropdown.
+     * Status and date range live in the collapsible advanced section.
+     *
+     * Crime type filtering is performed directly against the category name so that
+     * all 21 crime types work, not just the four covered by the legacy RadioMenuItems.
+     */
+    private void initFilterBar() {
+        // Severity chip group
+        ToggleGroup sevGroup = new ToggleGroup();
+        chipSevAll.setToggleGroup(sevGroup);
+        chipSevLow.setToggleGroup(sevGroup);
+        chipSevModerate.setToggleGroup(sevGroup);
+        chipSevSevere.setToggleGroup(sevGroup);
+        chipSevAll.setSelected(true);
+
+        sevGroup.selectedToggleProperty().addListener((obs, oldT, newT) -> {
+            if (newT == null) { chipSevAll.setSelected(true); return; }
+            styleChips(sevGroup);
+            if      (newT == chipSevAll)      severityAllItem.setSelected(true);
+            else if (newT == chipSevLow)      severityLowItem.setSelected(true);
+            else if (newT == chipSevModerate) severityModerateItem.setSelected(true);
+            else if (newT == chipSevSevere)   severitySevereItem.setSelected(true);
+            onFilterChanged();
         });
 
+        // Status chip group - police view includes Actioned (inside advanced section)
+        ToggleGroup statGroup = new ToggleGroup();
+        chipStatusAll.setToggleGroup(statGroup);
+        chipStatusPending.setToggleGroup(statGroup);
+        chipStatusActioned.setToggleGroup(statGroup);
+        chipStatusAll.setSelected(true);
 
+        statGroup.selectedToggleProperty().addListener((obs, oldT, newT) -> {
+            if (newT == null) { chipStatusAll.setSelected(true); return; }
+            styleChips(statGroup);
+            if      (newT == chipStatusAll)      statusAllItem.setSelected(true);
+            else if (newT == chipStatusPending)  statusPendingItem.setSelected(true);
+            else if (newT == chipStatusActioned) statusActionedItem.setSelected(true);
+            onFilterChanged();
+        });
+
+        // Crime type ComboBox - populated with every CrimeCategory value.
+        // Filtering is done directly in matchesCrimeTypeFilter() against the
+        // selected string, bypassing the legacy RadioMenuItem bridge entirely.
+        filterCrimeTypeCombo.getItems().add("All");
+        for (CrimeCategory cat : CrimeCategory.values()) {
+            filterCrimeTypeCombo.getItems().add(cat.getName());
+        }
+        filterCrimeTypeCombo.setValue("All");
+        filterCrimeTypeCombo.valueProperty().addListener((obs, oldV, newV) -> {
+            if (newV != null) onFilterChanged();
+        });
+
+        // Date range ComboBox (inside the advanced section)
+        filterDateCombo.getItems().addAll("All", "Today", "Last 7 Days", "Last 30 Days");
+        filterDateCombo.setValue("All");
+        filterDateCombo.valueProperty().addListener((obs, oldV, newV) -> {
+            if (newV == null) return;
+            switch (newV) {
+                case "Today"        -> dateTodayItem.setSelected(true);
+                case "Last 7 Days"  -> dateLast7DaysItem.setSelected(true);
+                case "Last 30 Days" -> dateLast30DaysItem.setSelected(true);
+                default             -> dateAllItem.setSelected(true);
+            }
+            onFilterChanged();
+        });
+
+        // Advanced section starts collapsed
+        if (filterBarAdvanced != null) {
+            filterBarAdvanced.setVisible(false);
+            filterBarAdvanced.setManaged(false);
+        }
+
+        // Apply initial chip styling
+        styleChips(sevGroup);
+        styleChips(statGroup);
+    }
+
+    /**
+     * Toggles the advanced filter section open or closed and updates the button label.
+     * Called by the "More" / "Less" button in the filter bar.
+     */
+    @FXML
+    public void onAdvancedToggle() {
+        advancedOpen = !advancedOpen;
+        if (filterBarAdvanced != null) {
+            filterBarAdvanced.setVisible(advancedOpen);
+            filterBarAdvanced.setManaged(advancedOpen);
+        }
+        if (advancedToggleBtn != null) {
+            advancedToggleBtn.setText(advancedOpen ? "Less \u25B4" : "More \u25BE");
+        }
+    }
+
+    /**
+     * Updates the visual style of every {@link ToggleButton} in the given group.
+     * The selected chip is filled dark; unselected chips use the muted pill style.
+     *
+     * @param group the {@link ToggleGroup} whose members should be restyled
+     */
+    /**
+     * Restyles all chips in the given group to reflect their selected state,
+     * respecting the current dark mode setting.
+     *
+     * @param group the {@link ToggleGroup} whose chip buttons should be restyled
+     */
+    private void styleChips(ToggleGroup group) {
+        boolean dark = UserSession.isDarkMode();
+        String selected = dark
+                ? "-fx-background-color: #4B5563; -fx-text-fill: #F9FAFB; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;"
+                : "-fx-background-color: #2A364E; -fx-text-fill: #FFFFFF; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;";
+        String unselected = dark
+                ? "-fx-background-color: #374151; -fx-text-fill: #D1D5DB; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;"
+                : "-fx-background-color: #F3F4F6; -fx-text-fill: #374151; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;";
+        for (Toggle t : group.getToggles()) {
+            if (t instanceof ToggleButton btn) {
+                btn.setStyle(btn.isSelected() ? selected : unselected);
+            }
+        }
+    }
+
+    /**
+     * Applies dark mode overrides to all inline-styled nodes on the police crimes screen.
+     * Called on first load and whenever dark mode is toggled.
+     */
+    private void applyDarkStrips() {
+        boolean dark = UserSession.isDarkMode();
+        String darkStrip   = "-fx-background-color: #1F2937; -fx-border-color: #374151;";
+        String darkSection = "-fx-padding: 12 20 8 20; -fx-background-color: #1F2937;";
+        String listViewDark = "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;";
+        String lightStrip   = "-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB;";
+        String lightSection = "-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;";
+
+        if (dark) {
+            if (severityLegendStrip != null) severityLegendStrip.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+            if (sectionHeader       != null) sectionHeader.setStyle(darkSection);
+            if (allReportsLabel     != null) allReportsLabel.setStyle("-fx-text-fill: #F9FAFB; -fx-font-size: 13px; -fx-font-weight: bold;");
+            if (crimeListView       != null) crimeListView.setStyle(listViewDark);
+        } else {
+            if (severityLegendStrip != null) severityLegendStrip.setStyle(lightStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+            if (sectionHeader       != null) sectionHeader.setStyle(lightSection);
+            if (allReportsLabel     != null) allReportsLabel.setStyle("-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;");
+            if (crimeListView       != null) crimeListView.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
+        }
+        applyDarkFilterBar(dark);
+        // If the detail panel is currently open, restyle it too
+        if (detailPanel != null && detailPanel.isVisible()) applyDarkDetailPanel();
+    }
+
+    /**
+     * Called by the hamburger menu when the user toggles dark mode at runtime.
+     * Re-applies all dark or light overrides and refreshes the list cells.
+     */
+    private void refreshDarkMode() {
+        applyDarkStrips();
+        if (crimeListView != null) crimeListView.refresh();
+    }
+
+    /**
+     * Applies or removes dark mode styling on the inline-styled filter bar controls.
+     * Called from initialize() after initFilterBar(), so the bar is correctly themed
+     * when the screen first opens in dark mode.
+     *
+     * @param dark true to apply dark styles, false to restore light styles
+     */
+    private void applyDarkFilterBar(boolean dark) {
+        String filterBarBg = dark
+                ? "-fx-background-color: #1F2937; -fx-border-color: #374151; -fx-border-width: 0 0 1 0; -fx-padding: 8 16 8 16;"
+                : "-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0; -fx-padding: 8 16 8 16;";
+        String chipSel = dark
+                ? "-fx-background-color: #4B5563; -fx-text-fill: #F9FAFB; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;"
+                : "-fx-background-color: #2A364E; -fx-text-fill: #FFFFFF; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;";
+        String chipUnsel = dark
+                ? "-fx-background-color: #374151; -fx-text-fill: #D1D5DB; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;"
+                : "-fx-background-color: #F3F4F6; -fx-text-fill: #374151; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;";
+        String comboDark  = "-fx-background-color: #374151; -fx-control-inner-background: #374151; -fx-text-fill: #F9FAFB; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 11px;";
+        String comboLight = "-fx-background-color: #F3F4F6; -fx-border-color: #E5E7EB; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 11px;";
+        String btnDark  = "-fx-background-color: #374151; -fx-text-fill: #D1D5DB; -fx-font-size: 11px; -fx-cursor: hand; -fx-border-width: 0; -fx-background-radius: 20; -fx-padding: 5 12 5 12;";
+        String btnLight = "-fx-background-color: #F3F4F6; -fx-text-fill: #6B7280; -fx-font-size: 11px; -fx-cursor: hand; -fx-border-width: 0; -fx-background-radius: 20; -fx-padding: 5 12 5 12;";
+
+        if (filterBar            != null) filterBar.setStyle(filterBarBg);
+        if (advancedToggleBtn    != null) advancedToggleBtn.setStyle(dark ? btnDark : btnLight);
+        if (filterCrimeTypeCombo != null) filterCrimeTypeCombo.setStyle(dark ? comboDark : comboLight);
+        if (filterDateCombo      != null) filterDateCombo.setStyle(dark ? comboDark : comboLight);
+
+        for (ToggleButton btn : new ToggleButton[]{chipSevAll, chipSevLow, chipSevModerate, chipSevSevere,
+                chipStatusAll, chipStatusPending, chipStatusActioned}) {
+            if (btn != null) btn.setStyle(btn.isSelected() ? chipSel : chipUnsel);
+        }
     }
 
     /**
@@ -203,7 +442,6 @@ public class PoliceCrimesController {
         }
     }
 
-
     /**
      * Return to the previous menu (dashboard)
      */
@@ -219,8 +457,8 @@ public class PoliceCrimesController {
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
 
+        // Police see ALL crimes (both pending and actioned) so they can review the full database
         allCrimeRecords = dao.getAllCrimes().stream()
-                .filter(c -> !c.isActioned())
                 .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp())) // NEWEST FIRST
                 .toList();
 
@@ -265,7 +503,8 @@ public class PoliceCrimesController {
     }
 
     /**
-     * Groups filter menu options so one item can be active in each section.
+     * Groups the hidden filter RadioMenuItem options so one item can be active in each section.
+     * These are still needed because the severity and date filter logic reads from them.
      */
     private void setupFilters() {
         ToggleGroup severityGroup = new ToggleGroup();
@@ -294,7 +533,7 @@ public class PoliceCrimesController {
     }
 
     /**
-     * Handles changes from any filter menu option.
+     * Handles changes from any filter control.
      */
     @FXML
     public void onFilterChanged() {
@@ -332,20 +571,17 @@ public class PoliceCrimesController {
         return true;
     }
 
+    /**
+     * Checks whether a crime record matches the selected crime type in filterCrimeTypeCombo.
+     * Filters directly against the category name so all 21 crime types work correctly.
+     * Returns true when "All" is selected or the category is null.
+     */
     private boolean matchesCrimeTypeFilter(CrimeRecord crime) {
-        if (crimeTypeAssaultItem.isSelected()) {
-            return crime.getCategory() == CrimeCategory.ASSAULT;
-        }
-        if (crimeTypeTrespassingItem.isSelected()) {
-            return crime.getCategory() == CrimeCategory.TRESPASSING;
-        }
-        if (crimeTypeDomesticAbuseItem.isSelected()) {
-            return crime.getCategory() == CrimeCategory.DOMESTICABUSE;
-        }
-        if (crimeTypeHomicideItem.isSelected()) {
-            return crime.getCategory() == CrimeCategory.HOMICIDE;
-        }
-        return true;
+        if (filterCrimeTypeCombo == null) return true;
+        String selected = filterCrimeTypeCombo.getValue();
+        if (selected == null || selected.equals("All")) return true;
+        if (crime.getCategory() == null) return false;
+        return crime.getCategory().getName().equals(selected);
     }
 
     private boolean matchesStatusFilter(CrimeRecord crime) {
@@ -377,7 +613,8 @@ public class PoliceCrimesController {
     private void updateFilterButtonText() {
         int activeFilters = 0;
         if (!severityAllItem.isSelected()) activeFilters++;
-        if (!crimeTypeAllItem.isSelected()) activeFilters++;
+        String crimeType = filterCrimeTypeCombo != null ? filterCrimeTypeCombo.getValue() : "All";
+        if (crimeType != null && !crimeType.equals("All")) activeFilters++;
         if (!statusAllItem.isSelected()) activeFilters++;
         if (!dateAllItem.isSelected()) activeFilters++;
 
@@ -438,23 +675,29 @@ public class PoliceCrimesController {
                 Label dot = new Label("●");
                 dot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 14px;");
 
+                boolean dark = UserSession.isDarkMode();
+
                 Label category = new Label(crime.getCategory().toString());
-                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1A1A2E;");
+                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: "
+                        + (dark ? "#F9FAFB" : "#1A1A2E") + ";");
 
                 String statusText = crime.isActioned() ? "Police Dispatched" : "Pending";
                 Label status = new Label(statusText);
-                status.setStyle("-fx-font-size: 11px; -fx-text-fill: #6B7280;");
+                status.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#9CA3AF" : "#6B7280") + ";");
 
                 String locationText = addressCache.containsKey(crime.getId())
                         ? addressCache.get(crime.getId())
                         : String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
                 Label location = new Label(locationText);
-                location.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+                location.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#6B7280" : "#9CA3AF") + ";");
 
                 VBox textBlock = new VBox(2, category, status, location);
 
                 Label time = new Label(getRelativeTime(crime.getTimestamp()));
-                time.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+                time.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#6B7280" : "#9CA3AF") + ";");
 
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -474,14 +717,22 @@ public class PoliceCrimesController {
             }
         });
 
-        crimeListView.setStyle("-fx-background-color: transparent; " +
-                "-fx-background: transparent; -fx-border-width: 0;");
+        // Inline style must match CSS .dark-mode .list-view background
+        crimeListView.setStyle(UserSession.isDarkMode()
+                ? "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;"
+                : "-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
     }
 
     /**
      * Displays the sliding detail panel for viewing/editing a crime.
      */
+    /**
+     * Slides the detail panel up from the bottom of the screen.
+     * Applies dark mode styles to all inline-styled panel elements before
+     * animating so they are correctly themed when they become visible.
+     */
     private void showDetailPanel() {
+        applyDarkDetailPanel();
         detailBackdrop.setVisible(true);
         detailBackdrop.setManaged(true);
         detailPanel.setVisible(true);
@@ -490,6 +741,47 @@ public class PoliceCrimesController {
         TranslateTransition slide = new TranslateTransition(Duration.millis(320), detailPanel);
         slide.setToY(0);
         slide.play();
+    }
+
+    /**
+     * Applies dark or light mode styling to every inline-styled node inside
+     * the detail panel. Called each time the panel opens so styles are correct
+     * regardless of when the user last toggled dark mode.
+     */
+    private void applyDarkDetailPanel() {
+        boolean dark = UserSession.isDarkMode();
+
+        String panelBg  = dark
+                ? "-fx-background-color: #1F2937; -fx-background-radius: 20 20 0 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0.3, 0, -4);"
+                : "-fx-background-color: #FFFFFF; -fx-background-radius: 20 20 0 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0.3, 0, -4);";
+        String dragRowBg = dark ? "-fx-padding: 12 16 0 16; -fx-background-color: #1F2937;" : "-fx-padding: 12 16 0 16;";
+        String dragColour = dark ? "#4B5563" : "#D1D5DB";
+        String titleBg  = dark
+                ? "-fx-padding: 10 20 12 20; -fx-border-color: #374151; -fx-border-width: 0 0 1 0;"
+                : "-fx-padding: 10 20 12 20; -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;";
+        String stripBg  = dark
+                ? "-fx-padding: 12 20 16 20; -fx-border-color: #374151; -fx-border-width: 1 0 0 0; -fx-background-color: #1F2937;"
+                : "-fx-padding: 12 20 16 20; -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;";
+        String valueLabelStyle = dark ? "-fx-font-weight: bold; -fx-text-fill: #E5E7EB;" : "-fx-font-weight: bold; -fx-text-fill: #2A364E;";
+        String statusLabelStyle = dark ? "-fx-font-weight: bold; -fx-text-fill: #E5E7EB;" : "-fx-font-weight: bold; -fx-text-fill: #2A364E;";
+        String fieldStyle = dark
+                ? "-fx-background-color: #374151; -fx-control-inner-background: #374151; -fx-text-fill: #F9FAFB; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;"
+                : "-fx-opacity: 1;";
+
+        if (detailPanel       != null) detailPanel.setStyle(panelBg);
+        if (detailDragRow     != null) detailDragRow.setStyle(dragRowBg);
+        if (dragHandle        != null) dragHandle.setStyle("-fx-background-color: " + dragColour + "; -fx-background-radius: 4; -fx-min-width: 40; -fx-max-width: 40; -fx-min-height: 4; -fx-max-height: 4;");
+        if (detailTitleRow    != null) detailTitleRow.setStyle(titleBg);
+        if (actionButtonStrip != null) actionButtonStrip.setStyle(stripBg);
+        if (idLabel           != null) idLabel.setStyle(valueLabelStyle);
+        if (actionedStatusLabel != null) actionedStatusLabel.setStyle(statusLabelStyle);
+        // Read-only reporter field uses the same dark styling as other read-only fields
+        if (reporterField     != null) reporterField.setStyle(dark
+                ? "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; -fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;"
+                : "-fx-opacity: 1;");
+        // Editable fields - only restyle if not overridden by setFormEditable
+        if (locationField     != null && locationField.isEditable()) locationField.setStyle(dark ? fieldStyle : "");
+        if (descriptionArea   != null && descriptionArea.isEditable()) descriptionArea.setStyle(dark ? fieldStyle : "");
     }
 
     /**
@@ -520,7 +812,6 @@ public class PoliceCrimesController {
         return (hrs / 24) + "d ago";
     }
 
-
     /**
      * Configures table columns to map to CrimeRecord properties.
      */
@@ -540,7 +831,6 @@ public class PoliceCrimesController {
                 new SimpleStringProperty(cd.getValue().isActioned() ? "Police Dispatched" : "Pending")
         );
     }
-
 
     /**
      * Initializes dropdown values for time selection inputs.
@@ -606,6 +896,8 @@ public class PoliceCrimesController {
 
         setFormEditable(true);
         isCreatingNew = (crime.getId() == 0);
+        // Re-apply dark panel styles after setText calls which can reset inline styles
+        applyDarkDetailPanel();
     }
 
     /**
@@ -646,9 +938,8 @@ public class PoliceCrimesController {
                 lat,
                 lon,
                 descriptionArea.getText(),
-                original.getReporter() ,
-                original.isActioned()// Preserve original raw reporter data (username/null)
-
+                original.getReporter(),
+                original.isActioned() // Preserve original raw reporter data (username/null)
         );
     }
 
@@ -673,6 +964,12 @@ public class PoliceCrimesController {
     /**
      * Enables or disables editing of form fields based on user interaction state.
      */
+    /**
+     * Enables or disables editing of form fields based on user interaction state.
+     * Field styles are applied respecting the current dark mode setting.
+     *
+     * @param editable true to allow editing, false to lock fields as read-only
+     */
     private void setFormEditable(boolean editable) {
         categoryComboBox.setDisable(!editable);
         datePicker.setDisable(!editable);
@@ -683,12 +980,19 @@ public class PoliceCrimesController {
         locationField.setEditable(editable);
         descriptionArea.setEditable(editable);
 
-        if (!editable) {
-            locationField.setStyle("-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;");
-            descriptionArea.setStyle("-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;");
+        boolean dark = UserSession.isDarkMode();
+        if (editable) {
+            String editStyle = dark
+                    ? "-fx-background-color: #374151; -fx-control-inner-background: #374151; -fx-text-fill: #F9FAFB; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8;"
+                    : "";
+            locationField.setStyle(editStyle);
+            descriptionArea.setStyle(editStyle);
         } else {
-            locationField.setStyle("");
-            descriptionArea.setStyle("");
+            String readStyle = dark
+                    ? "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; -fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;"
+                    : "-fx-opacity: 1; -fx-background-color: #f4f4f4; -fx-text-fill: black;";
+            locationField.setStyle(readStyle);
+            descriptionArea.setStyle(readStyle);
         }
     }
 
@@ -709,7 +1013,6 @@ public class PoliceCrimesController {
      * suggestions as the user types. Functionality is restricted to report creation mode
      * to improve usability and prevent unnecessary interactions during viewing.
      */
-
     private void setupAddressAutocomplete() {
         locationField.textProperty().addListener((obs, oldText, newText) -> {
 
@@ -744,7 +1047,6 @@ public class PoliceCrimesController {
         new Thread(() -> {
             try {
                 List<String> suggestions = geocoder.getAddressSuggestions(query);
-
                 Platform.runLater(() -> showSuggestions(suggestions));
             } catch (Exception e) {
                 Platform.runLater(suggestionsPopup::hide);
@@ -782,7 +1084,6 @@ public class PoliceCrimesController {
             suggestionsPopup.show(locationField, Side.BOTTOM, 0, 0);
         }
     }
-
 
     /**
      * Marks the selected crime as dealt with and updates the database.

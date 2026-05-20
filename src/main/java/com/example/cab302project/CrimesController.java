@@ -17,7 +17,6 @@ import java.util.Map;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
-import javafx.concurrent.Worker;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.control.CustomMenuItem;
@@ -46,34 +45,20 @@ import javafx.scene.input.MouseEvent;
 public class CrimesController {
 
     // FXML UI elements
-    @FXML
-    private TableView<CrimeRecord> crimeTable;
-    @FXML
-    private TableColumn<CrimeRecord, Integer> idColumn;
-    @FXML
-    private TableColumn<CrimeRecord, CrimeCategory> categoryColumn;
-    @FXML
-    private TableColumn<CrimeRecord, String> severityColumn;
-    @FXML
-    private TableColumn<CrimeRecord, String> timestampColumn; // String for formatted display of timestamp
-    @FXML
-    private TableColumn<CrimeRecord, String> actionedColumn;
-    @FXML
-    private ComboBox<CrimeCategory> categoryComboBox;
-    @FXML
-    private Label severityLabel;
-    @FXML
-    private Label severityDot;
-    @FXML
-    private DatePicker datePicker;
-    @FXML
-    private ComboBox<String> hourBox, minuteBox, ampmBox;
-    @FXML
-    private TextField reporterField, locationField;
-    @FXML
-    private CheckBox anonymousCheckBox;
-    @FXML
-    private TextArea descriptionArea;
+    @FXML private TableView<CrimeRecord> crimeTable;
+    @FXML private TableColumn<CrimeRecord, Integer> idColumn;
+    @FXML private TableColumn<CrimeRecord, CrimeCategory> categoryColumn;
+    @FXML private TableColumn<CrimeRecord, String> severityColumn;
+    @FXML private TableColumn<CrimeRecord, String> timestampColumn; // String for formatted display of timestamp
+    @FXML private TableColumn<CrimeRecord, String> actionedColumn;
+    @FXML private ComboBox<CrimeCategory> categoryComboBox;
+    @FXML private Label severityLabel;
+    @FXML private Label severityDot;
+    @FXML private DatePicker datePicker;
+    @FXML private ComboBox<String> hourBox, minuteBox, ampmBox;
+    @FXML private TextField reporterField, locationField;
+    @FXML private CheckBox anonymousCheckBox;
+    @FXML private TextArea descriptionArea;
 
     // Read-only detail view bindings (view panel shown for existing crimes)
     @FXML private javafx.scene.control.ScrollPane viewScrollPane;
@@ -86,45 +71,40 @@ public class CrimesController {
     @FXML private TextField locationFieldEdit;
     @FXML private TextArea descriptionAreaEdit;
 
-    // New bindings for the redesigned list and detail panel
-    @FXML
-    private ListView<CrimeRecord> crimeListView;
-    @FXML
-    private MenuButton filterMenuButton;
-    @FXML
-    private RadioMenuItem severityAllItem, severitySevereItem, severityModerateItem, severityLowItem;
-    @FXML
-    private RadioMenuItem crimeTypeAllItem, crimeTypeAssaultItem, crimeTypeTrespassingItem,
+    // Styled list view and hidden filter infrastructure
+    @FXML private ListView<CrimeRecord> crimeListView;
+
+    /**
+     * Hidden MenuButton kept in FXML so updateFilterButtonText() does not
+     * throw NullPointerException. The visible filter UI is the inline filter bar.
+     */
+    @FXML private MenuButton filterMenuButton;
+
+    // Hidden RadioMenuItems backing the filter bar chips for severity and date.
+    // Crime type filtering is handled directly via filterCrimeTypeCombo - see matchesCrimeTypeFilter().
+    @FXML private RadioMenuItem severityAllItem, severitySevereItem, severityModerateItem, severityLowItem;
+    @FXML private RadioMenuItem crimeTypeAllItem, crimeTypeAssaultItem, crimeTypeTrespassingItem,
             crimeTypeDomesticAbuseItem, crimeTypeHomicideItem;
-    @FXML
-    private RadioMenuItem statusAllItem, statusPendingItem;
-    @FXML
-    private RadioMenuItem dateAllItem, dateTodayItem, dateLast7DaysItem, dateLast30DaysItem;
-    @FXML
-    private VBox detailPanel;
-    @FXML
-    private Pane detailBackdrop;
-    @FXML
-    private Button saveBtn;
+    @FXML private RadioMenuItem statusAllItem, statusPendingItem;
+    @FXML private RadioMenuItem dateAllItem, dateTodayItem, dateLast7DaysItem, dateLast30DaysItem;
+
+    @FXML private VBox detailPanel;
+    @FXML private Pane detailBackdrop;
+    @FXML private Button saveBtn;
 
     // Opened report banner - shown above the list when an unsaved report exists
     @FXML private VBox openedSection;
     @FXML private Label openedBannerSubtitle;
     @FXML private VBox saveChangesStrip;
-
     @FXML private ListView<CrimeRecord> openedListView;
 
     // Tab bar buttons and content panes
-    @FXML
-    private Button listTabBtn;
-    @FXML
-    private Button mapTabBtn;
-    @FXML
-    private VBox listPane;
-    @FXML
-    private VBox mapPane;
-    @FXML
-    private WebView crimeMapView;
+    @FXML private Button listTabBtn;
+    @FXML private Button mapTabBtn;
+    @FXML private VBox listPane;
+    @FXML private VBox mapPane;
+    @FXML private WebView crimeMapView;
+
     // Crime map search overlay fields - mirror the dashboard floating search bar
     @FXML private VBox crimeSearchOverlay;
     @FXML private TextField crimeSearchField;
@@ -134,6 +114,7 @@ public class CrimesController {
     @FXML private ComboBox<String> crimeCategoryFilter;
     @FXML private ComboBox<String> crimeDaysFilter;
     @FXML private ComboBox<String> crimeSeverityFilter;
+
     // Inline-styled strips - needed for programmatic dark mode override
     @FXML private HBox severityLegendStrip;
     @FXML private HBox sectionHeader;
@@ -141,6 +122,26 @@ public class CrimesController {
     @FXML private VBox submitStripList;
     @FXML private HBox mapSeverityLegend;
     @FXML private VBox submitStripMap;
+
+    // Filter bar outer container - needed for dark mode restyle
+    @FXML private VBox filterBar;
+
+    // Filter bar always-visible controls
+    @FXML private ToggleButton chipSevAll;
+    @FXML private ToggleButton chipSevLow;
+    @FXML private ToggleButton chipSevModerate;
+    @FXML private ToggleButton chipSevSevere;
+    @FXML private ComboBox<String> filterCrimeTypeCombo;
+
+    // Expandable advanced filter section and its toggle button
+    @FXML private VBox filterBarAdvanced;
+    @FXML private Button advancedToggleBtn;
+
+    // Advanced filter controls (inside the collapsible section)
+    @FXML private ComboBox<String> filterDateCombo;
+
+    // Tracks whether the advanced filter section is currently expanded
+    private boolean advancedOpen = false;
 
     // Crime map search state - mirrors DashboardController pattern
     private double[] crimeActiveBoundingBox = null;
@@ -151,24 +152,18 @@ public class CrimesController {
     // Guards against filter/search methods calling loadCrimeMarkers before the JS is ready.
     private boolean crimeMapReady = false;
 
-    // Hamburger menu
-    @FXML
-    private StackPane crimesRoot;
-    @FXML
-    private Button hamburgerBtn;
-    @FXML
-    private Button crimeFilterToggleBtn;
+    @FXML private StackPane crimesRoot;
+    @FXML private Button hamburgerBtn;
+    @FXML private Button crimeFilterToggleBtn;
 
     private HamburgerMenu hamburgerMenu;
 
-    @FXML
-    private NavBarController navBarController;
+    @FXML private NavBarController navBarController;
 
     private IAppDAO dao;
-
     private IGeocodingService geocoder = new OpenStreetMapGeoCoder();
-    @FXML
 
+    @FXML
     private final ContextMenu suggestionsPopup = new ContextMenu();
     private final PauseTransition suggestionDelay = new PauseTransition(Duration.millis(400));
 
@@ -186,8 +181,7 @@ public class CrimesController {
     private boolean crimeMapLoaded = false;
 
     // Cache of geocoded addresses keyed by crime ID.
-    // Populated on list load and on row selection.
-    // Static so the cache persists across screen navigations and avoids re-geocoding
+    // Static so the cache persists across screen navigations and avoids re-geocoding.
     private static final Map<Integer, String> addressCache = new HashMap<>();
 
     /**
@@ -219,6 +213,7 @@ public class CrimesController {
         // Set dropdown values
         categoryComboBox.getItems().setAll(CrimeCategory.values());
         setupFilters();
+        initFilterBar();
 
         // Initialize Listener -> Auto-update severity dot colour and label when category changes.
         // This gives the user immediate visual feedback on the severity tier as they pick a crime type.
@@ -264,10 +259,13 @@ public class CrimesController {
             crimesRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
             hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
+            // Re-apply all dark mode overrides now the scene is attached so inline
+            // styles on the filter bar and list view are correctly themed on first load
+            if (UserSession.isDarkMode()) applyDarkStrips();
+            if (crimeListView != null) crimeListView.refresh();
         });
 
         anonymousCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
-
             if (newVal) {
                 reporterField.setText("Anonymous");
             } else {
@@ -278,6 +276,114 @@ public class CrimesController {
                 }
             }
         });
+    }
+
+    /**
+     * Initialises the compact filter bar above the public crime list.
+     *
+     * The always-visible row contains severity chips and the crime type dropdown.
+     * The public view has no status filter since all public-facing records are Pending.
+     * Date range lives in the collapsible advanced section toggled by advancedToggleBtn.
+     *
+     * Crime type filtering is performed directly against the category name so that
+     * all 21 crime types work, not just the four covered by the legacy RadioMenuItems.
+     */
+    private void initFilterBar() {
+        // Severity chip group
+        ToggleGroup sevGroup = new ToggleGroup();
+        chipSevAll.setToggleGroup(sevGroup);
+        chipSevLow.setToggleGroup(sevGroup);
+        chipSevModerate.setToggleGroup(sevGroup);
+        chipSevSevere.setToggleGroup(sevGroup);
+        chipSevAll.setSelected(true);
+
+        sevGroup.selectedToggleProperty().addListener((obs, oldT, newT) -> {
+            if (newT == null) { chipSevAll.setSelected(true); return; }
+            styleChips(sevGroup);
+            if      (newT == chipSevAll)      severityAllItem.setSelected(true);
+            else if (newT == chipSevLow)      severityLowItem.setSelected(true);
+            else if (newT == chipSevModerate) severityModerateItem.setSelected(true);
+            else if (newT == chipSevSevere)   severitySevereItem.setSelected(true);
+            onFilterChanged();
+        });
+
+        // Crime type ComboBox - populated with every CrimeCategory value.
+        // Filtering is done directly in matchesCrimeTypeFilter() against the
+        // selected string, bypassing the legacy RadioMenuItem bridge entirely.
+        filterCrimeTypeCombo.getItems().add("All");
+        for (CrimeCategory cat : CrimeCategory.values()) {
+            filterCrimeTypeCombo.getItems().add(cat.getName());
+        }
+        filterCrimeTypeCombo.setValue("All");
+        filterCrimeTypeCombo.valueProperty().addListener((obs, oldV, newV) -> {
+            if (newV != null) onFilterChanged();
+        });
+
+        // Date range ComboBox (inside the advanced section)
+        filterDateCombo.getItems().addAll("All", "Today", "Last 7 Days", "Last 30 Days");
+        filterDateCombo.setValue("All");
+        filterDateCombo.valueProperty().addListener((obs, oldV, newV) -> {
+            if (newV == null) return;
+            switch (newV) {
+                case "Today"        -> dateTodayItem.setSelected(true);
+                case "Last 7 Days"  -> dateLast7DaysItem.setSelected(true);
+                case "Last 30 Days" -> dateLast30DaysItem.setSelected(true);
+                default             -> dateAllItem.setSelected(true);
+            }
+            onFilterChanged();
+        });
+
+        // Advanced section starts collapsed
+        if (filterBarAdvanced != null) {
+            filterBarAdvanced.setVisible(false);
+            filterBarAdvanced.setManaged(false);
+        }
+
+        // Apply initial chip styling
+        styleChips(sevGroup);
+    }
+
+    /**
+     * Toggles the advanced filter section open or closed and updates the button label.
+     * Called by the "More" / "Less" button in the filter bar.
+     */
+    @FXML
+    public void onAdvancedToggle() {
+        advancedOpen = !advancedOpen;
+        if (filterBarAdvanced != null) {
+            filterBarAdvanced.setVisible(advancedOpen);
+            filterBarAdvanced.setManaged(advancedOpen);
+        }
+        if (advancedToggleBtn != null) {
+            advancedToggleBtn.setText(advancedOpen ? "Less \u25B4" : "More \u25BE");
+        }
+    }
+
+    /**
+     * Updates the visual style of every {@link ToggleButton} in the given group.
+     * The selected chip is filled dark; unselected chips use the muted pill style.
+     *
+     * @param group the {@link ToggleGroup} whose members should be restyled
+     */
+    /**
+     * Restyles all chips in the given group to reflect their selected state,
+     * respecting the current dark mode setting.
+     *
+     * @param group the {@link ToggleGroup} whose chip buttons should be restyled
+     */
+    private void styleChips(ToggleGroup group) {
+        boolean dark = UserSession.isDarkMode();
+        String selected = dark
+                ? "-fx-background-color: #4B5563; -fx-text-fill: #F9FAFB; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;"
+                : "-fx-background-color: #2A364E; -fx-text-fill: #FFFFFF; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;";
+        String unselected = dark
+                ? "-fx-background-color: #374151; -fx-text-fill: #D1D5DB; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;"
+                : "-fx-background-color: #F3F4F6; -fx-text-fill: #374151; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;";
+        for (Toggle t : group.getToggles()) {
+            if (t instanceof ToggleButton btn) {
+                btn.setStyle(btn.isSelected() ? selected : unselected);
+            }
+        }
     }
 
     /**
@@ -316,11 +422,49 @@ public class CrimesController {
         String brightLabelNormal = "-fx-text-fill: #E5E7EB;";
         if (detailCategoryLabel != null) detailCategoryLabel.setStyle(brightLabel);
         if (detailDateLabel     != null) detailDateLabel.setStyle(brightLabelNormal);
+        // List view background
+        if (crimeListView != null) crimeListView.setStyle("-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;");
+        // Filter bar
+        applyDarkFilterBar(true);
+    }
+
+    /**
+     * Applies or removes dark mode styling on the inline-styled filter bar controls.
+     * Called from applyDarkStrips(), refreshDarkMode(), and onAdvancedToggle() so the
+     * advanced section is correctly styled whether it was open when the theme changed.
+     *
+     * @param dark true to apply dark styles, false to restore light styles
+     */
+    private void applyDarkFilterBar(boolean dark) {
+        String filterBarBg  = dark
+                ? "-fx-background-color: #1F2937; -fx-border-color: #374151; -fx-border-width: 0 0 1 0; -fx-padding: 8 16 8 16;"
+                : "-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0; -fx-padding: 8 16 8 16;";
+        String chipSelected = dark
+                ? "-fx-background-color: #4B5563; -fx-text-fill: #F9FAFB; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;"
+                : "-fx-background-color: #2A364E; -fx-text-fill: #FFFFFF; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;";
+        String chipUnsel    = dark
+                ? "-fx-background-color: #374151; -fx-text-fill: #D1D5DB; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;"
+                : "-fx-background-color: #F3F4F6; -fx-text-fill: #374151; -fx-background-radius: 20; -fx-border-radius: 20; -fx-font-size: 11px; -fx-padding: 5 0 5 0; -fx-cursor: hand; -fx-border-width: 0;";
+        String comboDark    = "-fx-background-color: #374151; -fx-control-inner-background: #374151; -fx-text-fill: #F9FAFB; -fx-border-color: #4B5563; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 11px;";
+        String comboLight   = "-fx-background-color: #F3F4F6; -fx-border-color: #E5E7EB; -fx-border-radius: 8; -fx-background-radius: 8; -fx-font-size: 11px;";
+        String btnDark      = "-fx-background-color: #374151; -fx-text-fill: #D1D5DB; -fx-font-size: 11px; -fx-cursor: hand; -fx-border-width: 0; -fx-background-radius: 20; -fx-padding: 5 12 5 12;";
+        String btnLight     = "-fx-background-color: #F3F4F6; -fx-text-fill: #6B7280; -fx-font-size: 11px; -fx-cursor: hand; -fx-border-width: 0; -fx-background-radius: 20; -fx-padding: 5 12 5 12;";
+
+        if (filterBar         != null) filterBar.setStyle(filterBarBg);
+        if (advancedToggleBtn != null) advancedToggleBtn.setStyle(dark ? btnDark : btnLight);
+        if (filterCrimeTypeCombo != null) filterCrimeTypeCombo.setStyle(dark ? comboDark : comboLight);
+        if (filterDateCombo   != null) filterDateCombo.setStyle(dark ? comboDark : comboLight);
+
+        // Restyle severity chips based on their current selected state
+        for (ToggleButton btn : new ToggleButton[]{chipSevAll, chipSevLow, chipSevModerate, chipSevSevere}) {
+            if (btn != null) btn.setStyle(btn.isSelected() ? chipSelected : chipUnsel);
+        }
     }
 
     private void refreshDarkMode() {
         if (UserSession.isDarkMode()) {
             applyDarkStrips();
+            crimeListView.setStyle("-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;");
             crimeListView.refresh();
         } else {
             String lightStrip   = "-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB;";
@@ -335,16 +479,15 @@ public class CrimesController {
             if (submitStripMap      != null) submitStripMap.setStyle(lightStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
             if (detailPanel         != null) detailPanel.setStyle(lightPanel);
             if (saveChangesStrip    != null) saveChangesStrip.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0; -fx-padding: 12 20 16 20;");
-            // Read-only view fields
             if (locationField       != null) locationField.setStyle("-fx-opacity: 1;");
             if (descriptionArea     != null) descriptionArea.setStyle("-fx-opacity: 1;");
-            // Editable form fields
             if (locationFieldEdit   != null) locationFieldEdit.setStyle(null);
             if (descriptionAreaEdit != null) descriptionAreaEdit.setStyle(null);
             if (reporterField       != null) reporterField.setStyle("-fx-opacity: 1;");
-            // Restore value label colours for light mode
-            if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
-            if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
+            if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2A364E;");
+            if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #2A364E;");
+            applyDarkFilterBar(false);
+            crimeListView.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
             crimeListView.refresh();
         }
     }
@@ -520,8 +663,8 @@ public class CrimesController {
         String status = crimeActiveBoundingBox == null && filtered.size() == allCrimes.size()
                 ? ""
                 : filtered.isEmpty()
-                ? "No crimes match these filters"
-                : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
+                  ? "No crimes match these filters"
+                  : filtered.size() + " crime" + (filtered.size() == 1 ? "" : "s") + " in view";
         if (crimeSearchStatusLabel != null) {
             Platform.runLater(() -> crimeSearchStatusLabel.setText(status));
         }
@@ -883,7 +1026,6 @@ public class CrimesController {
                 && crime.getReporter().equals(currentUser);
     }
 
-
     /**
      * Return to the previous menu (dashboard)
      */
@@ -943,7 +1085,7 @@ public class CrimesController {
      * Pending records (id == 0) are preserved across refreshes since
      * they only exist in memory and are not returned by the database.
      */
-// Helper function to refresh crime table with updated crime data
+    // Helper function to refresh crime table with updated crime data
     private void refreshList() {
         int selectedIndex = crimeTable.getSelectionModel().getSelectedIndex();
 
@@ -964,7 +1106,8 @@ public class CrimesController {
     }
 
     /**
-     * Groups filter menu options so one item can be active in each section.
+     * Groups the hidden filter RadioMenuItem options so one item can be active in each section.
+     * These are still needed because the severity and date filter logic reads from them.
      */
     private void setupFilters() {
         ToggleGroup severityGroup = new ToggleGroup();
@@ -992,7 +1135,7 @@ public class CrimesController {
     }
 
     /**
-     * Handles changes from any filter menu option.
+     * Handles changes from any filter control.
      */
     @FXML
     public void onFilterChanged() {
@@ -1010,7 +1153,6 @@ public class CrimesController {
                 .filter(c -> c.getId() != 0) // opened reports are handled separately
                 .filter(this::matchesSeverityFilter)
                 .filter(this::matchesCrimeTypeFilter)
-                .filter(this::matchesStatusFilter)
                 .filter(this::matchesDateFilter)
                 .toList();
 
@@ -1041,37 +1183,16 @@ public class CrimesController {
     }
 
     /**
-     * Checks whether a crime record matches the currently selected crime type filter.
-     * Returns true if no specific crime type filter is selected.
+     * Checks whether a crime record matches the selected crime type in filterCrimeTypeCombo.
+     * Filters directly against the category name so all 21 crime types work correctly.
+     * Returns true when "All" is selected or the category is null.
      */
     private boolean matchesCrimeTypeFilter(CrimeRecord crime) {
-        if (crime.getCategory() == null) {
-            return crimeTypeAllItem.isSelected();
-        }
-        if (crimeTypeAssaultItem.isSelected()) {
-            return crime.getCategory() == CrimeCategory.ASSAULT;
-        }
-        if (crimeTypeTrespassingItem.isSelected()) {
-            return crime.getCategory() == CrimeCategory.TRESPASSING;
-        }
-        if (crimeTypeDomesticAbuseItem.isSelected()) {
-            return crime.getCategory() == CrimeCategory.DOMESTICABUSE;
-        }
-        if (crimeTypeHomicideItem.isSelected()) {
-            return crime.getCategory() == CrimeCategory.HOMICIDE;
-        }
-        return true;
-    }
-
-    /**
-     * Checks whether a crime record matches the currently selected status filter.
-     * Pending crimes are identified as records that have not yet been actioned.
-     */
-    private boolean matchesStatusFilter(CrimeRecord crime) {
-        if (statusPendingItem.isSelected()) {
-            return !crime.isActioned();
-        }
-        return true;
+        if (filterCrimeTypeCombo == null) return true;
+        String selected = filterCrimeTypeCombo.getValue();
+        if (selected == null || selected.equals("All")) return true;
+        if (crime.getCategory() == null) return false;
+        return crime.getCategory().getName().equals(selected);
     }
 
     private boolean matchesDateFilter(CrimeRecord crime) {
@@ -1097,8 +1218,8 @@ public class CrimesController {
     private void updateFilterButtonText() {
         int activeFilters = 0;
         if (!severityAllItem.isSelected()) activeFilters++;
-        if (!crimeTypeAllItem.isSelected()) activeFilters++;
-        if (!statusAllItem.isSelected()) activeFilters++;
+        String crimeType = filterCrimeTypeCombo != null ? filterCrimeTypeCombo.getValue() : "All";
+        if (crimeType != null && !crimeType.equals("All")) activeFilters++;
         if (!dateAllItem.isSelected()) activeFilters++;
 
         filterMenuButton.setText(activeFilters == 0 ? "Filter" : "Filter (" + activeFilters + ")");
@@ -1326,8 +1447,9 @@ public class CrimesController {
             }
         });
 
-        crimeListView.setStyle("-fx-background-color: transparent; " +
-                "-fx-background: transparent; -fx-border-width: 0;");
+        crimeListView.setStyle(UserSession.isDarkMode()
+                ? "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;"
+                : "-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
 
     }
 

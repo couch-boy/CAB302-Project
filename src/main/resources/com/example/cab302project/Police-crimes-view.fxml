@@ -30,7 +30,7 @@
         </HBox>
 
         <!-- Severity legend -->
-        <HBox alignment="CENTER_LEFT" spacing="16"
+        <HBox fx:id="severityLegendStrip" alignment="CENTER_LEFT" spacing="16"
               style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
                      -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;">
             <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
@@ -57,44 +57,147 @@
             </TableView>
 
             <!-- Section header -->
-            <HBox alignment="CENTER_LEFT" spacing="10"
+            <HBox fx:id="sectionHeader" alignment="CENTER_LEFT" spacing="10"
                   style="-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;">
-                <Label text="All Reports"
+                <Label fx:id="allReportsLabel" text="All Reports"
                        style="-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <MenuButton fx:id="filterMenuButton"
-                            text="Filter"
-                            styleClass="filter-menu-btn"
-                            popupSide="BOTTOM">
-                    <items>
-                        <MenuItem text="Filter By" disable="true"/>
-                        <SeparatorMenuItem/>
-                        <MenuItem text="Severity" disable="true"/>
-                        <RadioMenuItem fx:id="severityAllItem" text="All" selected="true" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="severitySevereItem" text="Severe" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="severityModerateItem" text="Moderate" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="severityLowItem" text="Low" onAction="#onFilterChanged"/>
-                        <SeparatorMenuItem/>
-                        <MenuItem text="Crime Type" disable="true"/>
-                        <RadioMenuItem fx:id="crimeTypeAllItem" text="All" selected="true" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="crimeTypeAssaultItem" text="Assault" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="crimeTypeTrespassingItem" text="Trespassing" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="crimeTypeDomesticAbuseItem" text="Domestic Abuse" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="crimeTypeHomicideItem" text="Homicide" onAction="#onFilterChanged"/>
-                        <SeparatorMenuItem/>
-                        <MenuItem text="Status" disable="true"/>
-                        <RadioMenuItem fx:id="statusAllItem" text="All" selected="true" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="statusPendingItem" text="Pending" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="statusActionedItem" text="Actioned" onAction="#onFilterChanged"/>
-                        <SeparatorMenuItem/>
-                        <MenuItem text="Date" disable="true"/>
-                        <RadioMenuItem fx:id="dateAllItem" text="All" selected="true" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="dateTodayItem" text="Today" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="dateLast7DaysItem" text="Last 7 Days" onAction="#onFilterChanged"/>
-                        <RadioMenuItem fx:id="dateLast30DaysItem" text="Last 30 Days" onAction="#onFilterChanged"/>
-                    </items>
-                </MenuButton>
             </HBox>
+
+            <!--
+                Hidden MenuButton and RadioMenuItems - kept invisible/unmanaged so
+                updateFilterButtonText() can write to filterMenuButton without a
+                NullPointerException. The visible filter UI is the compact bar below.
+            -->
+            <MenuButton fx:id="filterMenuButton"
+                        visible="false" managed="false"
+                        styleClass="filter-menu-btn">
+                <items>
+                    <RadioMenuItem fx:id="severityAllItem"    text="All"      selected="true" onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="severitySevereItem"   text="Severe"   onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="severityModerateItem" text="Moderate" onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="severityLowItem"      text="Low"      onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="crimeTypeAllItem"          text="All"            selected="true" onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="crimeTypeAssaultItem"      text="Assault"        onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="crimeTypeTrespassingItem"  text="Trespassing"    onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="crimeTypeDomesticAbuseItem" text="Domestic Abuse" onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="crimeTypeHomicideItem"     text="Homicide"       onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="statusAllItem"      text="All"      selected="true" onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="statusPendingItem"  text="Pending"               onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="statusActionedItem" text="Actioned"              onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="dateAllItem"        text="All"          selected="true" onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="dateTodayItem"      text="Today"                     onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="dateLast7DaysItem"  text="Last 7 Days"              onAction="#onFilterChanged"/>
+                    <RadioMenuItem fx:id="dateLast30DaysItem" text="Last 30 Days"             onAction="#onFilterChanged"/>
+                </items>
+            </MenuButton>
+
+            <!--
+                Compact filter bar. One always-visible row of severity chips that
+                share the full width equally. Crime type, status and date range are
+                inside the collapsible advanced section toggled by the More button.
+            -->
+            <VBox fx:id="filterBar"
+                  style="-fx-background-color: #FFFFFF;
+                         -fx-border-color: #E5E7EB;
+                         -fx-border-width: 0 0 1 0;
+                         -fx-padding: 8 16 8 16;"
+                  spacing="6">
+
+                <!-- Single always-visible row: severity chips + More toggle -->
+                <HBox alignment="CENTER_LEFT" spacing="6">
+                    <ToggleButton fx:id="chipSevAll" text="All" selected="true"
+                                  onAction="#onFilterChanged"
+                                  maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                                  style="-fx-background-color: #2A364E; -fx-text-fill: #FFFFFF;
+                                         -fx-background-radius: 20; -fx-border-radius: 20;
+                                         -fx-font-size: 11px; -fx-padding: 5 0 5 0;
+                                         -fx-cursor: hand; -fx-border-width: 0;"/>
+                    <ToggleButton fx:id="chipSevLow" text="Low"
+                                  onAction="#onFilterChanged"
+                                  maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                                  style="-fx-background-color: #F3F4F6; -fx-text-fill: #374151;
+                                         -fx-background-radius: 20; -fx-border-radius: 20;
+                                         -fx-font-size: 11px; -fx-padding: 5 0 5 0;
+                                         -fx-cursor: hand; -fx-border-width: 0;"/>
+                    <ToggleButton fx:id="chipSevModerate" text="Moderate"
+                                  onAction="#onFilterChanged"
+                                  maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                                  style="-fx-background-color: #F3F4F6; -fx-text-fill: #374151;
+                                         -fx-background-radius: 20; -fx-border-radius: 20;
+                                         -fx-font-size: 11px; -fx-padding: 5 0 5 0;
+                                         -fx-cursor: hand; -fx-border-width: 0;"/>
+                    <ToggleButton fx:id="chipSevSevere" text="Severe"
+                                  onAction="#onFilterChanged"
+                                  maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                                  style="-fx-background-color: #F3F4F6; -fx-text-fill: #374151;
+                                         -fx-background-radius: 20; -fx-border-radius: 20;
+                                         -fx-font-size: 11px; -fx-padding: 5 0 5 0;
+                                         -fx-cursor: hand; -fx-border-width: 0;"/>
+                    <Button fx:id="advancedToggleBtn" text="More &#x25BE;"
+                            onAction="#onAdvancedToggle"
+                            style="-fx-background-color: #F3F4F6;
+                                   -fx-text-fill: #6B7280; -fx-font-size: 11px;
+                                   -fx-cursor: hand; -fx-border-width: 0;
+                                   -fx-background-radius: 20; -fx-padding: 5 12 5 12;"/>
+                </HBox>
+
+                <!-- Collapsible advanced section: crime type, status chips, date range -->
+                <VBox fx:id="filterBarAdvanced" spacing="6"
+                      visible="false" managed="false">
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="Type"
+                               style="-fx-text-fill: #6B7280; -fx-font-size: 11px;
+                                      -fx-font-weight: bold; -fx-min-width: 46;"/>
+                        <ComboBox fx:id="filterCrimeTypeCombo"
+                                  promptText="All Crime Types"
+                                  onAction="#onFilterChanged"
+                                  maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                                  style="-fx-background-color: #F3F4F6;
+                                         -fx-border-color: #E5E7EB;
+                                         -fx-border-radius: 8; -fx-background-radius: 8;
+                                         -fx-font-size: 11px;"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="6">
+                        <Label text="Status"
+                               style="-fx-text-fill: #6B7280; -fx-font-size: 11px;
+                                      -fx-font-weight: bold; -fx-min-width: 46;"/>
+                        <ToggleButton fx:id="chipStatusAll" text="All" selected="true"
+                                      onAction="#onFilterChanged"
+                                      maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                                      style="-fx-background-color: #2A364E; -fx-text-fill: #FFFFFF;
+                                             -fx-background-radius: 20; -fx-border-radius: 20;
+                                             -fx-font-size: 11px; -fx-padding: 5 0 5 0;
+                                             -fx-cursor: hand; -fx-border-width: 0;"/>
+                        <ToggleButton fx:id="chipStatusPending" text="Pending"
+                                      onAction="#onFilterChanged"
+                                      maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                                      style="-fx-background-color: #F3F4F6; -fx-text-fill: #374151;
+                                             -fx-background-radius: 20; -fx-border-radius: 20;
+                                             -fx-font-size: 11px; -fx-padding: 5 0 5 0;
+                                             -fx-cursor: hand; -fx-border-width: 0;"/>
+                        <ToggleButton fx:id="chipStatusActioned" text="Actioned"
+                                      onAction="#onFilterChanged"
+                                      maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                                      style="-fx-background-color: #F3F4F6; -fx-text-fill: #374151;
+                                             -fx-background-radius: 20; -fx-border-radius: 20;
+                                             -fx-font-size: 11px; -fx-padding: 5 0 5 0;
+                                             -fx-cursor: hand; -fx-border-width: 0;"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <Label text="Date"
+                               style="-fx-text-fill: #6B7280; -fx-font-size: 11px;
+                                      -fx-font-weight: bold; -fx-min-width: 46;"/>
+                        <ComboBox fx:id="filterDateCombo"
+                                  onAction="#onFilterChanged"
+                                  maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                                  style="-fx-background-color: #F3F4F6;
+                                         -fx-border-color: #E5E7EB;
+                                         -fx-border-radius: 8; -fx-background-radius: 8;
+                                         -fx-font-size: 11px;"/>
+                    </HBox>
+                </VBox>
+
+            </VBox>
 
             <!-- Styled list view -->
             <ListView fx:id="crimeListView"
@@ -128,9 +231,9 @@
                  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0.3, 0, -4);">
 
         <!-- Drag handle + close button -->
-        <HBox alignment="CENTER" style="-fx-padding: 12 16 0 16;">
+        <HBox fx:id="detailDragRow" alignment="CENTER" style="-fx-padding: 12 16 0 16;">
             <Region HBox.hgrow="ALWAYS"/>
-            <Pane style="-fx-background-color: #D1D5DB;
+            <Pane fx:id="dragHandle" style="-fx-background-color: #D1D5DB;
                          -fx-background-radius: 4;
                          -fx-min-width: 40; -fx-max-width: 40;
                          -fx-min-height: 4; -fx-max-height: 4;"/>
@@ -144,7 +247,7 @@
         </HBox>
 
         <!-- Sheet title -->
-        <HBox alignment="CENTER_LEFT"
+        <HBox fx:id="detailTitleRow" alignment="CENTER_LEFT"
               style="-fx-padding: 10 20 12 20;
                      -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;">
             <Label text="Report Details" styleClass="auth-label"
@@ -212,7 +315,7 @@
                     <Label text="Reporter" styleClass="auth-label"/>
                     <TextField fx:id="reporterField" editable="false"
                                styleClass="auth-field"
-                               style="-fx-opacity: 1; -fx-background-color: #f4f4f4;"/>
+                               style="-fx-opacity: 1;"/>
                 </VBox>
 
                 <!-- Police-only: actioned status -->
@@ -227,7 +330,7 @@
         </ScrollPane>
 
         <!-- Police action buttons -->
-        <VBox spacing="8" style="-fx-padding: 12 20 16 20;
+        <VBox fx:id="actionButtonStrip" spacing="8" style="-fx-padding: 12 20 16 20;
                                   -fx-border-color: #E5E7EB; -fx-border-width: 1 0 0 0;">
             <Button fx:id="saveBtn"
                     text="Save Changes"
