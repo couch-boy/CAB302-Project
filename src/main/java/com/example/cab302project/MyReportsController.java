@@ -153,6 +153,9 @@ public class MyReportsController {
             myReportsRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
             hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
+            // Apply dark mode to filter bar now that all nodes are attached to the scene
+            applyDarkFilterBar(UserSession.isDarkMode());
+            if (crimeListView != null) crimeListView.refresh();
         });
     }
 
@@ -317,34 +320,41 @@ public class MyReportsController {
      * Applies dark mode overrides to nodes that use hardcoded inline style= in FXML.
      * CSS cannot override inline styles, so we patch them programmatically here.
      */
+    /**
+     * Applies dark mode overrides to all inline-styled nodes on this screen.
+     * CSS cannot override inline styles so we patch them here.
+     * Also handles the filter bar, list view background, and all strip backgrounds.
+     */
     private void applyDarkStrips() {
         if (!UserSession.isDarkMode()) return;
-        String darkStrip   = "-fx-background-color: #1F2937; -fx-border-color: #374151;";
-        String darkSection = "-fx-padding: 12 20 8 20; -fx-background-color: #1F2937;";
-        String darkPanel   = "-fx-background-color: #1F2937; -fx-background-radius: 20 20 0 0; "
+        String darkStrip    = "-fx-background-color: #1F2937; -fx-border-color: #374151;";
+        String darkSection  = "-fx-padding: 12 20 8 20; -fx-background-color: #1F2937;";
+        String darkPanel    = "-fx-background-color: #1F2937; -fx-background-radius: 20 20 0 0; "
                 + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0.3, 0, -4);";
         String darkReadOnly = "-fx-background-color: #2D3748; -fx-control-inner-background: #2D3748; "
                 + "-fx-text-fill: #9CA3AF; -fx-border-color: #4B5563; "
                 + "-fx-border-radius: 8; -fx-background-radius: 8; -fx-opacity: 1;";
+        String listViewDark = "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;";
 
-        if (severityLegendStrip != null) severityLegendStrip.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
-        if (sectionHeader       != null) sectionHeader.setStyle(darkSection);
-        if (yourReportsLabel    != null) yourReportsLabel.setStyle("-fx-text-fill: #F9FAFB; -fx-font-size: 13px; -fx-font-weight: bold;");
-        if (submitStrip         != null) submitStrip.setStyle(darkStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
-        if (detailPanel         != null) detailPanel.setStyle(darkPanel);
-        if (detailLocationField != null) detailLocationField.setStyle(darkReadOnly);
+        if (severityLegendStrip   != null) severityLegendStrip.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+        if (sectionHeader         != null) sectionHeader.setStyle(darkSection);
+        if (yourReportsLabel      != null) yourReportsLabel.setStyle("-fx-text-fill: #F9FAFB; -fx-font-size: 13px; -fx-font-weight: bold;");
+        if (submitStrip           != null) submitStrip.setStyle(darkStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+        if (detailPanel           != null) detailPanel.setStyle(darkPanel);
+        if (detailLocationField   != null) detailLocationField.setStyle(darkReadOnly);
         if (detailDescriptionArea != null) detailDescriptionArea.setStyle(darkReadOnly);
+        if (crimeListView         != null) crimeListView.setStyle(listViewDark);
+        if (openedListView        != null) openedListView.setStyle(darkStrip + " -fx-border-width: 0 0 1 0;");
         // Brighten inline-styled value labels
-        String brightLabel = "-fx-font-weight: bold; -fx-text-fill: #E5E7EB;";
-        if (detailCategoryLabel != null) detailCategoryLabel.setStyle(brightLabel);
+        if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
         if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
         // Filter bar
         applyDarkFilterBar(true);
     }
 
     /**
-     * Called by the hamburger menu when the user toggles dark mode.
-     * Re-applies or removes dark mode overrides and refreshes the list cells.
+     * Called by the hamburger menu when the user toggles dark mode at runtime.
+     * Re-applies or removes all dark mode overrides and refreshes the list cells.
      */
     private void refreshDarkMode() {
         if (UserSession.isDarkMode()) {
@@ -356,16 +366,17 @@ public class MyReportsController {
             String lightSection = "-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;";
             String lightPanel   = "-fx-background-color: #FFFFFF; -fx-background-radius: 20 20 0 0; "
                     + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0.3, 0, -4);";
-            if (severityLegendStrip != null) severityLegendStrip.setStyle(lightStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
-            if (sectionHeader       != null) sectionHeader.setStyle(lightSection);
-            if (yourReportsLabel    != null) yourReportsLabel.setStyle("-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;");
-            if (submitStrip         != null) submitStrip.setStyle(lightStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
-            if (detailPanel         != null) detailPanel.setStyle(lightPanel);
-            if (detailLocationField != null) detailLocationField.setStyle("-fx-opacity: 1;");
+            if (severityLegendStrip   != null) severityLegendStrip.setStyle(lightStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+            if (sectionHeader         != null) sectionHeader.setStyle(lightSection);
+            if (yourReportsLabel      != null) yourReportsLabel.setStyle("-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;");
+            if (submitStrip           != null) submitStrip.setStyle(lightStrip + " -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;");
+            if (detailPanel           != null) detailPanel.setStyle(lightPanel);
+            if (detailLocationField   != null) detailLocationField.setStyle("-fx-opacity: 1;");
             if (detailDescriptionArea != null) detailDescriptionArea.setStyle("-fx-opacity: 1;");
-            if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
-            if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
-            // Filter bar
+            if (detailCategoryLabel   != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2A364E;");
+            if (detailDateLabel       != null) detailDateLabel.setStyle("-fx-text-fill: #2A364E;");
+            if (crimeListView         != null) crimeListView.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
+            if (openedListView        != null) openedListView.setStyle("-fx-background-color: #FFFDF7; -fx-background: #FFFDF7; -fx-border-width: 0;");
             applyDarkFilterBar(false);
             crimeListView.refresh();
             if (openedListView != null) openedListView.refresh();
@@ -582,6 +593,12 @@ public class MyReportsController {
             }
         });
 
+        // Set list view background respecting dark mode - inline style must be set here
+        // because FXML transparent style would override the CSS .dark-mode .list-view rule
+        crimeListView.setStyle(UserSession.isDarkMode()
+                ? "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;"
+                : "-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
+
         // Submitted list selection - opens read-only detail panel
         crimeListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
@@ -665,8 +682,9 @@ public class MyReportsController {
                 }
             });
 
-            openedListView.setStyle("-fx-background-color: #FFFDF7; " +
-                    "-fx-background: #FFFDF7; -fx-border-width: 0;");
+            openedListView.setStyle(UserSession.isDarkMode()
+                    ? "-fx-background-color: #1F2937; -fx-background: #1F2937; -fx-border-width: 0;"
+                    : "-fx-background-color: #FFFDF7; -fx-background: #FFFDF7; -fx-border-width: 0;");
         }
     }
 

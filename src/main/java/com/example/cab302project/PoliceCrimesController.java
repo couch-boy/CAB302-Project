@@ -59,6 +59,11 @@ public class PoliceCrimesController {
     @FXML private RadioMenuItem statusAllItem, statusPendingItem, statusActionedItem;
     @FXML private RadioMenuItem dateAllItem, dateTodayItem, dateLast7DaysItem, dateLast30DaysItem;
 
+    // Inline-styled strips - needed for programmatic dark mode override
+    @FXML private HBox severityLegendStrip;
+    @FXML private HBox sectionHeader;
+    @FXML private Label allReportsLabel;
+
     // Filter bar outer container - needed for dark mode restyle
     @FXML private VBox filterBar;
 
@@ -168,9 +173,6 @@ public class PoliceCrimesController {
             }
         });
 
-        // Apply dark mode to filter bar inline styles
-        applyDarkFilterBar(UserSession.isDarkMode());
-
         // Load and Display Data
         refreshList();
         // Update selected list element after populating
@@ -189,6 +191,11 @@ public class PoliceCrimesController {
             hamburgerMenu.setMaxHeight(Double.MAX_VALUE);
             policeCrimesRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
+            hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
+            // Apply dark mode to all inline-styled nodes now that the scene is attached
+            applyDarkStrips();
+            // Refresh list cells so dark mode text colours apply on first load
+            if (crimeListView != null) crimeListView.refresh();
         });
     }
 
@@ -314,6 +321,41 @@ public class PoliceCrimesController {
                 btn.setStyle(btn.isSelected() ? selected : unselected);
             }
         }
+    }
+
+    /**
+     * Applies dark mode overrides to all inline-styled nodes on the police crimes screen.
+     * Called on first load and whenever dark mode is toggled.
+     */
+    private void applyDarkStrips() {
+        boolean dark = UserSession.isDarkMode();
+        String darkStrip   = "-fx-background-color: #1F2937; -fx-border-color: #374151;";
+        String darkSection = "-fx-padding: 12 20 8 20; -fx-background-color: #1F2937;";
+        String listViewDark = "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;";
+        String lightStrip   = "-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB;";
+        String lightSection = "-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;";
+
+        if (dark) {
+            if (severityLegendStrip != null) severityLegendStrip.setStyle(darkStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+            if (sectionHeader       != null) sectionHeader.setStyle(darkSection);
+            if (allReportsLabel     != null) allReportsLabel.setStyle("-fx-text-fill: #F9FAFB; -fx-font-size: 13px; -fx-font-weight: bold;");
+            if (crimeListView       != null) crimeListView.setStyle(listViewDark);
+        } else {
+            if (severityLegendStrip != null) severityLegendStrip.setStyle(lightStrip + " -fx-padding: 8 20 8 20; -fx-border-width: 0 0 1 0;");
+            if (sectionHeader       != null) sectionHeader.setStyle(lightSection);
+            if (allReportsLabel     != null) allReportsLabel.setStyle("-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;");
+            if (crimeListView       != null) crimeListView.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
+        }
+        applyDarkFilterBar(dark);
+    }
+
+    /**
+     * Called by the hamburger menu when the user toggles dark mode at runtime.
+     * Re-applies all dark or light overrides and refreshes the list cells.
+     */
+    private void refreshDarkMode() {
+        applyDarkStrips();
+        if (crimeListView != null) crimeListView.refresh();
     }
 
     /**
@@ -625,23 +667,29 @@ public class PoliceCrimesController {
                 Label dot = new Label("●");
                 dot.setStyle("-fx-text-fill: " + dotColor + "; -fx-font-size: 14px;");
 
+                boolean dark = UserSession.isDarkMode();
+
                 Label category = new Label(crime.getCategory().toString());
-                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1A1A2E;");
+                category.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: "
+                        + (dark ? "#F9FAFB" : "#1A1A2E") + ";");
 
                 String statusText = crime.isActioned() ? "Police Dispatched" : "Pending";
                 Label status = new Label(statusText);
-                status.setStyle("-fx-font-size: 11px; -fx-text-fill: #6B7280;");
+                status.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#9CA3AF" : "#6B7280") + ";");
 
                 String locationText = addressCache.containsKey(crime.getId())
                         ? addressCache.get(crime.getId())
                         : String.format("%.4f, %.4f", crime.getLatitude(), crime.getLongitude());
                 Label location = new Label(locationText);
-                location.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+                location.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#6B7280" : "#9CA3AF") + ";");
 
                 VBox textBlock = new VBox(2, category, status, location);
 
                 Label time = new Label(getRelativeTime(crime.getTimestamp()));
-                time.setStyle("-fx-font-size: 11px; -fx-text-fill: #9CA3AF;");
+                time.setStyle("-fx-font-size: 11px; -fx-text-fill: "
+                        + (dark ? "#6B7280" : "#9CA3AF") + ";");
 
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -661,8 +709,10 @@ public class PoliceCrimesController {
             }
         });
 
-        crimeListView.setStyle("-fx-background-color: transparent; " +
-                "-fx-background: transparent; -fx-border-width: 0;");
+        // Inline style must match CSS .dark-mode .list-view background
+        crimeListView.setStyle(UserSession.isDarkMode()
+                ? "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;"
+                : "-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
     }
 
     /**

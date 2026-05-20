@@ -259,6 +259,10 @@ public class CrimesController {
             crimesRoot.getChildren().add(hamburgerMenu);
             hamburgerBtn.setOnAction(e -> hamburgerMenu.toggle());
             hamburgerMenu.setOnDarkModeChanged(this::refreshDarkMode);
+            // Re-apply all dark mode overrides now the scene is attached so inline
+            // styles on the filter bar and list view are correctly themed on first load
+            if (UserSession.isDarkMode()) applyDarkStrips();
+            if (crimeListView != null) crimeListView.refresh();
         });
 
         anonymousCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
@@ -282,7 +286,7 @@ public class CrimesController {
      * Date range lives in the collapsible advanced section toggled by advancedToggleBtn.
      *
      * Crime type filtering is performed directly against the category name so that
-     * all 21 crime types work.
+     * all 21 crime types work, not just the four covered by the legacy RadioMenuItems.
      */
     private void initFilterBar() {
         // Severity chip group
@@ -418,6 +422,8 @@ public class CrimesController {
         String brightLabelNormal = "-fx-text-fill: #E5E7EB;";
         if (detailCategoryLabel != null) detailCategoryLabel.setStyle(brightLabel);
         if (detailDateLabel     != null) detailDateLabel.setStyle(brightLabelNormal);
+        // List view background
+        if (crimeListView != null) crimeListView.setStyle("-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;");
         // Filter bar
         applyDarkFilterBar(true);
     }
@@ -458,6 +464,7 @@ public class CrimesController {
     private void refreshDarkMode() {
         if (UserSession.isDarkMode()) {
             applyDarkStrips();
+            crimeListView.setStyle("-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;");
             crimeListView.refresh();
         } else {
             String lightStrip   = "-fx-background-color: #FFFFFF; -fx-border-color: #E5E7EB;";
@@ -477,10 +484,10 @@ public class CrimesController {
             if (locationFieldEdit   != null) locationFieldEdit.setStyle(null);
             if (descriptionAreaEdit != null) descriptionAreaEdit.setStyle(null);
             if (reporterField       != null) reporterField.setStyle("-fx-opacity: 1;");
-            if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #E5E7EB;");
-            if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #E5E7EB;");
-            // Filter bar
+            if (detailCategoryLabel != null) detailCategoryLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2A364E;");
+            if (detailDateLabel     != null) detailDateLabel.setStyle("-fx-text-fill: #2A364E;");
             applyDarkFilterBar(false);
+            crimeListView.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
             crimeListView.refresh();
         }
     }
@@ -1440,8 +1447,9 @@ public class CrimesController {
             }
         });
 
-        crimeListView.setStyle("-fx-background-color: transparent; " +
-                "-fx-background: transparent; -fx-border-width: 0;");
+        crimeListView.setStyle(UserSession.isDarkMode()
+                ? "-fx-background-color: #111827; -fx-background: #111827; -fx-border-width: 0;"
+                : "-fx-background-color: transparent; -fx-background: transparent; -fx-border-width: 0;");
 
     }
 

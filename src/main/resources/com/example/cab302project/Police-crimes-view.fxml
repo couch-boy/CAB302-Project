@@ -30,7 +30,7 @@
         </HBox>
 
         <!-- Severity legend -->
-        <HBox alignment="CENTER_LEFT" spacing="16"
+        <HBox fx:id="severityLegendStrip" alignment="CENTER_LEFT" spacing="16"
               style="-fx-background-color: #FFFFFF; -fx-padding: 8 20 8 20;
                      -fx-border-color: #E5E7EB; -fx-border-width: 0 0 1 0;">
             <Label text="●" style="-fx-text-fill: #DC143C; -fx-font-size: 11px;"/>
@@ -57,9 +57,9 @@
             </TableView>
 
             <!-- Section header -->
-            <HBox alignment="CENTER_LEFT" spacing="10"
+            <HBox fx:id="sectionHeader" alignment="CENTER_LEFT" spacing="10"
                   style="-fx-padding: 12 20 8 20; -fx-background-color: #F8F9FA;">
-                <Label text="All Reports"
+                <Label fx:id="allReportsLabel" text="All Reports"
                        style="-fx-text-fill: #1A1A2E; -fx-font-size: 13px; -fx-font-weight: bold;"/>
             </HBox>
 
