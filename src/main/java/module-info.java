@@ -5,6 +5,7 @@ module com.example.cab302project {
     requires java.sql;
     requires java.net.http;
     requires org.json;
+    requires ollama4j;
     requires org.kordamp.ikonli.core;
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.fontawesome5;
