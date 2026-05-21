@@ -403,7 +403,7 @@ public class PoliceDashboardController {
         Thread summaryThread = new Thread(() -> {
             try {
                 String prompt = buildCrimeSummaryPrompt(suburbName, displayedCrimes);
-                // OllamaService sends the prompt to http://localhost:11434 using the llama3.2 model.
+                // OllamaService sends the prompt to local Ollama using the configured/default model.
                 String summary = ollamaService.generateSummary(prompt);
 
                 if (summary == null || summary.isBlank()) {
