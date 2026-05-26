@@ -949,7 +949,7 @@ public class AppTest {
     private CrimeRecord maanCrime(int id, CrimeCategory category, double latitude, double longitude) {
         return new CrimeRecord(id, category, LocalDateTime.now(), latitude, longitude, "Maan test crime", "maan", false);
     }
-
+// tests
     // Helper: calls the private distanceKm() method so its calculation can still be tested.
     // Reflection is used here because the production method is intentionally kept private in the controller.
     private double invokeDistanceKm(double lat1, double lon1, double lat2, double lon2) throws Exception {
